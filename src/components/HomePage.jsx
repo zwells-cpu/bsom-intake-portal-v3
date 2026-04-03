@@ -26,7 +26,7 @@ export function HomePage({ onEnterModule, theme, setTheme }) {
         <ThemeToggle theme={theme} setTheme={setTheme} />
       </div>
 
-      <div className="home-logo">
+      <div className="bsom-logo.png">
         <img src="/bsom-logo.png" alt="BSOM" onError={e => { e.target.style.display = 'none' }} />
       </div>
 
