@@ -1,0 +1,78 @@
+import { STAGE_COLORS, STAGE_ICONS, PA_COLORS, PA_ICONS } from './constants'
+
+// ── Status color ──
+export function sc(v) {
+  if (!v || v === 'N/A' || v === '--') return '#64748b'
+  const u = v.toUpperCase()
+  if (['COMPLETED','SIGNED','YES','RECEIVED','VERIFIED','APPROVED','ACTIVE','DONE','ACTIVE CLIENT','NO PA NEEDED'].some(x => u.includes(x))) return '#22c55e'
+  if (['EMAILED','REMINDER','TOO YOUNG','IN PROGRESS','IN-PROGRESS','IN REVIEW','SUBMITTED','SENT','NOW SCHEDULED','REPORT IN PROGRESS','REAUTH','REAUTHORIZATION','APPEAL PENDING','REQUESTED','AWAITING','WAITING','TBD'].some(x => u.includes(x))) return '#f59e0b'
+  if (['DENIED','MISSING','NEEDS ACTION','NON-RESPONSIVE','PLEASE SEND','PLEASE','DECLINED'].some(x => u.includes(x))) return '#ef4444'
+  if (u === 'NO') return '#ef4444'
+  if (['DISCHARGED','REFERRED OUT','CLOSED','INACTIVE','APPROVED/DISCHARGED'].some(x => u.includes(x))) return '#64748b'
+  return '#64748b'
+}
+
+// ── Badge icon ──
+export function badgeIcon(v) {
+  if (!v) return ''
+  const u = v.toUpperCase()
+  if (['COMPLETED','SIGNED','YES','RECEIVED','VERIFIED','APPROVED','DONE','NO PA NEEDED'].some(x => u.includes(x))) return '✓ '
+  if (['DENIED','NON-RESPONSIVE','PLEASE','DECLINED','MISSING'].some(x => u.includes(x))) return '✗ '
+  if (u === 'NO') return '✗ '
+  if (['IN PROGRESS','IN-PROGRESS','SUBMITTED','IN REVIEW','NOW SCHEDULED','REAUTH','AWAITING','WAITING','REQUESTED','EMAILED','SENT','APPEAL PENDING'].some(x => u.includes(x))) return '◐ '
+  return ''
+}
+
+// ── Completion percentage ──
+export function pct(r) {
+  const fs = ['referral_form','permission_assessment','vineland','srs2','insurance_verified','autism_diagnosis','intake_paperwork','intake_personnel']
+  const done = fs.filter(f => {
+    const v = (r[f] || '').toUpperCase()
+    return ['YES','COMPLETED','SIGNED','RECEIVED'].some(x => v.includes(x))
+  })
+  return Math.round(done.length / fs.length * 100)
+}
+
+// ── Office normalization ──
+export function normalizeOffice(o) {
+  if (o === 'JACKSON') return 'FLOWOOD'
+  if (o === 'SCHOOL')  return 'DAY TREATMENT'
+  if (o === 'NEWTON')  return 'FOREST'
+  return o
+}
+
+// ── Status color helper for assessments ──
+export function statusColor(s) {
+  if (['Finalized','Done','Completed'].includes(s)) return '#22c55e'
+  if (['In Progress','In Review','Draft Complete'].includes(s)) return '#f59e0b'
+  if (['Not Started'].includes(s)) return '#ef4444'
+  return '#64748b'
+}
+
+// ── Sort list ──
+export function sortList(list, sortCol, sortDir) {
+  if (!sortCol) return list
+  return [...list].sort((a, b) => {
+    if (sortCol === 'pct') {
+      const av = pct(a), bv = pct(b)
+      return sortDir === 'asc' ? av - bv : bv - av
+    }
+    const av = a[sortCol] || '', bv = b[sortCol] || ''
+    return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av)
+  })
+}
+
+// ── Export CSV ──
+export function exportCSV(refs) {
+  const active = refs.filter(r => r.status === 'active')
+  const cols = ['first_name','last_name','dob','caregiver','caregiver_phone','caregiver_email','office','insurance','insurance_verified','autism_diagnosis','intake_paperwork','intake_personnel','referral_form','permission_assessment','vineland','srs2','attends_school','iep_report','contact1','contact2','contact3','date_received','notes','status']
+  const csv = [
+    cols.join(','),
+    ...active.map(r => cols.map(c => '"' + (r[c] || '').replace(/"/g, '""') + '"').join(',')),
+  ].join('\n')
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })),
+    download: 'bsom_referrals.csv',
+  })
+  a.click()
+}

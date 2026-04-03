@@ -1,0 +1,172 @@
+import { useEffect, useState } from 'react'
+import { useTheme }       from './hooks/useTheme'
+import { useReferrals }   from './hooks/useReferrals'
+import { useAssessments } from './hooks/useAssessments'
+import { MODULES, MODULE_NAV, ALL_ROLES } from './lib/constants'
+import { normalizeOffice } from './lib/utils'
+
+import { HomePage }        from './components/HomePage'
+import { Sidebar }         from './components/Sidebar'
+import { ThemeToggle }     from './components/ThemeToggle'
+import { ReferralModal }   from './components/ReferralModal'
+
+import { DashboardPage }   from './pages/DashboardPage'
+import { AllReferralsPage } from './pages/AllReferralsPage'
+import { NewReferralPage }  from './pages/NewReferralPage'
+import { IntakeDashboard, PendingDocsPage, InsuranceVerifPage, NonResponsivePage } from './pages/IntakePages'
+import { AboutPortalPage, LocationsPage } from './pages/AboutPage'
+
+export default function App() {
+  const { theme, setTheme } = useTheme()
+  const { refs, loading, error, saving, saved, setError, load, saveReferral, updateReferral, setStatus, toggleParentInterview } = useReferrals()
+  const { assessData, assessLoading, loadAssessments } = useAssessments()
+
+  const [screen,  setScreen]  = useState('home')   // 'home' | 'module'
+  const [module,  setModule]  = useState(null)
+  const [subpage, setSubpage] = useState(null)
+  const [selId,   setSelId]   = useState(null)
+  const [role,    setRole]    = useState('All Staff')
+
+  useEffect(() => { load() }, [load])
+
+  // Listen for sidebar cross-module navigation
+  useEffect(() => {
+    const h = (e) => enterModule(e.detail)
+    window.addEventListener('enter-module', h)
+    return () => window.removeEventListener('enter-module', h)
+  }, [])
+
+  const enterModule = (id) => {
+    const defaults = { dashboard: 'overview', intake: 'intakedash', assessment: 'tracker', operations: 'pipeline', about: 'portal' }
+    setModule(id)
+    setSubpage(defaults[id] || 'overview')
+    setScreen('module')
+    if (id === 'assessment' && assessData.length === 0) loadAssessments()
+  }
+
+  const goHome = () => { setScreen('home'); setModule(null); setSelId(null) }
+
+  const active  = refs.filter(r => r.status === 'active')
+  const nr      = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
+  const pending = active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
+  const noIns   = active.filter(r => !['yes', 'verified'].includes((r.insurance_verified || '').toLowerCase())).length
+
+  const selectedRef = selId ? refs.find(r => r.id === selId) : null
+
+  if (screen === 'home') {
+    return (
+      <>
+        <HomePage onEnterModule={enterModule} theme={theme} setTheme={setTheme} />
+        {saved && <div className="toast">✅ Referral saved!</div>}
+      </>
+    )
+  }
+
+  const m = MODULES.find(x => x.id === module)
+  const navItems = MODULE_NAV[module] || []
+  const currentNavLabel = navItems.find(n => n.id === subpage)?.label || ''
+
+  const renderPage = () => {
+    if (loading) return (
+      <div className="loader-wrap">
+        <div className="spinner" />
+        <div style={{ color: 'var(--muted)' }}>Connecting to database...</div>
+      </div>
+    )
+
+    if (module === 'dashboard') return <DashboardPage refs={refs} setSelectedId={setSelId} setModule={setModule} setSubpage={setSubpage} />
+
+    if (module === 'intake') {
+      if (subpage === 'intakedash') return <IntakeDashboard refs={refs} onSelectRef={setSelId} setSubpage={setSubpage} />
+      if (subpage === 'all')        return <AllReferralsPage refs={refs} role={role} setRole={setRole} onSelectRef={setSelId} />
+      if (subpage === 'new')        return <NewReferralPage onSave={saveReferral} saving={saving} />
+      if (subpage === 'pending')    return <PendingDocsPage refs={refs} onSelectRef={setSelId} />
+      if (subpage === 'insurance')  return <InsuranceVerifPage refs={refs} onSelectRef={setSelId} />
+      if (subpage === 'nr')         return <NonResponsivePage refs={refs} onRestore={(id) => setStatus(id, 'active')} />
+    }
+
+    if (module === 'about') {
+      if (subpage === 'portal')    return <AboutPortalPage />
+      if (subpage === 'locations') return <LocationsPage />
+    }
+
+    // Assessment and Operations — stubs ready for future build-out
+    return (
+      <div style={{ textAlign: 'center', padding: '80px 40px' }}>
+        <div style={{ fontSize: 40, marginBottom: 16 }}>🚧</div>
+        <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Coming Soon</div>
+        <div style={{ color: 'var(--muted)', fontSize: 14 }}>This section is being migrated to React.</div>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      {saved && <div className="toast">✅ Referral saved!</div>}
+
+      <div className="shell">
+        <Sidebar
+          module={module}
+          subpage={subpage}
+          setSubpage={setSubpage}
+          goHome={goHome}
+          pendingCount={pending.length}
+          nrCount={nr.length}
+          unverifiedCount={noIns}
+        />
+
+        <div className="content">
+          <div className="topbar">
+            <div className="topbar-title">
+              {m?.icon} {m?.name}{currentNavLabel ? ` — ${currentNavLabel}` : ''}
+            </div>
+            <div className="topbar-right">
+              {module === 'intake' && (
+                <select
+                  style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 7, padding: '4px 10px', color: 'var(--text)', fontSize: 12, fontWeight: 600 }}
+                  value={role} onChange={e => setRole(e.target.value)}
+                >
+                  {ALL_ROLES.map(r => <option key={r}>{r}</option>)}
+                </select>
+              )}
+              <span className="badge-pill">✓ {active.length} Active</span>
+              {pending.length > 0 && (
+                <span style={{ background: '#f59e0b18', color: '#f59e0b', border: '1px solid #f59e0b30', borderRadius: 20, padding: '3px 12px', fontSize: '11.5px', fontWeight: 700 }}>
+                  {pending.length} Pending Docs
+                </span>
+              )}
+              <ThemeToggle theme={theme} setTheme={setTheme} />
+              <button className="btn-sm" onClick={load}>↻ Refresh</button>
+            </div>
+          </div>
+
+          <div className="page">
+            {error && (
+              <div className="error-bar">
+                ⚠️ {error}
+                <button className="x-btn" onClick={() => setError(null)}>✕</button>
+              </div>
+            )}
+            {renderPage()}
+          </div>
+
+          <footer style={{ borderTop: '1px solid var(--border)', padding: '14px 28px', textAlign: 'center', flexShrink: 0 }}>
+            <span style={{ fontSize: 11, color: 'var(--dim)' }}>
+              © 2026 Behavioral Solutions of Mississippi &nbsp;•&nbsp; Intake Operations Portal developed by Zanteria Wells
+            </span>
+          </footer>
+        </div>
+      </div>
+
+      {selectedRef && (
+        <ReferralModal
+          referral={selectedRef}
+          onClose={() => setSelId(null)}
+          onSave={updateReferral}
+          onSetStatus={(id, status) => { setStatus(id, status); setSelId(null) }}
+          onToggleParentInterview={toggleParentInterview}
+        />
+      )}
+    </>
+  )
+}
