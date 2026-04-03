@@ -1,4 +1,3 @@
-import logo from '/bsom-logo.png'
 import { useEffect, useState } from 'react'
 import { MODULES } from '../lib/constants'
 import { ThemeToggle } from './ThemeToggle'
@@ -29,7 +28,7 @@ export function HomePage({ onEnterModule, theme, setTheme }) {
 
      <div className="home-logo">
   <img
-    src="/bsom-logo.png"
+    src="/bsom-logo.jpg"
     alt="BSOM"
     style={{ width: 96, height: 96 }}
   />

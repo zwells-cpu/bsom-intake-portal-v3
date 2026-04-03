@@ -15,7 +15,7 @@ export function Sidebar({ module, subpage, setSubpage, goHome, pendingCount, nrC
     <aside className="sidebar">
       <div className="sidebar-header sidebar-home-btn" onClick={goHome}>
         <div className="sidebar-logo">
-          <img src="/bsom-logo.png" alt="BSOM" onError={e => { e.target.style.display='none' }} />
+          <img src="/bsom-logo.jpg" alt="BSOM" onError={e => { e.target.style.display='none' }} />
         </div>
         <div>
           <div className="sidebar-title">BSOM Portal</div>
