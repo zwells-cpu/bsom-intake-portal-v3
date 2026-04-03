@@ -26,9 +26,13 @@ export function HomePage({ onEnterModule, theme, setTheme }) {
         <ThemeToggle theme={theme} setTheme={setTheme} />
       </div>
 
-      <div className="bsom-logo.png">
-        <img src="/bsom-logo.png" alt="BSOM" onError={e => { e.target.style.display = 'none' }} />
-      </div>
+     <div className="home-logo">
+  <img
+    src="/bsom-logo.png"
+    alt="BSOM"
+    style={{ width: 96, height: 96 }}
+  />
+</div>
 
       <div className="home-title">BSOM Intake Portal</div>
       <div className="home-sub">Behavioral Solutions of Mississippi — Intake Operations Portal</div>
