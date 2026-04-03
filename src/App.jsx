@@ -3,12 +3,12 @@ import { useTheme }       from './hooks/useTheme'
 import { useReferrals }   from './hooks/useReferrals'
 import { useAssessments } from './hooks/useAssessments'
 import { MODULES, MODULE_NAV, ALL_ROLES } from './lib/constants'
-import { normalizeOffice } from './lib/utils'
 
 import { HomePage }        from './components/HomePage'
 import { Sidebar }         from './components/Sidebar'
 import { ThemeToggle }     from './components/ThemeToggle'
 import { ReferralModal }   from './components/ReferralModal'
+import { AssessmentDetailModal } from './components/AssessmentDetailModal'
 
 import { DashboardPage }   from './pages/DashboardPage'
 import { AllReferralsPage } from './pages/AllReferralsPage'
@@ -21,12 +21,13 @@ import { PipelineOverviewPage, ReferralAgingPage, ClinicVolumePage, ConversionRa
 export default function App() {
   const { theme, setTheme } = useTheme()
   const { refs, loading, error, saving, saved, setError, load, saveReferral, updateReferral, setStatus, toggleParentInterview } = useReferrals()
-  const { assessData, assessLoading, loadAssessments } = useAssessments()
+  const { assessData, assessLoading, loadAssessments, saveAssessEdit } = useAssessments()
 
   const [screen,  setScreen]  = useState('home')   // 'home' | 'module'
   const [module,  setModule]  = useState(null)
   const [subpage, setSubpage] = useState(null)
   const [selId,   setSelId]   = useState(null)
+  const [selAssess, setSelAssess] = useState(null)
   const [role,    setRole]    = useState('All Staff')
 
   useEffect(() => { load() }, [load])
@@ -46,7 +47,7 @@ export default function App() {
     if (id === 'assessment' && assessData.length === 0) loadAssessments()
   }
 
-  const goHome = () => { setScreen('home'); setModule(null); setSelId(null) }
+  const goHome = () => { setScreen('home'); setModule(null); setSelId(null); setSelAssess(null) }
 
   const active  = refs.filter(r => r.status === 'active')
   const nr      = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
@@ -54,6 +55,9 @@ export default function App() {
   const noIns   = active.filter(r => !['yes', 'verified'].includes((r.insurance_verified || '').toLowerCase())).length
 
   const selectedRef = selId ? refs.find(r => r.id === selId) : null
+  const selectedAssess = selAssess
+    ? assessData.find(r => (r.assessment_id ?? r.id) === (selAssess.assessment_id ?? selAssess.id)) || selAssess
+    : null
 
   if (screen === 'home') {
     return (
@@ -93,12 +97,12 @@ export default function App() {
     }
 
     if (module === 'assessment') {
-      if (subpage === 'tracker')    return <AssessmentTracker assessData={assessData} assessLoading={assessLoading} onSelectAssess={id => setSelId(id)} />
-      if (subpage === 'interviews') return <ParentInterviewsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={id => setSelId(id)} />
-      if (subpage === 'bcba')       return <BCBAAssignmentsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={id => setSelId(id)} />
-      if (subpage === 'progress')   return <AssessmentProgressPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={id => setSelId(id)} />
-      if (subpage === 'txplan')     return <TreatmentPlansPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={id => setSelId(id)} />
-      if (subpage === 'readysvc')   return <ReadyForServicesPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={id => setSelId(id)} />
+      if (subpage === 'tracker')    return <AssessmentTracker assessData={assessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
+      if (subpage === 'interviews') return <ParentInterviewsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
+      if (subpage === 'bcba')       return <BCBAAssignmentsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
+      if (subpage === 'progress')   return <AssessmentProgressPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
+      if (subpage === 'txplan')     return <TreatmentPlansPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
+      if (subpage === 'readysvc')   return <ReadyForServicesPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
     }
 
     if (module === 'operations') {
@@ -182,6 +186,14 @@ export default function App() {
           onSave={updateReferral}
           onSetStatus={(id, status) => { setStatus(id, status); setSelId(null) }}
           onToggleParentInterview={toggleParentInterview}
+        />
+      )}
+
+      {selectedAssess && (
+        <AssessmentDetailModal
+          assessment={selectedAssess}
+          onClose={() => setSelAssess(null)}
+          onSave={saveAssessEdit}
         />
       )}
     </>

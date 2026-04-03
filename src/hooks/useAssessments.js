@@ -29,7 +29,10 @@ export function useAssessments() {
         .update(patch)
         .eq('assessment_id', id)
       if (error) throw error
-      setAssessData(prev => prev.map(r => r.assessment_id === id ? { ...r, ...patch } : r))
+      setAssessData(prev => prev.map(r => {
+        const rowId = r.assessment_id ?? r.id
+        return rowId === id ? { ...r, ...patch } : r
+      }))
       return { success: true }
     } catch (e) {
       setAssessError('Could not save assessment changes: ' + e.message)
