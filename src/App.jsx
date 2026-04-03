@@ -15,6 +15,8 @@ import { AllReferralsPage } from './pages/AllReferralsPage'
 import { NewReferralPage }  from './pages/NewReferralPage'
 import { IntakeDashboard, PendingDocsPage, InsuranceVerifPage, NonResponsivePage } from './pages/IntakePages'
 import { AboutPortalPage, LocationsPage } from './pages/AboutPage'
+import { AssessmentTracker, ParentInterviewsPage, BCBAAssignmentsPage, AssessmentProgressPage, TreatmentPlansPage, ReadyForServicesPage } from './pages/AssessmentPages'
+import { PipelineOverviewPage, ReferralAgingPage, ClinicVolumePage, ConversionRatePage, IntakePerformancePage } from './pages/OperationsPages'
 
 export default function App() {
   const { theme, setTheme } = useTheme()
@@ -90,12 +92,27 @@ export default function App() {
       if (subpage === 'locations') return <LocationsPage />
     }
 
-    // Assessment and Operations — stubs ready for future build-out
+    if (module === 'assessment') {
+      if (subpage === 'tracker')    return <AssessmentTracker assessData={assessData} assessLoading={assessLoading} onSelectAssess={id => setSelId(id)} />
+      if (subpage === 'interviews') return <ParentInterviewsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={id => setSelId(id)} />
+      if (subpage === 'bcba')       return <BCBAAssignmentsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={id => setSelId(id)} />
+      if (subpage === 'progress')   return <AssessmentProgressPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={id => setSelId(id)} />
+      if (subpage === 'txplan')     return <TreatmentPlansPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={id => setSelId(id)} />
+      if (subpage === 'readysvc')   return <ReadyForServicesPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={id => setSelId(id)} />
+    }
+
+    if (module === 'operations') {
+      if (subpage === 'pipeline')    return <PipelineOverviewPage refs={refs} />
+      if (subpage === 'aging')       return <ReferralAgingPage refs={refs} onSelectRef={setSelId} />
+      if (subpage === 'volume')      return <ClinicVolumePage refs={refs} />
+      if (subpage === 'conversion')  return <ConversionRatePage refs={refs} />
+      if (subpage === 'performance') return <IntakePerformancePage refs={refs} />
+    }
+
     return (
       <div style={{ textAlign: 'center', padding: '80px 40px' }}>
-        <div style={{ fontSize: 40, marginBottom: 16 }}>🚧</div>
-        <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Coming Soon</div>
-        <div style={{ color: 'var(--muted)', fontSize: 14 }}>This section is being migrated to React.</div>
+        <div style={{ fontSize: 40, marginBottom: 16 }}>🔍</div>
+        <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Page not found</div>
       </div>
     )
   }
