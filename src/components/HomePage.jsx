@@ -1,3 +1,4 @@
+import logo from '/bsom-logo.png'
 import { useEffect, useState } from 'react'
 import { MODULES } from '../lib/constants'
 import { ThemeToggle } from './ThemeToggle'
