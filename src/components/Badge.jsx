@@ -54,7 +54,15 @@ export function StagePill({ stage }) {
     'Active Client': '⭐', 'Reauth Needed': '🔄', 'Discharged': '🏁',
   }
   if (!stage) return <span style={{ color: 'var(--dim)' }}>--</span>
+  const isWorkflowAction = ['Intake', 'Initial Assessment'].includes(stage)
   const c = COLORS[stage] || '#64748b'
+  if (isWorkflowAction) {
+    return (
+      <span className="action-btn" style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
+        {ICONS[stage] || ''} {stage}
+      </span>
+    )
+  }
   return (
     <span style={{ background: `${c}20`, color: c, border: `1px solid ${c}35`, borderRadius: 6, padding: '2px 9px', fontSize: '10.5px', fontWeight: 700, whiteSpace: 'nowrap' }}>
       {ICONS[stage] || ''} {stage}
