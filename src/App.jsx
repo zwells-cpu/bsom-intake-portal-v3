@@ -283,7 +283,9 @@ export default function App() {
                 <button className="x-btn" onClick={() => setError(null)}>✕</button>
               </div>
             )}
-            {renderPage()}
+            <div className={`page-inner ${module === 'intake' && subpage === 'all' ? 'page-inner-wide' : ''}`}>
+              {renderPage()}
+            </div>
           </div>
 
           <footer style={{ borderTop: '1px solid var(--border)', padding: '14px 28px', textAlign: 'center', flexShrink: 0 }}>

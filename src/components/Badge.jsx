@@ -58,8 +58,9 @@ export function StagePill({ stage }) {
   const c = COLORS[stage] || '#64748b'
   if (isWorkflowAction) {
     return (
-      <span className="action-btn" style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
-        {ICONS[stage] || ''} {stage}
+      <span className="action-btn bdg-action">
+        <span className="bdg-action-icon">{ICONS[stage] || ''}</span>
+        <span>{stage}</span>
       </span>
     )
   }

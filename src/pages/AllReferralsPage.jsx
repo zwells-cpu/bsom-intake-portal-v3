@@ -53,9 +53,9 @@ export function AllReferralsPage({ refs, role, setRole, onSelectRef, statFilter,
       </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered referrals" />
 
-      <div className="card">
+      <div className="card" style={{ width: '100%' }}>
         <div className="table-wrap">
-          <table>
+          <table className="table-compact">
             <thead>
               <tr>
                 <Th col="pct" label="Progress" />
@@ -85,8 +85,8 @@ export function AllReferralsPage({ refs, role, setRole, onSelectRef, statFilter,
                   <td style={{ color: 'var(--muted)', fontSize: 12 }}>{r.insurance || '--'}</td>
                   <td><Badge value={r.insurance_verified} /></td>
                   <td><Badge value={r.autism_diagnosis} /></td>
-                  <td><Badge value={r.intake_paperwork} /></td>
                   <td><StagePill stage={r.current_stage} /></td>
+                  <td><Badge value={r.intake_paperwork} /></td>
                   <td style={{ color: 'var(--dim)', fontSize: 12 }}>{r.intake_personnel || '--'}</td>
                   <td style={{ color: 'var(--accent)' }}>→</td>
                 </tr>
