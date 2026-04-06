@@ -275,19 +275,20 @@ select option{ background:var(--surface); }
 
 /* ── Table ── */
 .table-wrap{ overflow-x:auto; }
-table{ width:100%; border-collapse:collapse; font-size:13px; }
+table{ width:100%; border-collapse:separate; border-spacing:0 6px; font-size:13px; }
 th{
   background:var(--surface2); color:var(--muted); font-size:11px; font-weight:700;
-  text-transform:uppercase; letter-spacing:0.06em; padding:10px 14px;
+  text-transform:uppercase; letter-spacing:0.06em; padding:14px 16px;
   text-align:left; border-bottom:1px solid var(--border); white-space:nowrap;
 }
 th.sort-asc::after{ content:" ↑"; color:var(--accent); }
 th.sort-desc::after{ content:" ↓"; color:var(--accent); }
 th[onclick]{ cursor:pointer; }
 th[onclick]:hover{ color:var(--text); }
-td{ padding:12px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
-.row-hover{ cursor:pointer; transition:background 0.1s; }
-.row-hover:hover{ background:var(--surface2); }
+td{ padding:14px 18px; border-bottom:1px solid #0f172a; vertical-align:middle; }
+tr{ transition:background 0.15s ease, transform 0.08s ease; }
+.row-hover{ cursor:pointer; }
+.row-hover:hover{ background:#1e293b55; transform:translateY(-1px); }
 
 /* ── Filter Row ── */
 .filter-row{
