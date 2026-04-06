@@ -1,4 +1,4 @@
-import { normalizeTreatmentPlanStatus } from './utils'
+import { getAuthorizationStatus, normalizeTreatmentPlanStatus } from './utils'
 
 export function isStatFilterTarget(filter, target) {
   return filter?.target === target ? filter : null
@@ -49,7 +49,7 @@ export function matchesStatFilter(record, filter) {
   }
 
   if (target === 'assessment-tracker') {
-    const pa = record.pa_status || ''
+    const pa = getAuthorizationStatus(record)
     const stage = record.assessment_status || ''
     if (key === 'pa-approved') return ['Approved', 'No PA Needed', 'Approved/Discharged'].includes(pa)
     if (key === 'in-progress') return stage === 'In Progress'
@@ -90,7 +90,7 @@ export function matchesStatFilter(record, filter) {
     if (key === 'ready') return record.ready_for_services === true
     if (key === 'awaiting-authorization') {
       return record.assessment_status === 'Completed'
-        && !['Approved'].includes(record.authorization_status || record.pa_status || '')
+        && !['Approved'].includes(getAuthorizationStatus(record))
         && !record.ready_for_services
     }
     if (key === 'not-ready') return record.ready_for_services !== true

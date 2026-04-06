@@ -18,9 +18,10 @@ function DetailRow({ label, value }) {
   )
 }
 
-export function AssessmentDetailModal({ assessment, onClose, onSave }) {
+export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete }) {
   const [form, setForm] = useState(assessment)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     setForm(assessment)
@@ -50,6 +51,16 @@ export function AssessmentDetailModal({ assessment, onClose, onSave }) {
     const res = await onSave(recordId, patch)
     if (res?.success) onClose()
     setSaving(false)
+  }
+
+  const handleDelete = async () => {
+    if (!recordId || !onDelete) return
+    if (!window.confirm('Delete this assessment record? This action cannot be undone.')) return
+
+    setDeleting(true)
+    const res = await onDelete(recordId)
+    if (res?.success) onClose()
+    setDeleting(false)
   }
 
   const renderEditableDate = (label, key) => (
@@ -206,8 +217,16 @@ export function AssessmentDetailModal({ assessment, onClose, onSave }) {
             {recordId ? 'Changes save to the assessment record.' : 'This record cannot be saved yet.'}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className="btn-ghost"
+              onClick={handleDelete}
+              disabled={saving || deleting || !recordId}
+              style={{ color: '#ef4444', borderColor: '#ef444430' }}
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </button>
             <button className="btn-ghost" onClick={onClose}>Cancel</button>
-            <button className="btn-save" onClick={handleSave} disabled={saving || !recordId}>
+            <button className="btn-save" onClick={handleSave} disabled={saving || deleting || !recordId}>
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>

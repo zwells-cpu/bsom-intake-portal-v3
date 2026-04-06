@@ -75,6 +75,14 @@ export function normalizeTreatmentPlanStatus(status) {
   return value
 }
 
+export function getAssessmentRecordId(record) {
+  return record?.assessment_id ?? record?.id ?? null
+}
+
+export function getAuthorizationStatus(record) {
+  return record?.authorization_status || record?.pa_status || ''
+}
+
 // ── Status color helper for assessments ──
 export function statusColor(s) {
   if (['Finalized','Done','Completed'].includes(s)) return '#22c55e'

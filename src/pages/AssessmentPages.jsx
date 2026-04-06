@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { PaStatusBadge } from '../components/Badge'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
-import { normalizeTreatmentPlanStatus } from '../lib/utils'
+import { getAssessmentRecordId, getAuthorizationStatus, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 function assessVal(value) {
   if (!value) return <span style={{ color: 'var(--dim)', fontSize: 12 }}>--</span>
@@ -50,10 +50,6 @@ function sBdg(status) {
 const ALL_PA = ['All', 'Approved', 'In Review', 'Pending', 'Reauthorization Needed', 'Appeal Pending', 'Denied', 'No PA Needed', 'Approved/Discharged', 'Referred Out']
 const TX_STATUSES = ['Not Started', 'In Progress', 'Finalized']
 
-function getAssessRecordId(record) {
-  return record?.assessment_id || record?.id || null
-}
-
 function renderClientCell(record, secondaryText) {
   return (
     <>
@@ -85,11 +81,13 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
   }
 
   const src = assessData.map(record => ({
-    ...record,
-    client_name: record.client_name || record.name || '',
-    clinic: record.clinic || record.office || '',
-    assessment_id: record.assessment_id || record.id || null,
-  }))
+      ...record,
+      client_name: record.client_name || record.name || '',
+      clinic: record.clinic || record.office || '',
+      assessment_id: getAssessmentRecordId(record),
+      pa_status: getAuthorizationStatus(record),
+      authorization_status: getAuthorizationStatus(record),
+    }))
 
   const { activeFilter, toggleFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'assessment-tracker')
 
@@ -100,13 +98,13 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
 
     return (name.includes(query) || caregiver.includes(query))
       && (office === 'ALL' || record.clinic === office)
-      && (paFilter === 'All' || record.pa_status === paFilter)
+      && (paFilter === 'All' || getAuthorizationStatus(record) === paFilter)
       && matchesStatFilter(record, activeFilter)
   })
 
-  const approved = filtered.filter(record => ['Approved', 'No PA Needed', 'Approved/Discharged'].includes(record.pa_status)).length
+  const approved = filtered.filter(record => ['Approved', 'No PA Needed', 'Approved/Discharged'].includes(getAuthorizationStatus(record))).length
   const inProgress = filtered.filter(record => record.assessment_status === 'In Progress').length
-  const denied = filtered.filter(record => ['Denied', 'Appeal Pending'].includes(record.pa_status)).length
+  const denied = filtered.filter(record => ['Denied', 'Appeal Pending'].includes(getAuthorizationStatus(record))).length
   return (
     <>
       <div className="stats-row stats-4" style={{ marginBottom: 20 }}>
@@ -149,8 +147,8 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
                   <tr
                     key={record.assessment_id || record.client_name}
                     className="row-hover"
-                    onClick={() => getAssessRecordId(record) && onSelectAssess(record)}
-                    style={{ cursor: getAssessRecordId(record) ? 'pointer' : 'default' }}
+                    onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
+                    style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
                   >
                     <td>{renderClientCell(record, record.caregiver)}</td>
                     <td><span className="office-pill">{record.clinic || '--'}</span></td>
@@ -161,7 +159,7 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
                     <td>{assessVal(record.direct_obs)}</td>
                     <td>{assessVal(record.in_school)}</td>
                     <td style={{ fontSize: 11, color: 'var(--dim)', maxWidth: 140 }}>{record.other_services || '--'}</td>
-                    <td><PaStatusBadge status={record.pa_status} /></td>
+                    <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
                   </tr>
                 ))}
             </tbody>
@@ -204,7 +202,7 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
               {filteredRows.length === 0
                 ? <tr><td colSpan={8} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No assessment records found.</td></tr>
                 : filteredRows.map(record => {
-                  const canOpen = Boolean(getAssessRecordId(record))
+                  const canOpen = Boolean(getAssessmentRecordId(record))
 
                   return (
                     <tr key={record.assessment_id || record.client_name}>
@@ -310,14 +308,14 @@ export function BCBAAssignmentsPage({ assessData, assessLoading, onSelectAssess,
                 <tr
                   key={record.assessment_id || record.client_name}
                   className="row-hover"
-                  onClick={() => getAssessRecordId(record) && onSelectAssess(record)}
-                  style={{ cursor: getAssessRecordId(record) ? 'pointer' : 'default' }}
+                  onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
+                  style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
                 >
                   <td>{renderClientCell(record, record.caregiver)}</td>
                   <td><span className="office-pill">{record.clinic || '--'}</span></td>
                   <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || <span style={{ color: 'var(--dim)', fontStyle: 'italic' }}>Unassigned</span>}</td>
                   <td>{sBdg(record.assessment_status || 'Not Started')}</td>
-                  <td><PaStatusBadge status={record.pa_status} /></td>
+                  <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
                   <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.insurance || '--'}</td>
                   <td style={{ color: 'var(--accent)' }}>→</td>
                 </tr>
@@ -362,8 +360,8 @@ export function AssessmentProgressPage({ assessData, assessLoading, onSelectAsse
                 <tr
                   key={record.assessment_id || record.client_name}
                   className="row-hover"
-                  onClick={() => getAssessRecordId(record) && onSelectAssess(record)}
-                  style={{ cursor: getAssessRecordId(record) ? 'pointer' : 'default' }}
+                  onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
+                  style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
                 >
                   <td>{renderClientCell(record, record.clinic)}</td>
                   <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || <span style={{ color: '#ef4444', fontStyle: 'italic', fontSize: 11 }}>Unassigned</span>}</td>
@@ -434,14 +432,14 @@ export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess, 
                 <tr
                   key={record.assessment_id || record.client_name}
                   className="row-hover"
-                  onClick={() => getAssessRecordId(record) && onSelectAssess(record)}
-                  style={{ cursor: getAssessRecordId(record) ? 'pointer' : 'default' }}
+                  onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
+                  style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
                 >
                   <td>{renderClientCell(record, record.clinic)}</td>
                   <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
                   <td>{sBdg(record.assessment_status || 'Not Started')}</td>
                   <td>{sBdg(record.treatment_plan_status || 'Not Started')}</td>
-                  <td>{sBdg(record.authorization_status || record.pa_status || 'Not Submitted')}</td>
+                  <td>{sBdg(getAuthorizationStatus(record) || 'Not Submitted')}</td>
                   <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--dim)' }}>{record.treatment_plan_started_date || '--'}</td>
                   <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.treatment_plan_completed_date ? '#22c55e' : 'var(--dim)' }}>{record.treatment_plan_completed_date || '--'}</td>
                   <td style={{ color: 'var(--accent)' }}>→</td>
@@ -461,7 +459,7 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
   const ready = assessData.filter(record => record.ready_for_services === true)
   const almostAuth = assessData.filter(record =>
     record.assessment_status === 'Completed'
-    && !['Approved'].includes(record.authorization_status || record.pa_status || '')
+    && !['Approved'].includes(getAuthorizationStatus(record))
     && !record.ready_for_services
   )
   const notReady = assessData.filter(record => !record.ready_for_services && !almostAuth.includes(record))
@@ -495,15 +493,15 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
                     <tr
                       key={record.assessment_id || record.client_name}
                       className="row-hover"
-                      onClick={() => getAssessRecordId(record) && onSelectAssess(record)}
-                      style={{ cursor: getAssessRecordId(record) ? 'pointer' : 'default' }}
+                      onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
+                      style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
                     >
                       <td>
                         <div style={{ fontWeight: 700, color: '#22c55e' }}>{record.client_name}</div>
                         <div style={{ fontSize: 11, color: 'var(--dim)' }}>{record.clinic || ''}</div>
                       </td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
-                      <td><PaStatusBadge status={record.authorization_status || record.pa_status} /></td>
+                      <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
                       <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: '#a5b4fc' }}>{record.authorization_approved_date || record.pa_decision_date || '--'}</td>
                       <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.active_client_date ? '#22c55e' : '#fb923c' }}>{record.active_client_date || 'Pending'}</td>
                       <td style={{ fontSize: 11, color: 'var(--dim)', maxWidth: 160 }}>{record.notes || '--'}</td>
@@ -529,14 +527,14 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
                     <tr
                       key={record.assessment_id || record.client_name}
                       className="row-hover"
-                      onClick={() => getAssessRecordId(record) && onSelectAssess(record)}
-                      style={{ cursor: getAssessRecordId(record) ? 'pointer' : 'default' }}
+                      onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
+                      style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
                     >
                       <td>{renderClientCell(record, record.clinic)}</td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
                       <td>{sBdg(record.assessment_status || 'Not Started')}</td>
                       <td>{sBdg(record.treatment_plan_status || 'Not Started')}</td>
-                      <td><PaStatusBadge status={record.authorization_status || record.pa_status || 'Not Submitted'} /></td>
+                      <td><PaStatusBadge status={getAuthorizationStatus(record) || 'Not Submitted'} /></td>
                       <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--dim)' }}>{record.authorization_submitted_date || '--'}</td>
                       <td style={{ color: 'var(--accent)' }}>→</td>
                     </tr>
@@ -566,14 +564,14 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
                     <tr
                       key={record.assessment_id || record.client_name}
                       className="row-hover"
-                      onClick={() => getAssessRecordId(record) && onSelectAssess(record)}
-                      style={{ cursor: getAssessRecordId(record) ? 'pointer' : 'default' }}
+                      onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
+                      style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
                     >
                       <td>{renderClientCell(record, record.clinic)}</td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
                       <td>{sBdg(record.assessment_status || 'Not Started')}</td>
                       <td>{sBdg(record.treatment_plan_status || 'Not Started')}</td>
-                      <td><PaStatusBadge status={record.authorization_status || record.pa_status || 'Not Submitted'} /></td>
+                      <td><PaStatusBadge status={getAuthorizationStatus(record) || 'Not Submitted'} /></td>
                       <td style={{ fontSize: 11, color: 'var(--dim)', maxWidth: 180 }}>{record.notes || '--'}</td>
                       <td style={{ color: 'var(--accent)' }}>→</td>
                     </tr>

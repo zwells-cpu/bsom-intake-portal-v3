@@ -17,7 +17,7 @@ import { IntakeDashboard, PendingDocsPage, InsuranceVerifPage, NonResponsivePage
 import { AboutPortalPage, LocationsPage } from './pages/AboutPage'
 import { AssessmentTracker, ParentInterviewsPage, BCBAAssignmentsPage, AssessmentProgressPage, TreatmentPlansPage, ReadyForServicesPage } from './pages/AssessmentPages'
 import { PipelineOverviewPage, ReferralAgingPage, ClinicVolumePage, ConversionRatePage, IntakePerformancePage } from './pages/OperationsPages'
-import { normalizeStaffName } from './lib/utils'
+import { getAssessmentRecordId, getAuthorizationStatus, normalizeStaffName } from './lib/utils'
 
 function normalizeClientName(first = '', last = '') {
   return `${first} ${last}`.trim().toLowerCase().replace(/\s+/g, ' ')
@@ -40,11 +40,13 @@ function getReferralMatch(assessment, refs) {
 
 function mergeAssessmentRecord(assessment, refs) {
   const referral = getReferralMatch(assessment, refs)
+  const authorizationStatus = getAuthorizationStatus(assessment)
   if (!referral) return assessment
 
   return {
     ...referral,
     ...assessment,
+    assessment_id: getAssessmentRecordId(assessment),
     client_name: assessment.client_name || assessment.name || `${referral.first_name || ''} ${referral.last_name || ''}`.trim(),
     caregiver: assessment.caregiver || referral.caregiver || '',
     caregiver_phone: assessment.caregiver_phone || referral.caregiver_phone || '',
@@ -54,6 +56,8 @@ function mergeAssessmentRecord(assessment, refs) {
     insurance: assessment.insurance || referral.insurance || '',
     secondary_insurance: assessment.secondary_insurance || referral.secondary_insurance || '',
     referral_id: assessment.referral_id || referral.referral_id || referral.id || '',
+    authorization_status: authorizationStatus,
+    pa_status: authorizationStatus,
   }
 }
 
@@ -123,7 +127,7 @@ export default function App() {
 
   const selectedRef = selId ? refs.find(r => r.id === selId) : null
   const selectedAssess = selAssessId
-    ? mergedAssessData.find(r => String(r.assessment_id || r.id || '') === String(selAssessId))
+    ? mergedAssessData.find(r => String(getAssessmentRecordId(r) || '') === String(selAssessId))
     : null
 
   useEffect(() => {
@@ -131,13 +135,13 @@ export default function App() {
   }, [refs, selId])
 
   useEffect(() => {
-    if (selAssessId && !assessData.some(record => String(record.assessment_id || record.id || '') === String(selAssessId))) {
+    if (selAssessId && !assessData.some(record => String(getAssessmentRecordId(record) || '') === String(selAssessId))) {
       setSelAssessId(null)
     }
   }, [assessData, selAssessId])
 
   const handleSelectAssessment = (record) => {
-    const id = record?.assessment_id ?? record?.id ?? null
+    const id = getAssessmentRecordId(record)
     setSelAssessId(id)
   }
 
@@ -306,6 +310,7 @@ export default function App() {
           assessment={selectedAssess}
           onClose={() => setSelAssessId(null)}
           onSave={saveAssessEdit}
+          onDelete={(id) => deleteRecord('assessment', id)}
         />
       )}
     </>

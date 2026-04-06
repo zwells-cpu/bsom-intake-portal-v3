@@ -6,6 +6,20 @@ function getAssessmentId(record) {
   return record?.assessment_id ?? record?.id ?? null
 }
 
+function normalizeAssessmentRecord(record, fallbackId = null) {
+  if (!record) return null
+
+  const assessmentId = getAssessmentId(record) ?? fallbackId
+  const authorizationStatus = record.authorization_status ?? record.pa_status ?? ''
+
+  return {
+    ...record,
+    assessment_id: assessmentId,
+    authorization_status: authorizationStatus,
+    pa_status: authorizationStatus,
+  }
+}
+
 export function useAssessments() {
   const [assessData, setAssessData] = useState([])
   const [assessLoading, setAssessLoading] = useState(false)
@@ -14,12 +28,13 @@ export function useAssessments() {
   const loadAssessments = useCallback(async () => {
     setAssessLoading(true)
     try {
+      setAssessError(null)
       const { data, error } = await supabase
         .from('assessments')
         .select('*')
         .order('client_name', { ascending: true })
       if (error) throw error
-      setAssessData(data || [])
+      setAssessData((data || []).map(record => normalizeAssessmentRecord(record)))
     } catch (e) {
       setAssessError('Could not load assessments: ' + e.message)
     } finally {
@@ -29,15 +44,35 @@ export function useAssessments() {
 
   const saveAssessEdit = useCallback(async (id, patch) => {
     try {
+      setAssessError(null)
+      const normalizedPatch = normalizeAssessmentRecord({ assessment_id: id, ...patch }, id)
+
       const { data, error } = await supabase
         .from('assessments')
-        .update(patch)
+        .update(normalizedPatch)
         .eq('assessment_id', id)
-        .select()
-        .single()
+        .select('*')
+        .maybeSingle()
       if (error) throw error
-      setAssessData(prev => replaceRecordById(prev, data || { assessment_id: id, ...patch }, getAssessmentId))
-      return { success: true, data: data || { assessment_id: id, ...patch } }
+
+      let nextRecord = data ? normalizeAssessmentRecord(data, id) : null
+
+      if (!nextRecord) {
+        const { data: refreshed, error: refreshError } = await supabase
+          .from('assessments')
+          .select('*')
+          .eq('assessment_id', id)
+          .maybeSingle()
+        if (refreshError) throw refreshError
+        nextRecord = normalizeAssessmentRecord(refreshed, id)
+      }
+
+      if (!nextRecord) {
+        nextRecord = normalizedPatch
+      }
+
+      setAssessData(prev => replaceRecordById(prev, nextRecord, getAssessmentId))
+      return { success: true, data: nextRecord }
     } catch (e) {
       setAssessError('Could not save assessment changes: ' + e.message)
       return { success: false }
@@ -46,6 +81,7 @@ export function useAssessments() {
 
   const deleteAssessment = useCallback(async (id) => {
     try {
+      setAssessError(null)
       const { error } = await supabase
         .from('assessments')
         .delete()

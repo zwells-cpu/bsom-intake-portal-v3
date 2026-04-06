@@ -1,6 +1,6 @@
 import { StagePill } from '../components/Badge'
 import { ClickableStatCard } from '../components/StatFilterControls'
-import { displayStaffName, normalizeOffice, normalizeStaffName, normalizeTreatmentPlanStatus } from '../lib/utils'
+import { displayStaffName, getAuthorizationStatus, normalizeOffice, normalizeStaffName, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 // ── Shared helpers ──
 function daysSince(dateStr) {
@@ -52,7 +52,7 @@ export function PipelineOverviewPage({ refs, assessData = [], openModulePage }) 
   const active = refs.filter(r => r.status === 'active')
   const nr     = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
   const activeClients = assessData.filter(record => Boolean(record.active_client_date)).length
-  const awaitingPA = assessData.filter(record => ['Pending', 'In Review'].includes(record.pa_status)).length
+  const awaitingPA = assessData.filter(record => ['Pending', 'In Review'].includes(getAuthorizationStatus(record))).length
   const txInProgress = assessData.filter(record => normalizeTreatmentPlanStatus(record.treatment_plan_status) === 'In Progress').length
 
   const stageOrder = ['New Referral','Intake','Initial Assessment','PA Submitted','PA In Review','PA Approved','Active Client','Reauth Needed','Discharged']
