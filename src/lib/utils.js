@@ -2,12 +2,13 @@ import { STAGE_COLORS, STAGE_ICONS, PA_COLORS, PA_ICONS } from './constants'
 
 // ── Status color ──
 export function sc(v) {
-  if (!v || v === 'N/A' || v === '--') return '#64748b'
+  if (!v || v === 'N/A' || v === '--') return '#94a3b8'
   const u = v.toUpperCase()
-  if (['COMPLETED','SIGNED','YES','RECEIVED','VERIFIED','APPROVED','ACTIVE','DONE','ACTIVE CLIENT','NO PA NEEDED'].some(x => u.includes(x))) return '#22c55e'
-  if (['EMAILED','REMINDER','TOO YOUNG','IN PROGRESS','IN-PROGRESS','IN REVIEW','SUBMITTED','SENT','NOW SCHEDULED','REPORT IN PROGRESS','REAUTH','REAUTHORIZATION','APPEAL PENDING','REQUESTED','AWAITING','WAITING','TBD'].some(x => u.includes(x))) return '#f59e0b'
-  if (['DENIED','MISSING','NEEDS ACTION','NON-RESPONSIVE','PLEASE SEND','PLEASE','DECLINED'].some(x => u.includes(x))) return '#ef4444'
-  if (u === 'NO') return '#ef4444'
+  if (u.includes('PLEASE')) return '#3b82f6'
+  if (['COMPLETED','SIGNED','YES','RECEIVED'].some(x => u.includes(x))) return '#22c55e'
+  if (['EMAILED','REMINDER','TOO YOUNG'].some(x => u.includes(x))) return '#f59e0b'
+  if (['AWAITING','REQUESTED'].some(x => u.includes(x))) return '#fb923c'
+  if (u === 'NO' || u.includes('NOT RECEIVED')) return '#ef4444'
   if (['DISCHARGED','REFERRED OUT','CLOSED','INACTIVE','APPROVED/DISCHARGED'].some(x => u.includes(x))) return '#64748b'
   return '#64748b'
 }
