@@ -62,6 +62,28 @@ export function displayStaffName(name) {
   return String(name || '').trim()
 }
 
+export function formatInsurance(name) {
+  if (!name) return ''
+
+  const map = {
+    'medicaid of ms': 'Medicaid of MS',
+    'uhc': 'UHC',
+    'uhc comm': 'UHC Community',
+    'uhc community': 'UHC Community',
+    'magnolia': 'Magnolia',
+    'molina': 'Molina',
+    'bcbsms': 'BCBSMS',
+    'aetna': 'Aetna',
+    'tri care': 'Tricare',
+    'tricare': 'Tricare',
+    'cigna': 'Cigna',
+    'trucare': 'TruCare',
+  }
+
+  const key = name.toLowerCase().trim()
+  return map[key] || name
+}
+
 export function normalizeTreatmentPlanStatus(status) {
   if (!status) return 'Not Started'
 

@@ -1,8 +1,8 @@
 export const OFFICES = ['MERIDIAN', 'FOREST', 'FLOWOOD', 'DAY TREATMENT']
 
 export const INSURANCES = [
-  'MEDICAID OF MS', 'UHC', 'UHC Comm', 'MAGNOLIA', 'MOLINA',
-  'BCBSMS', 'Aetna', 'Tri Care', 'CIGNA', 'TruCARE', 'Other',
+  'Medicaid of MS', 'UHC', 'UHC Community', 'Magnolia', 'Molina',
+  'BCBSMS', 'Aetna', 'Tricare', 'Cigna', 'TruCare', 'Other',
 ]
 
 export const BOOL = ['YES', 'NO', 'AWAITING']

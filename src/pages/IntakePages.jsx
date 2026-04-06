@@ -1,7 +1,7 @@
 import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
-import { pct, displayStaffName, normalizeOffice, normalizeStaffName } from '../lib/utils'
+import { pct, displayStaffName, formatInsurance, normalizeOffice, normalizeStaffName } from '../lib/utils'
 
 // ══════════════════════════════════════
 // INTAKE DASHBOARD
@@ -199,7 +199,7 @@ export function InsuranceVerifPage({ refs, onSelectRef, statFilter, onSetStatFil
   const awaiting   = active.filter(r => (r.insurance_verified || '').toLowerCase() === 'awaiting')
   const notStarted = active.filter(r => (r.insurance_verified || '').toLowerCase() === 'no')
   const byProvider = {}
-  unverified.forEach(r => { const p = r.insurance || 'Unknown'; byProvider[p] = (byProvider[p] || 0) + 1 })
+  unverified.forEach(r => { const p = formatInsurance(r.insurance) || 'Unknown'; byProvider[p] = (byProvider[p] || 0) + 1 })
   const verRate = active.length ? Math.round(verified.length / active.length * 100) : 0
   const activeFilter = isStatFilterTarget(statFilter, 'insurance-verification')
   const toggleFilter = (key, label) => onSetStatFilter(toggleStatFilter(activeFilter, { target: 'insurance-verification', key, label }))
@@ -229,7 +229,7 @@ export function InsuranceVerifPage({ refs, onSelectRef, statFilter, onSetStatFil
                   : filteredRows.map(r => (
                     <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}>
                       <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11 }}><OfficePill office={r.office} previousOffice={r.previous_office} /></div></td>
-                      <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.insurance || '--'}</td>
+                      <td style={{ fontSize: 12, color: 'var(--muted)' }}>{formatInsurance(r.insurance) || '--'}</td>
                       <td><Badge value={r.insurance_verified} /></td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>
                       <td style={{ color: 'var(--accent)' }}>→</td>
@@ -290,7 +290,7 @@ export function NonResponsivePage({ refs, onRestore, statFilter, onClearStatFilt
                     <td style={{ color: 'var(--muted)', fontSize: 13 }}>{r.caregiver || '--'}</td>
                     <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: 'var(--dim)' }}>{r.caregiver_phone || '--'}</td>
                     <td><OfficePill office={r.office} previousOffice={r.previous_office} /></td>
-                    <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.insurance || '--'}</td>
+                    <td style={{ fontSize: 12, color: 'var(--muted)' }}>{formatInsurance(r.insurance) || '--'}</td>
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>
                     <td><span className="bdg" style={{ background: r.status === 'referred-out' ? '#8b5cf620' : '#ef444420', color: r.status === 'referred-out' ? '#8b5cf6' : '#ef4444', border: `1px solid ${r.status === 'referred-out' ? '#8b5cf640' : '#ef444440'}` }}>{r.status}</span></td>
                     <td><button onClick={() => onRestore(r.id)} style={{ padding: '6px 12px', borderRadius: 7, border: '1px solid #22c55e40', background: '#22c55e15', color: '#22c55e', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>↩ Restore</button></td>

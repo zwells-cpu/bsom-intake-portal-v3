@@ -3,7 +3,7 @@ import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
 import { ActiveFilterBanner } from '../components/StatFilterControls'
 import { OFFICES, ALL_ROLES } from '../lib/constants'
 import { isStatFilterTarget, matchesStatFilter } from '../lib/statFilters'
-import { sortList, normalizeOffice, normalizeStaffName, exportCSV, pct } from '../lib/utils'
+import { sortList, normalizeOffice, normalizeStaffName, formatInsurance, exportCSV, pct } from '../lib/utils'
 
 export function AllReferralsPage({ refs, role, setRole, onSelectRef, statFilter, onClearStatFilter }) {
   const active = refs.filter(r => r.status === 'active')
@@ -82,7 +82,7 @@ export function AllReferralsPage({ refs, role, setRole, onSelectRef, statFilter,
                   <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: 'var(--muted)' }}>{r.dob || '--'}</td>
                   <td><div style={{ color: '#cbd5e1' }}>{r.caregiver || ''}</div><div style={{ fontSize: 11, color: 'var(--dim)', fontFamily: "'DM Mono',monospace" }}>{r.caregiver_phone || ''}</div></td>
                   <td><OfficePill office={r.office} previousOffice={r.previous_office} /></td>
-                  <td style={{ color: 'var(--muted)', fontSize: 12 }}>{r.insurance || '--'}</td>
+                  <td style={{ color: 'var(--muted)', fontSize: 12 }}>{formatInsurance(r.insurance) || '--'}</td>
                   <td><Badge value={r.insurance_verified} /></td>
                   <td><Badge value={r.autism_diagnosis} /></td>
                   <td><StagePill stage={r.current_stage} /></td>

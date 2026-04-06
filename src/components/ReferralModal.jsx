@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Badge, OfficePill, ProgressRing } from './Badge'
 import { INSURANCES, BOOL, STAT, STAFF, OFFICES, CHECKLIST_FIELDS } from '../lib/constants'
-import { pct } from '../lib/utils'
+import { pct, formatInsurance } from '../lib/utils'
 
 export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus, onToggleParentInterview }) {
   const [editMode, setEditMode] = useState(false)
@@ -133,8 +133,8 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
               </div>
             ) : (
               <>
-                <div className="info-row"><span className="info-label">Primary</span><span className="info-val">{r.insurance || '--'}</span></div>
-                <div className="info-row"><span className="info-label">Secondary</span><span className="info-val">{r.secondary_insurance || '--'}</span></div>
+                <div className="info-row"><span className="info-label">Primary</span><span className="info-val">{formatInsurance(r.insurance) || '--'}</span></div>
+                <div className="info-row"><span className="info-label">Secondary</span><span className="info-val">{formatInsurance(r.secondary_insurance) || '--'}</span></div>
                 <div className="info-row"><span className="info-label">Verified</span><Badge value={r.insurance_verified} /></div>
               </>
             )}
