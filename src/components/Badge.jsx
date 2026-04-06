@@ -54,12 +54,15 @@ export function StagePill({ stage }) {
     'Active Client': '⭐', 'Reauth Needed': '🔄', 'Discharged': '🏁',
   }
   if (!stage) return <span style={{ color: 'var(--dim)' }}>--</span>
-  const isWorkflowAction = ['Intake', 'Initial Assessment'].includes(stage)
   const c = COLORS[stage] || '#64748b'
-  if (isWorkflowAction) {
+  const unifiedStageFamily = ['New Referral', 'Intake', 'Initial Assessment', 'Active Client'].includes(stage)
+  if (unifiedStageFamily) {
     return (
-      <span className="action-btn bdg-action">
-        <span className="bdg-action-icon">{ICONS[stage] || ''}</span>
+      <span
+        className="stage-badge action-btn"
+        style={{ background: `${c}20`, color: c, borderColor: `${c}35` }}
+      >
+        <span className="stage-badge-icon">{ICONS[stage] || ''}</span>
         <span>{stage}</span>
       </span>
     )
