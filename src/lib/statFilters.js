@@ -1,4 +1,4 @@
-import { getAssessmentWorkflowStatus, getAuthorizationStatus, normalizeTreatmentPlanStatus } from './utils'
+import { getAssessmentWorkflowStatus, getAuthorizationStatus, normalizeAutismDx, normalizeTreatmentPlanStatus } from './utils'
 
 export function isStatFilterTarget(filter, target) {
   return filter?.target === target ? filter : null
@@ -26,7 +26,7 @@ export function matchesStatFilter(record, filter) {
 
   if (target === 'pending-docs') {
     const paperwork = (record.intake_paperwork || '').toLowerCase()
-    const dx = (record.autism_diagnosis || '').toLowerCase()
+    const dx = normalizeAutismDx(record.autism_diagnosis).toLowerCase()
     if (key === 'not-yet-sent') return !paperwork.includes('emailed') && !['signed', 'completed'].includes(paperwork)
     if (key === 'emailed') return paperwork.includes('emailed')
     if (key === 'needs-dx') return dx !== 'received'

@@ -1,6 +1,6 @@
 import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
 import { ClickableStatCard } from '../components/StatFilterControls'
-import { pct } from '../lib/utils'
+import { normalizeAutismDx, pct } from '../lib/utils'
 
 export function DashboardPage({ refs, setSelectedId, openModulePage }) {
   const active = refs.filter(r => r.status === 'active')
@@ -58,7 +58,7 @@ export function DashboardPage({ refs, setSelectedId, openModulePage }) {
             </div>
             <div className="info-row"><span className="info-label">Paperwork signed</span><span style={{ color: '#22c55e', fontWeight: 700 }}>{signed.length} / {active.length}</span></div>
             <div className="info-row"><span className="info-label">Insurance verified</span><span style={{ color: '#f59e0b', fontWeight: 700 }}>{active.filter(r => r.insurance_verified === 'YES').length} / {active.length}</span></div>
-            <div className="info-row" style={{ border: 'none' }}><span className="info-label">Autism DX received</span><span style={{ color: '#a5b4fc', fontWeight: 700 }}>{active.filter(r => (r.autism_diagnosis || '').toLowerCase().includes('received')).length} / {active.length}</span></div>
+            <div className="info-row" style={{ border: 'none' }}><span className="info-label">Autism DX received</span><span style={{ color: '#a5b4fc', fontWeight: 700 }}>{active.filter(r => normalizeAutismDx(r.autism_diagnosis) === 'Received').length} / {active.length}</span></div>
           </div>
         </div>
       </div>

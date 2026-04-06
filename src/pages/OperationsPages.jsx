@@ -1,6 +1,6 @@
 import { StagePill } from '../components/Badge'
 import { ClickableStatCard } from '../components/StatFilterControls'
-import { displayStaffName, getAuthorizationStatus, normalizeOffice, normalizeStaffName, normalizeTreatmentPlanStatus } from '../lib/utils'
+import { displayStaffName, getAuthorizationStatus, normalizeAutismDx, normalizeOffice, normalizeStaffName, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 // ── Shared helpers ──
 function daysSince(dateStr) {
@@ -368,7 +368,7 @@ export function ConversionRatePage({ refs }) {
     { label: 'Paperwork Completed',        count: active.filter(r => ['signed','completed'].some(v => (r.intake_paperwork||'').toLowerCase().includes(v))).length, color: '#8b5cf6' },
     { label: 'Insurance Verified',         count: active.filter(r => (r.insurance_verified||'').toUpperCase() === 'YES').length,                             color: '#f59e0b' },
     { label: 'Parent Interview Completed', count: active.filter(r => ['completed','yes','done'].some(v => (r.permission_assessment||'').toLowerCase().includes(v))).length, color: '#fb923c' },
-    { label: 'Assessment Completed',       count: active.filter(r => (r.autism_diagnosis||'').toLowerCase().includes('received')).length,                    color: '#fb923c' },
+    { label: 'Assessment Completed',       count: active.filter(r => normalizeAutismDx(r.autism_diagnosis) === 'Received').length,                    color: '#fb923c' },
     { label: 'Active Client',              count: active.filter(r => r.current_stage === 'Active Client').length,                                            color: '#22c55e' },
   ]
 
@@ -475,7 +475,7 @@ export function IntakePerformancePage({ refs, role }) {
     const mine     = active.filter(r => normalizeStaffName(r.intake_personnel) === normalizeStaffName(staff))
     const signed   = mine.filter(r => (r.intake_paperwork || '').toLowerCase().includes('signed')).length
     const verified = mine.filter(r => r.insurance_verified === 'YES').length
-    const dxRecvd  = mine.filter(r => (r.autism_diagnosis || '').toLowerCase().includes('received')).length
+    const dxRecvd  = mine.filter(r => normalizeAutismDx(r.autism_diagnosis) === 'Received').length
     const activeC  = mine.filter(r => r.current_stage === 'Active Client').length
     const pending  = mine.filter(r => !['signed','completed'].includes((r.intake_paperwork || '').toLowerCase())).length
     const score    = mine.length > 0 ? Math.round(((signed + verified + dxRecvd) / ((mine.length * 3) || 1)) * 100) : 0

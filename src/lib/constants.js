@@ -8,6 +8,7 @@ export const INSURANCES = [
 export const BOOL = ['YES', 'NO', 'AWAITING']
 
 export const STAT = ['Completed', 'Emailed', 'Awaiting', 'Please Send', 'N/A']
+export const AUTISM_DIAGNOSIS_OPTIONS = ['Received', 'Not Received', 'Requested']
 
 export const STAFF = ['Zanteria', 'Aerianna', 'LaShannon', 'Keiara', 'Celia', 'Other']
 
@@ -112,7 +113,7 @@ export const CHECKLIST_FIELDS = [
   ['Attends School', 'attends_school', BOOL],
   ['IEP Report', 'iep_report', STAT],
   ['Insurance Verified', 'insurance_verified', BOOL],
-  ['Autism Diagnosis', 'autism_diagnosis', STAT],
+  ['Autism Diagnosis', 'autism_diagnosis', AUTISM_DIAGNOSIS_OPTIONS],
   ['Intake Paperwork', 'intake_paperwork', STAT],
 ]
 

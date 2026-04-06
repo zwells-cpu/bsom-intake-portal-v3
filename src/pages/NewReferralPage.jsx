@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { OFFICES, INSURANCES, BOOL, STAT, STAFF, emptyReferral } from '../lib/constants'
+import { OFFICES, INSURANCES, BOOL, STAT, STAFF, AUTISM_DIAGNOSIS_OPTIONS, emptyReferral } from '../lib/constants'
+import { normalizeAutismDx } from '../lib/utils'
 
 const STEPS = ['Client Info', 'Caregiver', 'Insurance', 'Documents', 'Review']
 const ATTEND_SCHOOL_OPTIONS = ['Yes', 'No']
 const IEP_REPORT_OPTIONS = ['Received', 'Not Received', 'Too Young']
-const AUTISM_DIAGNOSIS_OPTIONS = ['Received', 'Not Received']
 const INTAKE_PERSONNEL_OPTIONS = [...STAFF.slice(0, -1), 'Nicola', STAFF[STAFF.length - 1]]
 
 function StepDots({ step, setStep }) {
@@ -46,10 +46,10 @@ export function NewReferralPage({ onSave, saving }) {
   const [step, setStep] = useState(0)
   const [form, setForm] = useState(emptyReferral())
 
-  const f = (key) => (event) => setForm(prev => ({ ...prev, [key]: event.target.value }))
+  const f = (key) => (event) => setForm(prev => ({ ...prev, [key]: key === 'autism_diagnosis' ? normalizeAutismDx(event.target.value) : event.target.value }))
 
   const handleSubmit = async () => {
-    const res = await onSave(form)
+    const res = await onSave({ ...form, autism_diagnosis: normalizeAutismDx(form.autism_diagnosis, { emptyAsNotReceived: false }) })
     if (res?.success) {
       setForm(emptyReferral())
       setStep(0)

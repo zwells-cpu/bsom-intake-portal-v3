@@ -4,11 +4,12 @@ import { STAGE_COLORS, STAGE_ICONS, PA_COLORS, PA_ICONS } from './constants'
 export function sc(v) {
   if (!v || v === 'N/A' || v === '--') return '#94a3b8'
   const u = v.toUpperCase()
+  if (u.includes('NOT RECEIVED')) return '#ef4444'
   if (u.includes('PLEASE')) return '#3b82f6'
   if (['COMPLETED','SIGNED','YES','RECEIVED'].some(x => u.includes(x))) return '#22c55e'
   if (['EMAILED','REMINDER','TOO YOUNG'].some(x => u.includes(x))) return '#f59e0b'
   if (['AWAITING','REQUESTED'].some(x => u.includes(x))) return '#fb923c'
-  if (u === 'NO' || u.includes('NOT RECEIVED')) return '#ef4444'
+  if (u === 'NO') return '#ef4444'
   if (['DISCHARGED','REFERRED OUT','CLOSED','INACTIVE','APPROVED/DISCHARGED'].some(x => u.includes(x))) return '#64748b'
   return '#64748b'
 }
@@ -17,6 +18,7 @@ export function sc(v) {
 export function badgeIcon(v) {
   if (!v) return ''
   const u = v.toUpperCase()
+  if (u.includes('NOT RECEIVED')) return '✗ '
   if (['COMPLETED','SIGNED','YES','RECEIVED','VERIFIED','APPROVED','DONE','NO PA NEEDED'].some(x => u.includes(x))) return '✓ '
   if (['DENIED','NON-RESPONSIVE','PLEASE','DECLINED','MISSING'].some(x => u.includes(x))) return '✗ '
   if (u === 'NO') return '✗ '
@@ -28,7 +30,9 @@ export function badgeIcon(v) {
 export function pct(r) {
   const fs = ['referral_form','permission_assessment','vineland','srs2','insurance_verified','autism_diagnosis','intake_paperwork','intake_personnel']
   const done = fs.filter(f => {
-    const v = (r[f] || '').toUpperCase()
+    const v = f === 'autism_diagnosis'
+      ? normalizeAutismDx(r[f], { emptyAsNotReceived: false }).toUpperCase()
+      : (r[f] || '').toUpperCase()
     return ['YES','COMPLETED','SIGNED','RECEIVED'].some(x => v.includes(x))
   })
   return Math.round(done.length / fs.length * 100)
@@ -83,6 +87,21 @@ export function formatInsurance(name) {
 
   const key = name.toLowerCase().trim()
   return map[key] || name
+}
+
+export function normalizeAutismDx(value, { emptyAsNotReceived = true } = {}) {
+  if (value === null || value === undefined) return emptyAsNotReceived ? 'Not Received' : ''
+
+  const normalized = String(value).trim()
+  if (!normalized) return emptyAsNotReceived ? 'Not Received' : ''
+
+  const upper = normalized.toUpperCase()
+
+  if (upper === 'COMPLETED' || upper === 'RECEIVED') return 'Received'
+  if (upper === 'NOT RECEIVED' || upper === 'NO') return 'Not Received'
+  if (upper === 'AWAITING' || upper === 'REQUESTED') return 'Requested'
+
+  return normalized
 }
 
 export function normalizeTreatmentPlanStatus(status) {

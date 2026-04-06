@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Badge, OfficePill, ProgressRing } from './Badge'
-import { INSURANCES, BOOL, STAT, STAFF, OFFICES, CHECKLIST_FIELDS } from '../lib/constants'
-import { pct, formatInsurance } from '../lib/utils'
+import { INSURANCES, BOOL, STAFF, OFFICES, CHECKLIST_FIELDS } from '../lib/constants'
+import { pct, formatInsurance, normalizeAutismDx } from '../lib/utils'
 
 export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus, onToggleParentInterview }) {
   const [editMode, setEditMode] = useState(false)
-  const [form, setForm] = useState({ ...referral })
+  const [form, setForm] = useState({ ...referral, autism_diagnosis: normalizeAutismDx(referral.autism_diagnosis) })
   const [saving, setSaving] = useState(false)
 
   const r = referral
@@ -16,6 +16,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
   const handleSave = async () => {
     setSaving(true)
     const patch = { ...form }
+    patch.autism_diagnosis = normalizeAutismDx(form.autism_diagnosis)
     delete patch.id
     delete patch.created_at
     delete patch.user_id
@@ -83,7 +84,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <ProgressRing value={pct(r)} />
             <button className={`btn-edit ${editMode ? 'editing' : ''}`}
-              onClick={() => { if (!editMode) { setForm({ ...r }); setEditMode(true) } else setEditMode(false) }}>
+              onClick={() => { if (!editMode) { setForm({ ...r, autism_diagnosis: normalizeAutismDx(r.autism_diagnosis) }); setEditMode(true) } else setEditMode(false) }}>
               ✏ {editMode ? 'Editing' : 'Edit Record'}
             </button>
             <button className="close-btn" onClick={onClose}>×</button>
@@ -173,9 +174,9 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
                 <span className="info-label">{label}</span>
                 {editMode
                   ? <select className="edit-select" value={e[key] || ''} onChange={ev => field(key)(ev.target.value)} style={{ width: 160 }}>
-                      {opts.map(o => <option key={o}>{o}</option>)}
+                    {opts.map(o => <option key={o}>{o}</option>)}
                     </select>
-                  : <Badge value={r[key]} />}
+                  : <Badge value={key === 'autism_diagnosis' ? normalizeAutismDx(r[key]) : r[key]} />}
               </div>
             ))}
 

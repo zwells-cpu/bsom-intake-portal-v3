@@ -1,7 +1,7 @@
 import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
-import { pct, displayStaffName, formatInsurance, normalizeOffice, normalizeStaffName } from '../lib/utils'
+import { pct, displayStaffName, formatInsurance, normalizeAutismDx, normalizeOffice, normalizeStaffName } from '../lib/utils'
 
 // ══════════════════════════════════════
 // INTAKE DASHBOARD
@@ -12,7 +12,7 @@ export function IntakeDashboard({ refs, onSelectRef, openModulePage }) {
   const pending = active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
   const signed  = active.filter(r => (r.intake_paperwork || '').toLowerCase().includes('signed'))
   const noIns   = active.filter(r => !['yes'].includes((r.insurance_verified || '').toLowerCase()))
-  const noDx    = active.filter(r => !['received'].includes((r.autism_diagnosis || '').toLowerCase()))
+  const noDx    = active.filter(r => normalizeAutismDx(r.autism_diagnosis) !== 'Received')
   const readyPI = active.filter(r => r.ready_for_parent_interview === true)
 
   const byStage = {}
@@ -140,7 +140,7 @@ export function PendingDocsPage({ refs, onSelectRef, statFilter, onSetStatFilter
   const pending = active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
   const needsPaperwork = pending.filter(r => !(r.intake_paperwork || '').toLowerCase().includes('emailed'))
   const emailed        = pending.filter(r => (r.intake_paperwork || '').toLowerCase().includes('emailed'))
-  const needsDx        = active.filter(r => !['received'].includes((r.autism_diagnosis || '').toLowerCase()))
+  const needsDx        = active.filter(r => normalizeAutismDx(r.autism_diagnosis) !== 'Received')
   const activeFilter = isStatFilterTarget(statFilter, 'pending-docs')
   const toggleFilter = (key, label) => onSetStatFilter(toggleStatFilter(activeFilter, { target: 'pending-docs', key, label }))
   const filteredRows = (activeFilter ? active : pending)
@@ -173,7 +173,7 @@ export function PendingDocsPage({ refs, onSelectRef, statFilter, onSetStatFilter
                     <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--dim)' }}>{r.referral_id || '--'}</td>
                     <td><OfficePill office={r.office} previousOffice={r.previous_office} /></td>
                     <td><Badge value={r.intake_paperwork} /></td>
-                    <td><Badge value={r.autism_diagnosis} /></td>
+                    <td><Badge value={normalizeAutismDx(r.autism_diagnosis)} /></td>
                     <td><Badge value={r.vineland} /></td>
                     <td><Badge value={r.srs2} /></td>
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>
