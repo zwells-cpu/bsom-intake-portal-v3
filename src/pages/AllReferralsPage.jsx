@@ -3,7 +3,7 @@ import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
 import { ActiveFilterBanner } from '../components/StatFilterControls'
 import { OFFICES, ALL_ROLES } from '../lib/constants'
 import { isStatFilterTarget, matchesStatFilter } from '../lib/statFilters'
-import { sortList, normalizeOffice, normalizeStaffName, exportCSV } from '../lib/utils'
+import { sortList, normalizeOffice, normalizeStaffName, exportCSV, pct } from '../lib/utils'
 
 export function AllReferralsPage({ refs, role, setRole, onSelectRef, statFilter, onClearStatFilter }) {
   const active = refs.filter(r => r.status === 'active')
@@ -77,7 +77,7 @@ export function AllReferralsPage({ refs, role, setRole, onSelectRef, statFilter,
                 <tr><td colSpan={12} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No referrals found.</td></tr>
               ) : filtered.map(r => (
                 <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}>
-                  <td><ProgressRing value={r._pct ?? 0} /></td>
+                  <td><ProgressRing value={pct(r)} /></td>
                   <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.date_received || ''}</div></td>
                   <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: 'var(--muted)' }}>{r.dob || '--'}</td>
                   <td><div style={{ color: '#cbd5e1' }}>{r.caregiver || ''}</div><div style={{ fontSize: 11, color: 'var(--dim)', fontFamily: "'DM Mono',monospace" }}>{r.caregiver_phone || ''}</div></td>
