@@ -50,7 +50,7 @@ export default function App() {
   }
 
   const enterModule = (id) => {
-    const defaults = { dashboard: 'overview', intake: 'intakedash', assessment: 'tracker', operations: 'pipeline', about: 'portal' }
+    const defaults = { dashboard: 'overview', intake: 'intakedash', assessment: 'tracker', operations: 'pipeline', about: 'locations' }
     openModulePage(id, defaults[id] || 'overview')
   }
 

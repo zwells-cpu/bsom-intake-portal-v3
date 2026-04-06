@@ -14,43 +14,43 @@ export const STAFF = ['Zanteria', 'Aerianna', 'LaShannon', 'Keiara', 'Celia', 'O
 export const ALL_ROLES = ['All Staff', ...STAFF.filter((s) => s !== 'Other')]
 
 export const MODULES = [
-  { id: 'dashboard',  icon: '📊', name: 'Dashboard',             desc: 'At-a-glance stats, alerts, and recent activity',              color: '#6366f1' },
-  { id: 'intake',     icon: '📋', name: 'Intake',                desc: 'Manage referrals, add new clients, track status',             color: '#22c55e' },
-  { id: 'assessment', icon: '🧪', name: 'Initial Assessments',   desc: 'Vineland, SRS-2, IEP and assessment tracking',                color: '#f59e0b' },
-  { id: 'operations', icon: '📈', name: 'Operational Insights',  desc: 'Aging reports, volume, conversion rates, and team performance', color: '#fb923c' },
-  { id: 'about',      icon: 'ℹ️', name: 'About',                 desc: 'Office locations, version history, portal info',              color: '#8b5cf6' },
+  { id: 'dashboard',  icon: 'ðŸ“Š', name: 'Dashboard',             desc: 'At-a-glance stats, alerts, and recent activity',              color: '#6366f1' },
+  { id: 'intake',     icon: 'ðŸ“‹', name: 'Intake',                desc: 'Manage referrals, add new clients, track status',             color: '#22c55e' },
+  { id: 'assessment', icon: 'ðŸ§ª', name: 'Initial Assessments',   desc: 'Vineland, SRS-2, IEP and assessment tracking',                color: '#f59e0b' },
+  { id: 'operations', icon: 'ðŸ“ˆ', name: 'Operational Insights',  desc: 'Aging reports, volume, conversion rates, and team performance', color: '#fb923c' },
+  { id: 'about',      icon: 'â„¹ï¸', name: 'About',                 desc: 'Office locations, version history, portal info',              color: '#8b5cf6' },
 ]
 
 export const MODULE_NAV = {
   dashboard: [
-    { id: 'overview', icon: '🏠', label: 'Overview' },
+    { id: 'overview', icon: 'ðŸ ', label: 'Overview' },
   ],
   intake: [
-    { id: 'intakedash', icon: '🏠', label: 'Intake Dashboard' },
-    { id: 'all',        icon: '📋', label: 'All Referrals' },
-    { id: 'new',        icon: '➕', label: 'New Referral' },
-    { id: 'pending',    icon: '📄', label: 'Pending Documents' },
-    { id: 'insurance',  icon: '🛡️', label: 'Insurance Verification' },
-    { id: 'nr',         icon: '🚫', label: 'Non-Responsive' },
+    { id: 'intakedash', icon: 'ðŸ ', label: 'Intake Dashboard' },
+    { id: 'all',        icon: 'ðŸ“‹', label: 'All Referrals' },
+    { id: 'new',        icon: 'âž•', label: 'New Referral' },
+    { id: 'pending',    icon: 'ðŸ“„', label: 'Pending Documents' },
+    { id: 'insurance',  icon: 'ðŸ›¡ï¸', label: 'Insurance Verification' },
+    { id: 'nr',         icon: 'ðŸš«', label: 'Non-Responsive' },
   ],
   assessment: [
-    { id: 'tracker',    icon: '🧪', label: 'Assessment Tracker' },
-    { id: 'interviews', icon: '🗣️', label: 'Parent Interviews' },
-    { id: 'bcba',       icon: '👩‍⚕️', label: 'BCBA Assignments' },
-    { id: 'progress',   icon: '📈', label: 'Assessment Progress' },
-    { id: 'txplan',     icon: '📝', label: 'Treatment Plan Status' },
-    { id: 'readysvc',   icon: '⭐', label: 'Ready for Services' },
+    { id: 'tracker',    icon: 'ðŸ§ª', label: 'Assessment Tracker' },
+    { id: 'interviews', icon: 'ðŸ—£ï¸', label: 'Parent Interviews' },
+    { id: 'bcba',       icon: 'ðŸ‘©â€âš•ï¸', label: 'BCBA Assignments' },
+    { id: 'progress',   icon: 'ðŸ“ˆ', label: 'Assessment Progress' },
+    { id: 'txplan',     icon: 'ðŸ“', label: 'Treatment Plan Status' },
+    { id: 'readysvc',   icon: 'â­', label: 'Ready for Services' },
   ],
   operations: [
-    { id: 'pipeline',    icon: '🔄', label: 'Pipeline Overview' },
-    { id: 'aging',       icon: '⏱️', label: 'Referral Aging' },
-    { id: 'volume',      icon: '🏢', label: 'Clinic Volume' },
-    { id: 'conversion',  icon: '📊', label: 'Conversion Rate' },
-    { id: 'performance', icon: '⭐', label: 'Intake Performance' },
+    { id: 'pipeline',    icon: 'ðŸ”„', label: 'Pipeline Overview' },
+    { id: 'aging',       icon: 'â±ï¸', label: 'Referral Aging' },
+    { id: 'volume',      icon: 'ðŸ¢', label: 'Clinic Volume' },
+    { id: 'conversion',  icon: 'ðŸ“Š', label: 'Conversion Rate' },
+    { id: 'performance', icon: 'â­', label: 'Intake Performance' },
   ],
   about: [
-    { id: 'portal',    icon: 'ℹ️', label: 'About the Portal' },
-    { id: 'locations', icon: '📍', label: 'Office Locations' },
+    { id: 'locations', icon: 'ðŸ“', label: 'Office Locations' },
+    { id: 'portal',    icon: 'â„¹ï¸', label: 'About the Portal' },
   ],
 }
 
@@ -69,15 +69,15 @@ export const PA_COLORS = {
 }
 
 export const PA_ICONS = {
-  'Approved':               '✓',
-  'Approved/Discharged':    '🏁',
-  'No PA Needed':           '✓',
-  'Pending':                '◐',
-  'In Review':              '🔍',
-  'Reauthorization Needed': '🔄',
-  'Appeal Pending':         '⚠️',
-  'Denied':                 '✗',
-  'Referred Out':           '🏁',
+  'Approved':               'âœ“',
+  'Approved/Discharged':    'ðŸ',
+  'No PA Needed':           'âœ“',
+  'Pending':                'â—',
+  'In Review':              'ðŸ”',
+  'Reauthorization Needed': 'ðŸ”„',
+  'Appeal Pending':         'âš ï¸',
+  'Denied':                 'âœ—',
+  'Referred Out':           'ðŸ',
 }
 
 export const STAGE_COLORS = {
@@ -93,15 +93,15 @@ export const STAGE_COLORS = {
 }
 
 export const STAGE_ICONS = {
-  'New Referral':       '📥',
-  'Intake':             '📋',
-  'Initial Assessment': '🧪',
-  'PA Submitted':       '📤',
-  'PA In Review':       '🔍',
-  'PA Approved':        '✅',
-  'Active Client':      '⭐',
-  'Reauth Needed':      '🔄',
-  'Discharged':         '🏁',
+  'New Referral':       'ðŸ“¥',
+  'Intake':             'ðŸ“‹',
+  'Initial Assessment': 'ðŸ§ª',
+  'PA Submitted':       'ðŸ“¤',
+  'PA In Review':       'ðŸ”',
+  'PA Approved':        'âœ…',
+  'Active Client':      'â­',
+  'Reauth Needed':      'ðŸ”„',
+  'Discharged':         'ðŸ',
 }
 
 export const CHECKLIST_FIELDS = [
