@@ -2,6 +2,10 @@ import { useState } from 'react'
 import { OFFICES, INSURANCES, BOOL, STAT, STAFF, emptyReferral } from '../lib/constants'
 
 const STEPS = ['Client Info', 'Caregiver', 'Insurance', 'Documents', 'Review']
+const ATTEND_SCHOOL_OPTIONS = ['Yes', 'No']
+const IEP_REPORT_OPTIONS = ['Received', 'Not Received', 'Too Young']
+const AUTISM_DIAGNOSIS_OPTIONS = ['Received', 'Not Received']
+const INTAKE_PERSONNEL_OPTIONS = [...STAFF.slice(0, -1), 'Nicola', STAFF[STAFF.length - 1]]
 
 function StepDots({ step, setStep }) {
   return (
@@ -82,11 +86,11 @@ export function NewReferralPage({ onSave, saving }) {
       <Field label="Permission for Assessment" options={STAT} value={form.permission_assessment} onChange={f('permission_assessment')} />
       <Field label="Vineland" options={STAT} value={form.vineland} onChange={f('vineland')} />
       <Field label="SRS-2" options={STAT} value={form.srs2} onChange={f('srs2')} />
-      <Field label="Attends School" options={BOOL} value={form.attends_school} onChange={f('attends_school')} />
-      <Field label="IEP Report" options={STAT} value={form.iep_report} onChange={f('iep_report')} />
-      <Field label="Autism Diagnosis" options={STAT} value={form.autism_diagnosis} onChange={f('autism_diagnosis')} />
+      <Field label="Attends School" options={ATTEND_SCHOOL_OPTIONS} value={form.attends_school} onChange={f('attends_school')} />
+      <Field label="IEP Report" options={IEP_REPORT_OPTIONS} value={form.iep_report} onChange={f('iep_report')} />
+      <Field label="Autism Diagnosis" options={AUTISM_DIAGNOSIS_OPTIONS} value={form.autism_diagnosis} onChange={f('autism_diagnosis')} />
       <Field label="Intake Paperwork" options={STAT} value={form.intake_paperwork} onChange={f('intake_paperwork')} />
-      <Field label="Intake Personnel" options={STAFF} value={form.intake_personnel} onChange={f('intake_personnel')} />
+      <Field label="Intake Personnel" options={INTAKE_PERSONNEL_OPTIONS} value={form.intake_personnel} onChange={f('intake_personnel')} />
     </div>,
 
     <div>
