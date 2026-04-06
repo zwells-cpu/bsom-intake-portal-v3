@@ -68,12 +68,12 @@ export function AboutPortalPage() {
 export function LocationsPage() {
   return (
     <div style={{ width: '100%', maxWidth: 1100, margin: '0 auto' }}>
-      <div style={{ marginBottom: 24 }}>
+      <div style={{ marginBottom: 34 }}>
         <div style={{ fontWeight: 800, fontSize: 22, letterSpacing: '-0.02em', marginBottom: 4 }}>Office Locations</div>
         <div style={{ color: 'var(--muted)', fontSize: 13 }}>BSOM clinic locations and contact information</div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 18, alignItems: 'stretch' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 30, alignItems: 'stretch' }}>
         {locations.map(loc => (
           <div key={loc.name} className="card card-pad" style={{ borderLeft: `3px solid ${loc.color}`, minHeight: 190 }}>
             <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 14, color: loc.color }}>{loc.name}</div>
@@ -87,8 +87,10 @@ export function LocationsPage() {
             </div>
           </div>
         ))}
+      </div>
 
-        <div className="card card-pad" style={{ borderLeft: '3px solid #8b5cf6' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 30 }}>
+        <div className="card card-pad" style={{ borderLeft: '3px solid #8b5cf6', width: '100%', maxWidth: 720 }}>
           <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 14, color: '#a78bfa' }}>General Contact Info</div>
           <div className="info-row">
             <span className="info-label">Email</span>
