@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTheme }       from './hooks/useTheme'
 import { useReferrals }   from './hooks/useReferrals'
 import { useAssessments } from './hooks/useAssessments'
@@ -60,13 +60,13 @@ function mergeAssessmentRecord(assessment, refs) {
 export default function App() {
   const { theme, setTheme } = useTheme()
   const { refs, loading, error, saving, saved, setError, load, saveReferral, updateReferral, deleteReferral, setStatus, toggleParentInterview } = useReferrals()
-  const { assessData, assessLoading, loadAssessments, saveAssessEdit } = useAssessments()
+  const { assessData, assessLoading, loadAssessments, saveAssessEdit, deleteAssessment } = useAssessments()
 
   const [screen,  setScreen]  = useState('home')   // 'home' | 'module'
   const [module,  setModule]  = useState(null)
   const [subpage, setSubpage] = useState(null)
   const [selId,   setSelId]   = useState(null)
-  const [selAssess, setSelAssess] = useState(null)
+  const [selAssessId, setSelAssessId] = useState(null)
   const [role,    setRole]    = useState('All Staff')
   const [routeFilter, setRouteFilter] = useState(null)
 
@@ -101,26 +101,58 @@ export default function App() {
     setScreen('home')
     setModule(null)
     setSelId(null)
-    setSelAssess(null)
+    setSelAssessId(null)
     setRouteFilter(null)
   }
 
-  const active  = refs.filter(r => r.status === 'active')
-  const nr      = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
-  const pending = active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
-  const noIns   = active.filter(r => !['yes', 'verified'].includes((r.insurance_verified || '').toLowerCase())).length
-  const mergedAssessData = assessData.map(record => mergeAssessmentRecord(record, refs))
-  const operationsRefs = role === 'All Staff'
-    ? refs
-    : refs.filter(ref => normalizeStaffName(ref.intake_personnel) === normalizeStaffName(role))
-  const operationsAssessData = role === 'All Staff'
-    ? mergedAssessData
-    : mergedAssessData.filter(record => normalizeStaffName(record.intake_personnel) === normalizeStaffName(role))
+  const active  = useMemo(() => refs.filter(r => r.status === 'active'), [refs])
+  const nr      = useMemo(() => refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out'), [refs])
+  const pending = useMemo(() => active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase())), [active])
+  const noIns   = useMemo(() => active.filter(r => !['yes', 'verified'].includes((r.insurance_verified || '').toLowerCase())).length, [active])
+  const mergedAssessData = useMemo(() => assessData.map(record => mergeAssessmentRecord(record, refs)), [assessData, refs])
+  const operationsRefs = useMemo(() => (
+    role === 'All Staff'
+      ? refs
+      : refs.filter(ref => normalizeStaffName(ref.intake_personnel) === normalizeStaffName(role))
+  ), [refs, role])
+  const operationsAssessData = useMemo(() => (
+    role === 'All Staff'
+      ? mergedAssessData
+      : mergedAssessData.filter(record => normalizeStaffName(record.intake_personnel) === normalizeStaffName(role))
+  ), [mergedAssessData, role])
 
   const selectedRef = selId ? refs.find(r => r.id === selId) : null
-  const selectedAssess = selAssess
-    ? mergedAssessData.find(r => r.assessment_id === selAssess.assessment_id) || selAssess
+  const selectedAssess = selAssessId
+    ? mergedAssessData.find(r => String(r.assessment_id || r.id || '') === String(selAssessId))
     : null
+
+  useEffect(() => {
+    if (selId && !refs.some(record => record.id === selId)) setSelId(null)
+  }, [refs, selId])
+
+  useEffect(() => {
+    if (selAssessId && !assessData.some(record => String(record.assessment_id || record.id || '') === String(selAssessId))) {
+      setSelAssessId(null)
+    }
+  }, [assessData, selAssessId])
+
+  const handleSelectAssessment = (record) => {
+    const id = record?.assessment_id ?? record?.id ?? null
+    setSelAssessId(id)
+  }
+
+  const deleteRecord = async (type, id) => {
+    const res = type === 'assessment'
+      ? await deleteAssessment(id)
+      : await deleteReferral(id)
+
+    if (res?.success) {
+      if (type === 'assessment') setSelAssessId(current => (String(current) === String(id) ? null : current))
+      else setSelId(current => (current === id ? null : current))
+    }
+
+    return res
+  }
 
   if (screen === 'home') {
     return (
@@ -168,12 +200,12 @@ export default function App() {
     }
 
     if (module === 'assessment') {
-      if (subpage === 'tracker')    return <AssessmentTracker assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'interviews') return <ParentInterviewsPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'bcba')       return <BCBAAssignmentsPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'progress')   return <AssessmentProgressPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'txplan')     return <TreatmentPlansPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'readysvc')   return <ReadyForServicesPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'tracker')    return <AssessmentTracker assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'interviews') return <ParentInterviewsPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'bcba')       return <BCBAAssignmentsPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'progress')   return <AssessmentProgressPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'txplan')     return <TreatmentPlansPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'readysvc')   return <ReadyForServicesPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
     }
 
     if (module === 'operations') {
@@ -263,7 +295,7 @@ export default function App() {
           referral={selectedRef}
           onClose={() => setSelId(null)}
           onSave={updateReferral}
-          onDelete={deleteReferral}
+          onDelete={(id) => deleteRecord('referral', id)}
           onSetStatus={(id, status) => { setStatus(id, status); setSelId(null) }}
           onToggleParentInterview={toggleParentInterview}
         />
@@ -272,7 +304,7 @@ export default function App() {
       {selectedAssess && (
         <AssessmentDetailModal
           assessment={selectedAssess}
-          onClose={() => setSelAssess(null)}
+          onClose={() => setSelAssessId(null)}
           onSave={saveAssessEdit}
         />
       )}

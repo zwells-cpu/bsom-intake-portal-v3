@@ -1,6 +1,11 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { emptyReferral } from '../lib/constants'
+import { removeRecordById, replaceRecordById } from '../lib/recordStore'
+
+function getReferralId(record) {
+  return record?.id ?? null
+}
 
 export function useReferrals() {
   const [refs, setRefs] = useState([])
@@ -41,7 +46,7 @@ export function useReferrals() {
         .select()
         .single()
       if (err) throw err
-      setRefs(prev => [data, ...prev])
+      setRefs(prev => replaceRecordById(prev, data, getReferralId))
       setSaved(true)
       setTimeout(() => setSaved(false), 1800)
       return { success: true }
@@ -55,13 +60,15 @@ export function useReferrals() {
 
   const updateReferral = useCallback(async (id, patch) => {
     try {
-      const { error: err } = await supabase
+      const { data, error: err } = await supabase
         .from('referrals')
         .update(patch)
         .eq('id', id)
+        .select()
+        .single()
       if (err) throw err
-      setRefs(prev => prev.map(r => r.id === id ? { ...r, ...patch } : r))
-      return { success: true }
+      setRefs(prev => replaceRecordById(prev, data || { id, ...patch }, getReferralId))
+      return { success: true, data: data || { id, ...patch } }
     } catch (e) {
       setError('Could not update: ' + e.message)
       return { success: false }
@@ -75,8 +82,8 @@ export function useReferrals() {
         .delete()
         .eq('id', id)
       if (err) throw err
-      setRefs(prev => prev.filter(ref => ref.id !== id))
-      return { success: true }
+      setRefs(prev => removeRecordById(prev, id, getReferralId))
+      return { success: true, id }
     } catch (e) {
       setError('Could not delete referral.')
       return { success: false }
