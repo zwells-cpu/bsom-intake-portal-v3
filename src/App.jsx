@@ -68,6 +68,7 @@ export default function App() {
   const [selId,   setSelId]   = useState(null)
   const [selAssess, setSelAssess] = useState(null)
   const [role,    setRole]    = useState('All Staff')
+  const [routeFilter, setRouteFilter] = useState(null)
 
   useEffect(() => { load() }, [load])
 
@@ -78,15 +79,31 @@ export default function App() {
     return () => window.removeEventListener('enter-module', h)
   }, [])
 
-  const enterModule = (id) => {
-    const defaults = { dashboard: 'overview', intake: 'intakedash', assessment: 'tracker', operations: 'pipeline', about: 'portal' }
-    setModule(id)
-    setSubpage(defaults[id] || 'overview')
+  const openModulePage = (nextModule, nextSubpage, filter = null) => {
+    setModule(nextModule)
+    setSubpage(nextSubpage)
     setScreen('module')
-    if ((id === 'assessment' || id === 'operations') && assessData.length === 0) loadAssessments()
+    setRouteFilter(filter)
+    if ((nextModule === 'assessment' || nextModule === 'operations') && assessData.length === 0) loadAssessments()
   }
 
-  const goHome = () => { setScreen('home'); setModule(null); setSelId(null); setSelAssess(null) }
+  const enterModule = (id) => {
+    const defaults = { dashboard: 'overview', intake: 'intakedash', assessment: 'tracker', operations: 'pipeline', about: 'portal' }
+    openModulePage(id, defaults[id] || 'overview')
+  }
+
+  const setSubpageAndClearFilter = (nextSubpage) => {
+    setSubpage(nextSubpage)
+    setRouteFilter(null)
+  }
+
+  const goHome = () => {
+    setScreen('home')
+    setModule(null)
+    setSelId(null)
+    setSelAssess(null)
+    setRouteFilter(null)
+  }
 
   const active  = refs.filter(r => r.status === 'active')
   const nr      = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
@@ -126,15 +143,23 @@ export default function App() {
       </div>
     )
 
-    if (module === 'dashboard') return <DashboardPage refs={refs} setSelectedId={setSelId} setModule={setModule} setSubpage={setSubpage} />
+    if (module === 'dashboard') {
+      return (
+        <DashboardPage
+          refs={refs}
+          setSelectedId={setSelId}
+          openModulePage={openModulePage}
+        />
+      )
+    }
 
     if (module === 'intake') {
-      if (subpage === 'intakedash') return <IntakeDashboard refs={refs} onSelectRef={setSelId} setSubpage={setSubpage} />
-      if (subpage === 'all')        return <AllReferralsPage refs={refs} role={role} setRole={setRole} onSelectRef={setSelId} />
+      if (subpage === 'intakedash') return <IntakeDashboard refs={refs} onSelectRef={setSelId} openModulePage={openModulePage} />
+      if (subpage === 'all')        return <AllReferralsPage refs={refs} role={role} setRole={setRole} onSelectRef={setSelId} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'new')        return <NewReferralPage onSave={saveReferral} saving={saving} />
-      if (subpage === 'pending')    return <PendingDocsPage refs={refs} onSelectRef={setSelId} />
-      if (subpage === 'insurance')  return <InsuranceVerifPage refs={refs} onSelectRef={setSelId} />
-      if (subpage === 'nr')         return <NonResponsivePage refs={refs} onRestore={(id) => setStatus(id, 'active')} />
+      if (subpage === 'pending')    return <PendingDocsPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'insurance')  return <InsuranceVerifPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'nr')         return <NonResponsivePage refs={refs} onRestore={(id) => setStatus(id, 'active')} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
     }
 
     if (module === 'about') {
@@ -175,7 +200,7 @@ export default function App() {
         <Sidebar
           module={module}
           subpage={subpage}
-          setSubpage={setSubpage}
+          setSubpage={setSubpageAndClearFilter}
           goHome={goHome}
           pendingCount={pending.length}
           nrCount={nr.length}

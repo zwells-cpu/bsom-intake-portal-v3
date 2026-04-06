@@ -1,10 +1,37 @@
 import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
+import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
 import { pct, displayStaffName, normalizeOffice, normalizeStaffName } from '../lib/utils'
+
+function matchesPendingDocsFilter(referral, filterKey) {
+  const paperwork = (referral.intake_paperwork || '').toLowerCase()
+  const dx = (referral.autism_diagnosis || '').toLowerCase()
+
+  if (filterKey === 'not-yet-sent') return !paperwork.includes('emailed') && !['signed', 'completed'].includes(paperwork)
+  if (filterKey === 'emailed') return paperwork.includes('emailed')
+  if (filterKey === 'needs-dx') return dx !== 'received'
+  return !['signed', 'completed'].includes(paperwork)
+}
+
+function matchesInsuranceFilter(referral, filterKey) {
+  const status = (referral.insurance_verified || '').toLowerCase()
+
+  if (filterKey === 'verified') return status === 'yes'
+  if (filterKey === 'awaiting') return status === 'awaiting'
+  if (filterKey === 'not-started') return status === 'no'
+  if (filterKey === 'total-active') return true
+  return status !== 'yes'
+}
+
+function matchesNonResponsiveFilter(referral, filterKey) {
+  if (filterKey === 'referred-out') return referral.status === 'referred-out'
+  if (filterKey === 'non-responsive-only') return referral.status === 'non-responsive'
+  return referral.status === 'non-responsive' || referral.status === 'referred-out'
+}
 
 // ══════════════════════════════════════
 // INTAKE DASHBOARD
 // ══════════════════════════════════════
-export function IntakeDashboard({ refs, onSelectRef, setSubpage }) {
+export function IntakeDashboard({ refs, onSelectRef, openModulePage }) {
   const active  = refs.filter(r => r.status === 'active')
   const nr      = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
   const pending = active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
@@ -35,10 +62,10 @@ export function IntakeDashboard({ refs, onSelectRef, setSubpage }) {
       </div>
 
       <div className="stats-row stats-4" style={{ marginBottom: 24 }}>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#6366f1' }}>{active.length}</div><div className="stat-label">Total Active</div></div>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#22c55e' }}>{signed.length}</div><div className="stat-label">Paperwork Signed</div></div>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#f59e0b' }}>{pending.length}</div><div className="stat-label">Pending Documents</div></div>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#ef4444' }}>{nr.length}</div><div className="stat-label">Non-Responsive</div></div>
+        <ClickableStatCard value={active.length} label="Total Active" color="#6366f1" onClick={() => openModulePage('intake', 'all', { target: 'all-referrals', key: 'active-referrals', label: 'Active Referrals' })} />
+        <ClickableStatCard value={signed.length} label="Paperwork Signed" color="#22c55e" onClick={() => openModulePage('intake', 'all', { target: 'all-referrals', key: 'paperwork-signed', label: 'Paperwork Signed' })} />
+        <ClickableStatCard value={pending.length} label="Pending Documents" color="#f59e0b" onClick={() => openModulePage('intake', 'pending', { target: 'pending-docs', key: 'total-pending', label: 'Pending Documents' })} />
+        <ClickableStatCard value={nr.length} label="Non-Responsive" color="#ef4444" onClick={() => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'all', label: 'Non-Responsive / Referred Out' })} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
@@ -68,10 +95,10 @@ export function IntakeDashboard({ refs, onSelectRef, setSubpage }) {
           <div className="card card-pad">
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>🔔 Action Items</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {pending.length ? <ActionItem color="#f59e0b" text={`◐ ${pending.length} pending documents`} onClick={() => setSubpage('pending')} /> : null}
-              {noIns.length ? <ActionItem color="#a5b4fc" text={`🛡️ ${noIns.length} unverified insurance`} onClick={() => setSubpage('insurance')} /> : null}
+              {pending.length ? <ActionItem color="#f59e0b" text={`◐ ${pending.length} pending documents`} onClick={() => openModulePage('intake', 'pending', { target: 'pending-docs', key: 'total-pending', label: 'Pending Documents' })} /> : null}
+              {noIns.length ? <ActionItem color="#a5b4fc" text={`🛡️ ${noIns.length} unverified insurance`} onClick={() => openModulePage('intake', 'insurance', { target: 'insurance-verification', key: 'unverified', label: 'Unverified Insurance' })} /> : null}
               {noDx.length ? <ActionItem color="#fb923c" text={`◐ ${noDx.length} awaiting diagnosis docs`} /> : null}
-              {nr.length ? <ActionItem color="#ef4444" text={`✗ ${nr.length} non-responsive / referred out`} onClick={() => setSubpage('nr')} /> : null}
+              {nr.length ? <ActionItem color="#ef4444" text={`✗ ${nr.length} non-responsive / referred out`} onClick={() => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'all', label: 'Non-Responsive / Referred Out' })} /> : null}
               {readyPI.length ? <ActionItem color="#22c55e" text={`✓ ${readyPI.length} ready for parent interview`} /> : null}
               {!pending.length && !noIns.length && !nr.length && <div style={{ color: 'var(--dim)', fontSize: 13, textAlign: 'center', padding: 16 }}>✅ No action items!</div>}
             </div>
@@ -133,13 +160,17 @@ function ActionItem({ color, text, onClick }) {
 // ══════════════════════════════════════
 // PENDING DOCUMENTS
 // ══════════════════════════════════════
-export function PendingDocsPage({ refs, onSelectRef }) {
+export function PendingDocsPage({ refs, onSelectRef, statFilter, onSetStatFilter, onClearStatFilter }) {
   const active  = refs.filter(r => r.status === 'active')
   const pending = active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
-  const sorted  = [...pending].sort((a, b) => (a.date_received || '').localeCompare(b.date_received || ''))
   const needsPaperwork = pending.filter(r => !(r.intake_paperwork || '').toLowerCase().includes('emailed'))
   const emailed        = pending.filter(r => (r.intake_paperwork || '').toLowerCase().includes('emailed'))
   const needsDx        = active.filter(r => !['received'].includes((r.autism_diagnosis || '').toLowerCase()))
+  const activeFilter = statFilter?.target === 'pending-docs' ? statFilter : null
+  const toggleFilter = (key, label) => onSetStatFilter(activeFilter?.key === key ? null : { target: 'pending-docs', key, label })
+  const filteredRows = (activeFilter ? active : pending)
+    .filter(r => matchesPendingDocsFilter(r, activeFilter?.key))
+    .sort((a, b) => (a.date_received || '').localeCompare(b.date_received || ''))
 
   return (
     <>
@@ -148,19 +179,20 @@ export function PendingDocsPage({ refs, onSelectRef }) {
         <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Clients requiring document follow-up</div>
       </div>
       <div className="stats-row stats-4" style={{ marginBottom: 22 }}>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#f59e0b' }}>{pending.length}</div><div className="stat-label">Total Pending</div></div>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#ef4444' }}>{needsPaperwork.length}</div><div className="stat-label">Not Yet Sent</div></div>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#fb923c' }}>{emailed.length}</div><div className="stat-label">Emailed — Awaiting Return</div></div>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#6366f1' }}>{needsDx.length}</div><div className="stat-label">Awaiting Diagnosis Docs</div></div>
+        <ClickableStatCard value={pending.length} label="Total Pending" color="#f59e0b" active={activeFilter?.key === 'total-pending'} onClick={() => toggleFilter('total-pending', 'Pending Documents')} />
+        <ClickableStatCard value={needsPaperwork.length} label="Not Yet Sent" color="#ef4444" active={activeFilter?.key === 'not-yet-sent'} onClick={() => toggleFilter('not-yet-sent', 'Pending Documents: Not Yet Sent')} />
+        <ClickableStatCard value={emailed.length} label="Emailed — Awaiting Return" color="#fb923c" active={activeFilter?.key === 'emailed'} onClick={() => toggleFilter('emailed', 'Pending Documents: Emailed — Awaiting Return')} />
+        <ClickableStatCard value={needsDx.length} label="Awaiting Diagnosis Docs" color="#6366f1" active={activeFilter?.key === 'needs-dx'} onClick={() => toggleFilter('needs-dx', 'Pending Documents: Awaiting Diagnosis Docs')} />
       </div>
+      <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing pending document matches" />
       <div className="card">
         <div className="table-wrap">
           <table>
             <thead><tr><th>Client</th><th>Referral ID</th><th>Office</th><th>Paperwork</th><th>Autism DX</th><th>Vineland</th><th>SRS-2</th><th>Staff</th><th>Date Received</th><th /></tr></thead>
             <tbody>
-              {sorted.length === 0
+              {filteredRows.length === 0
                 ? <tr><td colSpan={10} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>✅ No pending documents!</td></tr>
-                : sorted.map(r => (
+                : filteredRows.map(r => (
                   <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}>
                     <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.caregiver || ''}</div></td>
                     <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--dim)' }}>{r.referral_id || '--'}</td>
@@ -185,7 +217,7 @@ export function PendingDocsPage({ refs, onSelectRef }) {
 // ══════════════════════════════════════
 // INSURANCE VERIFICATION
 // ══════════════════════════════════════
-export function InsuranceVerifPage({ refs, onSelectRef }) {
+export function InsuranceVerifPage({ refs, onSelectRef, statFilter, onSetStatFilter, onClearStatFilter }) {
   const active     = refs.filter(r => r.status === 'active')
   const unverified = active.filter(r => !['yes'].includes((r.insurance_verified || '').toLowerCase()))
   const verified   = active.filter(r => (r.insurance_verified || '').toLowerCase() === 'yes')
@@ -194,6 +226,9 @@ export function InsuranceVerifPage({ refs, onSelectRef }) {
   const byProvider = {}
   unverified.forEach(r => { const p = r.insurance || 'Unknown'; byProvider[p] = (byProvider[p] || 0) + 1 })
   const verRate = active.length ? Math.round(verified.length / active.length * 100) : 0
+  const activeFilter = statFilter?.target === 'insurance-verification' ? statFilter : null
+  const toggleFilter = (key, label) => onSetStatFilter(activeFilter?.key === key ? null : { target: 'insurance-verification', key, label })
+  const filteredRows = active.filter(r => matchesInsuranceFilter(r, activeFilter?.key))
 
   return (
     <>
@@ -202,20 +237,21 @@ export function InsuranceVerifPage({ refs, onSelectRef }) {
         <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Track insurance verification status across all active referrals</div>
       </div>
       <div className="stats-row stats-4" style={{ marginBottom: 22 }}>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#22c55e' }}>{verified.length}</div><div className="stat-label">✓ Verified</div></div>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#f59e0b' }}>{awaiting.length}</div><div className="stat-label">◐ Awaiting</div></div>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#ef4444' }}>{notStarted.length}</div><div className="stat-label">✗ Not Started</div></div>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#6366f1' }}>{active.length}</div><div className="stat-label">Total Active</div></div>
+        <ClickableStatCard value={verified.length} label="✓ Verified" color="#22c55e" active={activeFilter?.key === 'verified'} onClick={() => toggleFilter('verified', 'Insurance Verification: Verified')} />
+        <ClickableStatCard value={awaiting.length} label="◐ Awaiting" color="#f59e0b" active={activeFilter?.key === 'awaiting'} onClick={() => toggleFilter('awaiting', 'Insurance Verification: Awaiting')} />
+        <ClickableStatCard value={notStarted.length} label="✗ Not Started" color="#ef4444" active={activeFilter?.key === 'not-started'} onClick={() => toggleFilter('not-started', 'Insurance Verification: Not Started')} />
+        <ClickableStatCard value={active.length} label="Total Active" color="#6366f1" active={activeFilter?.key === 'total-active'} onClick={() => toggleFilter('total-active', 'Insurance Verification: Total Active')} />
       </div>
+      <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing insurance verification matches" />
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>
         <div className="card">
           <div className="table-wrap">
             <table>
               <thead><tr><th>Client</th><th>Insurance</th><th>Verified</th><th>Staff</th><th /></tr></thead>
               <tbody>
-                {unverified.length === 0
+                {filteredRows.length === 0
                   ? <tr><td colSpan={5} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>✅ All insurance verified!</td></tr>
-                  : unverified.map(r => (
+                  : filteredRows.map(r => (
                     <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}>
                       <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11 }}><OfficePill office={r.office} previousOffice={r.previous_office} /></div></td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.insurance || '--'}</td>
@@ -255,22 +291,25 @@ export function InsuranceVerifPage({ refs, onSelectRef }) {
 // ══════════════════════════════════════
 // NON-RESPONSIVE
 // ══════════════════════════════════════
-export function NonResponsivePage({ refs, onRestore }) {
+export function NonResponsivePage({ refs, onRestore, statFilter, onClearStatFilter }) {
   const nr = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
+  const activeFilter = statFilter?.target === 'non-responsive' ? statFilter : null
+  const filteredRows = nr.filter(r => matchesNonResponsiveFilter(r, activeFilter?.key))
   return (
     <>
       <div style={{ marginBottom: 20 }}>
         <div style={{ fontWeight: 800, fontSize: 18 }}>Non-Responsive / Referred Out</div>
         <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Clients who could not be reached or were referred elsewhere</div>
       </div>
+      <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing non-responsive records" />
       <div className="card">
         <div className="table-wrap">
           <table>
             <thead><tr><th>Client</th><th>Caregiver</th><th>Phone</th><th>Office</th><th>Insurance</th><th>Coordinator</th><th>Status</th><th>Action</th></tr></thead>
             <tbody>
-              {nr.length === 0
+              {filteredRows.length === 0
                 ? <tr><td colSpan={8} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No non-responsive clients.</td></tr>
-                : nr.map(r => (
+                : filteredRows.map(r => (
                   <tr key={r.id}>
                     <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.date_received || ''}</div></td>
                     <td style={{ color: 'var(--muted)', fontSize: 13 }}>{r.caregiver || '--'}</td>

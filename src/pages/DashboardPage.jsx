@@ -1,7 +1,8 @@
 import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
+import { ClickableStatCard } from '../components/StatFilterControls'
 import { pct } from '../lib/utils'
 
-export function DashboardPage({ refs, setSelectedId, setModule, setSubpage }) {
+export function DashboardPage({ refs, setSelectedId, openModulePage }) {
   const active = refs.filter(r => r.status === 'active')
   const nr     = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
   const signed  = active.filter(r => (r.intake_paperwork || '').toLowerCase().includes('signed'))
@@ -11,17 +12,17 @@ export function DashboardPage({ refs, setSelectedId, setModule, setSubpage }) {
   const recent  = active.slice(0, 5)
 
   const alerts = []
-  if (pending.length) alerts.push({ color: '#f59e0b', text: `⚠️ ${pending.length} client${pending.length > 1 ? 's' : ''} with pending paperwork`, action: () => { setModule('intake'); setSubpage('pending') }, label: 'View Intake →' })
-  if (nr.length)      alerts.push({ color: '#ef4444', text: `🚫 ${nr.length} non-responsive / referred out`, action: () => { setModule('intake'); setSubpage('nr') }, label: 'View →' })
-  if (noIns.length)   alerts.push({ color: '#a5b4fc', text: `🛡️ ${noIns.length} unverified insurance records`, action: () => { setModule('intake'); setSubpage('insurance') }, label: 'View →' })
+  if (pending.length) alerts.push({ color: '#f59e0b', text: `⚠️ ${pending.length} client${pending.length > 1 ? 's' : ''} with pending paperwork`, action: () => openModulePage('intake', 'pending', { target: 'pending-docs', key: 'total-pending', label: 'Pending Documents' }), label: 'View Intake →' })
+  if (nr.length)      alerts.push({ color: '#ef4444', text: `🚫 ${nr.length} non-responsive / referred out`, action: () => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'all', label: 'Non-Responsive / Referred Out' }), label: 'View →' })
+  if (noIns.length)   alerts.push({ color: '#a5b4fc', text: `🛡️ ${noIns.length} unverified insurance records`, action: () => openModulePage('intake', 'insurance', { target: 'insurance-verification', key: 'unverified', label: 'Unverified Insurance' }), label: 'View →' })
 
   return (
     <>
       <div className="stats-row stats-4" style={{ marginBottom: 20 }}>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#6366f1' }}>{active.length}</div><div className="stat-label">Active Referrals</div></div>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#22c55e' }}>{signed.length}</div><div className="stat-label">Fully Signed</div></div>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#f59e0b' }}>{pending.length}</div><div className="stat-label">Pending Docs</div></div>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#fb923c' }}>{nr.length}</div><div className="stat-label">Non-Responsive</div></div>
+        <ClickableStatCard value={active.length} label="Active Referrals" color="#6366f1" onClick={() => openModulePage('intake', 'all', { target: 'all-referrals', key: 'active-referrals', label: 'Active Referrals' })} />
+        <ClickableStatCard value={signed.length} label="Fully Signed" color="#22c55e" onClick={() => openModulePage('intake', 'all', { target: 'all-referrals', key: 'paperwork-signed', label: 'Fully Signed Referrals' })} />
+        <ClickableStatCard value={pending.length} label="Pending Docs" color="#f59e0b" onClick={() => openModulePage('intake', 'pending', { target: 'pending-docs', key: 'total-pending', label: 'Pending Documents' })} />
+        <ClickableStatCard value={nr.length} label="Non-Responsive" color="#fb923c" onClick={() => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'all', label: 'Non-Responsive / Referred Out' })} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
@@ -70,7 +71,7 @@ export function DashboardPage({ refs, setSelectedId, setModule, setSubpage }) {
               <thead><tr><th>Client</th><th>Office</th><th>Personnel</th><th>Paperwork</th><th>Progress</th><th /></tr></thead>
               <tbody>
                 {recent.map(r => (
-                  <tr key={r.id} className="row-hover" onClick={() => { setSelectedId(r.id); setModule('intake'); setSubpage('all') }}>
+                  <tr key={r.id} className="row-hover" onClick={() => { setSelectedId(r.id); openModulePage('intake', 'all') }}>
                     <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.date_received || ''}</div></td>
                     <td><OfficePill office={r.office} previousOffice={r.previous_office} /></td>
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>

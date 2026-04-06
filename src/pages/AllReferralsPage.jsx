@@ -1,14 +1,24 @@
 import { useState } from 'react'
 import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
+import { ActiveFilterBanner } from '../components/StatFilterControls'
 import { OFFICES, ALL_ROLES } from '../lib/constants'
 import { sortList, normalizeOffice, normalizeStaffName, exportCSV } from '../lib/utils'
 
-export function AllReferralsPage({ refs, role, setRole, onSelectRef }) {
+function matchesAllReferralFilter(referral, filterKey) {
+  const paperwork = (referral.intake_paperwork || '').toLowerCase()
+
+  if (filterKey === 'paperwork-signed') return paperwork.includes('signed')
+  if (filterKey === 'paperwork-pending') return !['signed', 'completed'].includes(paperwork)
+  return true
+}
+
+export function AllReferralsPage({ refs, role, setRole, onSelectRef, statFilter, onClearStatFilter }) {
   const active = refs.filter(r => r.status === 'active')
   const [search, setSearch]   = useState('')
   const [office, setOffice]   = useState('ALL')
   const [sortCol, setSortCol] = useState(null)
   const [sortDir, setSortDir] = useState('asc')
+  const activeFilter = statFilter?.target === 'all-referrals' ? statFilter : null
 
   const filtered = sortList(
     active.filter(r => {
@@ -16,6 +26,7 @@ export function AllReferralsPage({ refs, role, setRole, onSelectRef }) {
         return (n.includes(search.toLowerCase()) || (r.caregiver || '').toLowerCase().includes(search.toLowerCase()))
         && (office === 'ALL' || normalizeOffice(r.office) === office || r.office === office)
         && (role === 'All Staff' || normalizeStaffName(r.intake_personnel) === normalizeStaffName(role))
+        && matchesAllReferralFilter(r, activeFilter?.key)
     }),
     sortCol, sortDir
   )
@@ -47,6 +58,7 @@ export function AllReferralsPage({ refs, role, setRole, onSelectRef }) {
           <button className="btn-export" onClick={() => exportCSV(refs)}>⬇ Export CSV</button>
         </div>
       </div>
+      <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered referrals" />
 
       <div className="card">
         <div className="table-wrap">
