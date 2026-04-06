@@ -1,4 +1,4 @@
-import { getAuthorizationStatus, normalizeTreatmentPlanStatus } from './utils'
+import { getAssessmentWorkflowStatus, getAuthorizationStatus, normalizeTreatmentPlanStatus } from './utils'
 
 export function isStatFilterTarget(filter, target) {
   return filter?.target === target ? filter : null
@@ -50,7 +50,7 @@ export function matchesStatFilter(record, filter) {
 
   if (target === 'assessment-tracker') {
     const pa = getAuthorizationStatus(record)
-    const stage = record.assessment_status || ''
+    const stage = getAssessmentWorkflowStatus(record)
     if (key === 'pa-approved') return ['Approved', 'No PA Needed', 'Approved/Discharged'].includes(pa)
     if (key === 'in-progress') return stage === 'In Progress'
     if (key === 'denied-appealed') return ['Denied', 'Appeal Pending'].includes(pa)
@@ -74,7 +74,7 @@ export function matchesStatFilter(record, filter) {
   }
 
   if (target === 'assessment-progress') {
-    const status = record.assessment_status || ''
+    const status = getAssessmentWorkflowStatus(record)
     if (key === 'not-started') return !status || status === 'Not Started'
     if (key === 'in-progress') return status === 'In Progress'
     if (key === 'completed') return status === 'Completed'
@@ -89,7 +89,7 @@ export function matchesStatFilter(record, filter) {
     if (key === 'active-clients') return Boolean(record.active_client_date)
     if (key === 'ready') return record.ready_for_services === true
     if (key === 'awaiting-authorization') {
-      return record.assessment_status === 'Completed'
+      return getAssessmentWorkflowStatus(record) === 'Completed'
         && !['Approved'].includes(getAuthorizationStatus(record))
         && !record.ready_for_services
     }

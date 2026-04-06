@@ -75,6 +75,45 @@ export function normalizeTreatmentPlanStatus(status) {
   return value
 }
 
+function hasMeaningfulAssessmentValue(value) {
+  if (value === null || value === undefined) return false
+  const normalized = String(value).trim()
+  if (!normalized) return false
+  return normalized.toUpperCase() !== 'N/A'
+}
+
+function isCompletedAssessmentValue(value) {
+  const normalized = String(value || '').trim().toUpperCase()
+  return ['YES', 'DONE', 'COMPLETED', 'RECEIVED', 'SIGNED'].some(token => normalized.includes(token))
+}
+
+export function getAssessmentWorkflowProgress(record) {
+  const components = [
+    { key: 'parent_interview_status', completed: String(record?.parent_interview_status || '').trim().toUpperCase() === 'COMPLETED', started: hasMeaningfulAssessmentValue(record?.parent_interview_status) },
+    { key: 'vineland', completed: isCompletedAssessmentValue(record?.vineland), started: hasMeaningfulAssessmentValue(record?.vineland) },
+    { key: 'srs2', completed: isCompletedAssessmentValue(record?.srs2), started: hasMeaningfulAssessmentValue(record?.srs2) },
+    { key: 'direct_obs', completed: isCompletedAssessmentValue(record?.direct_obs), started: hasMeaningfulAssessmentValue(record?.direct_obs) },
+  ]
+
+  const total = components.length
+  const completed = components.filter(component => component.completed).length
+  const started = components.some(component => component.started)
+
+  return {
+    total,
+    completed,
+    percent: Math.round((completed / total) * 100),
+    started,
+  }
+}
+
+export function getAssessmentWorkflowStatus(record) {
+  const { completed, total, started } = getAssessmentWorkflowProgress(record)
+  if (completed >= total) return 'Completed'
+  if (started || completed > 0) return 'In Progress'
+  return 'Not Started'
+}
+
 export function getAssessmentRecordId(record) {
   return record?.assessment_id ?? record?.id ?? null
 }

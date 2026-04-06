@@ -3,7 +3,6 @@ import { OFFICES, STAT, BOOL } from '../lib/constants'
 import { normalizeTreatmentPlanStatus } from '../lib/utils'
 
 const INTERVIEW_STATUSES = ['Awaiting Assignment', 'Scheduled', 'Completed', 'No Show']
-const ASSESSMENT_STATUSES = ['Not Started', 'In Progress', 'Completed']
 const TREATMENT_PLAN_STATUSES = ['Not Started', 'In Progress', 'Finalized']
 const AUTHORIZATION_STATUSES = ['Not Submitted', 'Pending', 'In Review', 'Approved', 'Reauthorization Needed', 'Appeal Pending', 'Denied', 'No PA Needed', 'Approved/Discharged', 'Referred Out']
 
@@ -89,9 +88,6 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
       parent_interview_status: form.parent_interview_status || '',
       parent_interview_scheduled_date: form.parent_interview_scheduled_date || null,
       parent_interview_completed_date: form.parent_interview_completed_date || null,
-      assessment_status: form.assessment_status || '',
-      assessment_started_date: form.assessment_started_date || null,
-      assessment_completed_date: form.assessment_completed_date || null,
       direct_obs: form.direct_obs || '',
       treatment_plan_status: normalizeTreatmentPlanStatus(form.treatment_plan_status || 'Not Started'),
       treatment_plan_started_date: form.treatment_plan_started_date || null,
@@ -132,25 +128,32 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
 
         <div className="modal-body" style={{ gridTemplateColumns: '1fr 1.2fr' }}>
           <div>
-            <div className="section-hdr">Assessment Summary</div>
+            <div className="section-hdr">Client Details</div>
             <DetailRow label="Client Name" value={form?.client_name} />
             <DetailRow label="Clinic" value={clinic} />
             <DetailRow label="Assigned BCBA" value={form?.assigned_bcba} />
+            <DetailRow label="Caregiver" value={form?.caregiver} />
+            <DetailRow label="Caregiver Phone" value={form?.caregiver_phone} />
+            <DetailRow label="Caregiver Email" value={form?.caregiver_email} />
+
+            <div className="section-hdr" style={{ marginTop: 18 }}>Caregiver / Insurance</div>
             <DetailRow label="Insurance" value={form?.insurance} />
+            <DetailRow label="In School" value={form?.in_school} />
+            <DetailRow label="Other Services" value={form?.other_services} />
+
+            <div className="section-hdr" style={{ marginTop: 18 }}>Assessment Components</div>
             <DetailRow label="Parent Interview" value={form?.parent_interview_status} />
-            <DetailRow label="Assessment Status" value={form?.assessment_status} />
+            <DetailRow label="Interview Scheduled" value={form?.parent_interview_scheduled_date} />
+            <DetailRow label="Interview Completed" value={form?.parent_interview_completed_date} />
+            <DetailRow label="Vineland" value={form?.vineland} />
+            <DetailRow label="SRS-2" value={form?.srs2} />
+            <DetailRow label="Direct Observation" value={form?.direct_obs} />
+
+            <div className="section-hdr" style={{ marginTop: 18 }}>Treatment Plan / Authorization</div>
             <DetailRow label="Treatment Plan" value={normalizeTreatmentPlanStatus(form?.treatment_plan_status)} />
             <DetailRow label="Authorization Status" value={form?.authorization_status} />
             <DetailRow label="Ready for Services" value={form?.ready_for_services === true ? 'Yes' : 'No'} />
             <DetailRow label="Active Client Date" value={form?.active_client_date} />
-            <DetailRow label="Vineland" value={form?.vineland} />
-            <DetailRow label="SRS-2" value={form?.srs2} />
-            <DetailRow label="Direct Observation" value={form?.direct_obs} />
-            <DetailRow label="In School" value={form?.in_school} />
-            <DetailRow label="Other Services" value={form?.other_services} />
-            <DetailRow label="Caregiver" value={form?.caregiver} />
-            <DetailRow label="Caregiver Phone" value={form?.caregiver_phone} />
-            <DetailRow label="Caregiver Email" value={form?.caregiver_email} />
 
             <div style={{ marginTop: 14 }}>
               <div className="label">Notes</div>
@@ -161,41 +164,42 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
           </div>
 
           <div>
-            <div className="section-hdr">Edit Assessment</div>
+            <div className="section-hdr">Client Details</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <TextField label="Client Name" value={form?.client_name} onChange={setField('client_name')} />
               <SelectField label="Clinic" value={form?.clinic || form?.office || ''} onChange={setField('clinic')} options={OFFICES} />
 
               <TextField label="Assigned BCBA" value={form?.assigned_bcba} onChange={setField('assigned_bcba')} />
-              <TextField label="Insurance" value={form?.insurance} onChange={setField('insurance')} />
+            </div>
 
+            <div className="section-hdr" style={{ marginTop: 18 }}>Caregiver / Insurance</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <TextField label="Caregiver" value={form?.caregiver} onChange={setField('caregiver')} />
               <TextField label="Caregiver Phone" value={form?.caregiver_phone} onChange={setField('caregiver_phone')} />
-
               <TextField label="Caregiver Email" value={form?.caregiver_email} onChange={setField('caregiver_email')} />
-              <SelectField label="Vineland" value={form?.vineland} onChange={setField('vineland')} options={STAT} />
+              <TextField label="Insurance" value={form?.insurance} onChange={setField('insurance')} />
+              <SelectField label="In School" value={form?.in_school} onChange={setField('in_school')} options={BOOL} />
+              <TextField label="Other Services" value={form?.other_services} onChange={setField('other_services')} placeholder="ABA, OT, speech, etc." />
+            </div>
 
+            <div className="section-hdr" style={{ marginTop: 18 }}>Assessment Components</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <SelectField label="Vineland" value={form?.vineland} onChange={setField('vineland')} options={STAT} />
               <SelectField label="SRS-2" value={form?.srs2} onChange={setField('srs2')} options={STAT} />
               <SelectField label="Parent Interview Status" value={form?.parent_interview_status} onChange={setField('parent_interview_status')} options={INTERVIEW_STATUSES} />
-
               <DateField label="Interview Scheduled" value={form?.parent_interview_scheduled_date} onChange={setField('parent_interview_scheduled_date')} />
               <DateField label="Interview Completed" value={form?.parent_interview_completed_date} onChange={setField('parent_interview_completed_date')} />
-
-              <SelectField label="Assessment Status" value={form?.assessment_status} onChange={setField('assessment_status')} options={ASSESSMENT_STATUSES} />
-              <DateField label="Assessment Started" value={form?.assessment_started_date} onChange={setField('assessment_started_date')} />
-
-              <DateField label="Assessment Completed" value={form?.assessment_completed_date} onChange={setField('assessment_completed_date')} />
               <SelectField label="Direct Observation" value={form?.direct_obs} onChange={setField('direct_obs')} options={STAT} />
+            </div>
 
+            <div className="section-hdr" style={{ marginTop: 18 }}>Treatment Plan / Authorization</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <SelectField label="Treatment Plan Status" value={normalizeTreatmentPlanStatus(form?.treatment_plan_status)} onChange={setField('treatment_plan_status')} options={TREATMENT_PLAN_STATUSES} />
               <DateField label="Treatment Plan Started" value={form?.treatment_plan_started_date} onChange={setField('treatment_plan_started_date')} />
-
               <DateField label="Treatment Plan Completed" value={form?.treatment_plan_completed_date} onChange={setField('treatment_plan_completed_date')} />
               <SelectField label="Authorization Status" value={form?.authorization_status || ''} onChange={setField('authorization_status')} options={AUTHORIZATION_STATUSES} />
-
               <DateField label="Auth Submitted" value={form?.authorization_submitted_date} onChange={setField('authorization_submitted_date')} />
               <DateField label="Auth Approved" value={form?.authorization_approved_date} onChange={setField('authorization_approved_date')} />
-
               <div>
                 <div className="label">Ready for Services</div>
                 <select className="edit-select" value={asBoolString(form?.ready_for_services)} onChange={ev => setField('ready_for_services')(ev.target.value)}>
@@ -204,9 +208,6 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
                 </select>
               </div>
               <DateField label="Active Client Date" value={form?.active_client_date} onChange={setField('active_client_date')} />
-
-              <SelectField label="In School" value={form?.in_school} onChange={setField('in_school')} options={BOOL} />
-              <TextField label="Other Services" value={form?.other_services} onChange={setField('other_services')} placeholder="ABA, OT, speech, etc." />
             </div>
 
             <div style={{ marginTop: 14 }}>

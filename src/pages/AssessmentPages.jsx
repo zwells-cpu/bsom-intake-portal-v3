@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { PaStatusBadge } from '../components/Badge'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
-import { getAssessmentRecordId, getAuthorizationStatus, normalizeTreatmentPlanStatus } from '../lib/utils'
+import { getAssessmentRecordId, getAssessmentWorkflowProgress, getAssessmentWorkflowStatus, getAuthorizationStatus, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 function assessVal(value) {
   if (!value) return <span style={{ color: 'var(--dim)', fontSize: 12 }}>--</span>
@@ -102,7 +102,7 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
   })
 
   const approved = filtered.filter(record => ['Approved', 'No PA Needed', 'Approved/Discharged'].includes(record.authorization_status)).length
-  const inProgress = filtered.filter(record => record.assessment_status === 'In Progress').length
+  const inProgress = filtered.filter(record => getAssessmentWorkflowStatus(record) === 'In Progress').length
   const denied = filtered.filter(record => ['Denied', 'Appeal Pending'].includes(record.authorization_status)).length
   return (
     <>
@@ -247,10 +247,11 @@ export function BCBAAssignmentsPage({ assessData, assessLoading, onSelectAssess,
   const filteredRows = assessData.filter(record => matchesStatFilter(record, activeFilter))
 
   assigned.forEach(record => {
+    const workflowStatus = getAssessmentWorkflowStatus(record)
     if (!byBCBA[record.assigned_bcba]) byBCBA[record.assigned_bcba] = { total: 0, completed: 0, inProgress: 0, notStarted: 0 }
     byBCBA[record.assigned_bcba].total += 1
-    if (record.assessment_status === 'Completed') byBCBA[record.assigned_bcba].completed += 1
-    else if (record.assessment_status === 'In Progress') byBCBA[record.assigned_bcba].inProgress += 1
+    if (workflowStatus === 'Completed') byBCBA[record.assigned_bcba].completed += 1
+    else if (workflowStatus === 'In Progress') byBCBA[record.assigned_bcba].inProgress += 1
     else byBCBA[record.assigned_bcba].notStarted += 1
   })
 
@@ -299,7 +300,7 @@ export function BCBAAssignmentsPage({ assessData, assessLoading, onSelectAssess,
       <div className="card">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Client</th><th>Office</th><th>Assigned BCBA</th><th>Assessment Status</th><th>PA Status</th><th>Insurance</th><th /></tr></thead>
+            <thead><tr><th>Client</th><th>Office</th><th>Assigned BCBA</th><th>Assessment Progress</th><th>PA Status</th><th>Insurance</th><th /></tr></thead>
             <tbody>
               {filteredRows.length === 0 ? (
                 <tr><td colSpan={7} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No assessment records match the current filter.</td></tr>
@@ -313,7 +314,7 @@ export function BCBAAssignmentsPage({ assessData, assessLoading, onSelectAssess,
                   <td>{renderClientCell(record, record.caregiver)}</td>
                   <td><span className="office-pill">{record.clinic || '--'}</span></td>
                   <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || <span style={{ color: 'var(--dim)', fontStyle: 'italic' }}>Unassigned</span>}</td>
-                  <td>{sBdg(record.assessment_status || 'Not Started')}</td>
+                  <td>{sBdg(getAssessmentWorkflowStatus(record))}</td>
                   <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
                   <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.insurance || '--'}</td>
                   <td style={{ color: 'var(--accent)' }}>→</td>
@@ -330,9 +331,9 @@ export function BCBAAssignmentsPage({ assessData, assessLoading, onSelectAssess,
 export function AssessmentProgressPage({ assessData, assessLoading, onSelectAssess, statFilter, onSetStatFilter, onClearStatFilter }) {
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
-  const notStarted = assessData.filter(record => !record.assessment_status || record.assessment_status === 'Not Started')
-  const inProgress = assessData.filter(record => record.assessment_status === 'In Progress')
-  const completed = assessData.filter(record => record.assessment_status === 'Completed')
+  const notStarted = assessData.filter(record => getAssessmentWorkflowStatus(record) === 'Not Started')
+  const inProgress = assessData.filter(record => getAssessmentWorkflowStatus(record) === 'In Progress')
+  const completed = assessData.filter(record => getAssessmentWorkflowStatus(record) === 'Completed')
   const { activeFilter, toggleFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'assessment-progress')
   const filteredRows = assessData.filter(record => matchesStatFilter(record, activeFilter))
 
@@ -340,7 +341,7 @@ export function AssessmentProgressPage({ assessData, assessLoading, onSelectAsse
     <>
       <div style={{ marginBottom: 22 }}>
         <div style={{ fontWeight: 800, fontSize: 18 }}>Assessment Progress</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Track Vineland, SRS-2, observations, and overall assessment completion</div>
+        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Track parent interviews, Vineland, SRS-2, and direct observations</div>
       </div>
       <div className="stats-row stats-3" style={{ marginBottom: 22 }}>
         <ClickableStatCard value={notStarted.length} label="Not Started" color="#ef4444" active={activeFilter?.key === 'not-started'} onClick={() => toggleFilter('not-started', 'Assessment Progress: Not Started')} />
@@ -351,7 +352,7 @@ export function AssessmentProgressPage({ assessData, assessLoading, onSelectAsse
       <div className="card">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Client</th><th>BCBA</th><th>Assessment</th><th>Vineland</th><th>SRS-2</th><th>Parent Interview</th><th>Direct Obs.</th><th>Started</th><th>Completed</th><th /></tr></thead>
+            <thead><tr><th>Client</th><th>BCBA</th><th>Progress</th><th>Vineland</th><th>SRS-2</th><th>Parent Interview</th><th>Direct Obs.</th><th>Complete</th><th>PA Status</th><th /></tr></thead>
             <tbody>
               {filteredRows.length === 0 ? (
                 <tr><td colSpan={10} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No assessment records match the current filter.</td></tr>
@@ -364,13 +365,13 @@ export function AssessmentProgressPage({ assessData, assessLoading, onSelectAsse
                 >
                   <td>{renderClientCell(record, record.clinic)}</td>
                   <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || <span style={{ color: '#ef4444', fontStyle: 'italic', fontSize: 11 }}>Unassigned</span>}</td>
-                  <td>{sBdg(record.assessment_status || 'Not Started')}</td>
+                  <td><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{sBdg(getAssessmentWorkflowStatus(record))}<span style={{ fontSize: 11, color: 'var(--dim)', fontFamily: "'DM Mono',monospace" }}>{getAssessmentWorkflowProgress(record).completed}/{getAssessmentWorkflowProgress(record).total}</span></div></td>
                   <td>{assessVal(record.vineland)}</td>
                   <td>{assessVal(record.srs2)}</td>
                   <td>{sBdg(record.parent_interview_status || 'Awaiting Assignment')}</td>
                   <td>{assessVal(record.direct_obs)}</td>
-                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--dim)' }}>{record.assessment_started_date || '--'}</td>
-                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.assessment_completed_date ? '#22c55e' : 'var(--dim)' }}>{record.assessment_completed_date || '--'}</td>
+                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: getAssessmentWorkflowProgress(record).completed === getAssessmentWorkflowProgress(record).total ? '#22c55e' : 'var(--dim)' }}>{getAssessmentWorkflowProgress(record).percent}%</td>
+                  <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
                   <td style={{ color: 'var(--accent)' }}>→</td>
                 </tr>
               ))}
@@ -423,7 +424,7 @@ export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess, 
       <div className="card">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Client</th><th>BCBA</th><th>Assessment</th><th>Treatment Plan</th><th>Authorization</th><th>Started</th><th>Completed</th><th /></tr></thead>
+            <thead><tr><th>Client</th><th>BCBA</th><th>Assessment Progress</th><th>Treatment Plan</th><th>Authorization</th><th>Started</th><th>Completed</th><th /></tr></thead>
             <tbody>
               {filteredRecords.length === 0 ? (
                 <tr><td colSpan={8} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No treatment plans match the current filter.</td></tr>
@@ -436,7 +437,7 @@ export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess, 
                 >
                   <td>{renderClientCell(record, record.clinic)}</td>
                   <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
-                  <td>{sBdg(record.assessment_status || 'Not Started')}</td>
+                  <td>{sBdg(getAssessmentWorkflowStatus(record))}</td>
                   <td>{sBdg(record.treatment_plan_status || 'Not Started')}</td>
                   <td>{sBdg(getAuthorizationStatus(record) || 'Not Submitted')}</td>
                   <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--dim)' }}>{record.treatment_plan_started_date || '--'}</td>
@@ -457,7 +458,7 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
 
   const ready = assessData.filter(record => record.ready_for_services === true)
   const almostAuth = assessData.filter(record =>
-    record.assessment_status === 'Completed'
+    getAssessmentWorkflowStatus(record) === 'Completed'
     && !['Approved'].includes(getAuthorizationStatus(record))
     && !record.ready_for_services
   )
@@ -520,7 +521,7 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
           <div className="card">
             <div className="table-wrap">
               <table>
-                <thead><tr><th>Client</th><th>BCBA</th><th>Assessment</th><th>Treatment Plan</th><th>Authorization</th><th>Submitted</th><th /></tr></thead>
+                <thead><tr><th>Client</th><th>BCBA</th><th>Assessment Progress</th><th>Treatment Plan</th><th>Authorization</th><th>Submitted</th><th /></tr></thead>
                 <tbody>
                   {almostAuthRows.map(record => (
                     <tr
@@ -531,7 +532,7 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
                     >
                       <td>{renderClientCell(record, record.clinic)}</td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
-                      <td>{sBdg(record.assessment_status || 'Not Started')}</td>
+                      <td>{sBdg(getAssessmentWorkflowStatus(record))}</td>
                       <td>{sBdg(record.treatment_plan_status || 'Not Started')}</td>
                       <td><PaStatusBadge status={getAuthorizationStatus(record) || 'Not Submitted'} /></td>
                       <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--dim)' }}>{record.authorization_submitted_date || '--'}</td>
@@ -557,7 +558,7 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
           <div className="card">
             <div className="table-wrap">
               <table>
-                <thead><tr><th>Client</th><th>BCBA</th><th>Assessment</th><th>Treatment Plan</th><th>Authorization</th><th>Notes</th><th /></tr></thead>
+                <thead><tr><th>Client</th><th>BCBA</th><th>Assessment Progress</th><th>Treatment Plan</th><th>Authorization</th><th>Notes</th><th /></tr></thead>
                 <tbody>
                   {notReadyRows.map(record => (
                     <tr
@@ -568,7 +569,7 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
                     >
                       <td>{renderClientCell(record, record.clinic)}</td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
-                      <td>{sBdg(record.assessment_status || 'Not Started')}</td>
+                      <td>{sBdg(getAssessmentWorkflowStatus(record))}</td>
                       <td>{sBdg(record.treatment_plan_status || 'Not Started')}</td>
                       <td><PaStatusBadge status={getAuthorizationStatus(record) || 'Not Submitted'} /></td>
                       <td style={{ fontSize: 11, color: 'var(--dim)', maxWidth: 180 }}>{record.notes || '--'}</td>
