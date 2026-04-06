@@ -5,9 +5,9 @@ export function Sidebar({ module, subpage, setSubpage, goHome, pendingCount, nrC
   const navItems = MODULE_NAV[module] || []
 
   const badgeFor = (id) => {
-    if (id === 'pending')   return pendingCount > 0 ? pendingCount : null
+    if (id === 'pending') return pendingCount > 0 ? pendingCount : null
     if (id === 'insurance') return unverifiedCount > 0 ? unverifiedCount : null
-    if (id === 'nr')        return nrCount > 0 ? nrCount : null
+    if (id === 'nr') return nrCount > 0 ? nrCount : null
     return null
   }
 
@@ -15,7 +15,7 @@ export function Sidebar({ module, subpage, setSubpage, goHome, pendingCount, nrC
     <aside className="sidebar">
       <div className="sidebar-header sidebar-home-btn" onClick={goHome}>
         <div className="sidebar-logo">
-          <img src="/bsom-logo.jpg" alt="BSOM" onError={e => { e.target.style.display='none' }} />
+          <img src="/bsom-logo.jpg" alt="BSOM" onError={e => { e.target.style.display = 'none' }} />
         </div>
         <div>
           <div className="sidebar-title">BSOM Portal</div>
@@ -42,10 +42,13 @@ export function Sidebar({ module, subpage, setSubpage, goHome, pendingCount, nrC
 
         <div className="nav-section-label" style={{ marginTop: 16 }}>Modules</div>
         {MODULES.filter(x => x.id !== module).map(x => (
-          <div key={x.id} className="nav-item" onClick={() => {
-            // Handled by parent via goHome + re-enter
-            window.dispatchEvent(new CustomEvent('enter-module', { detail: x.id }))
-          }}>
+          <div
+            key={x.id}
+            className="nav-item"
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('enter-module', { detail: x.id }))
+            }}
+          >
             <span className="nav-icon">{x.icon}</span>
             <span style={{ fontSize: 12 }}>{x.name}</span>
           </div>
@@ -53,7 +56,7 @@ export function Sidebar({ module, subpage, setSubpage, goHome, pendingCount, nrC
       </nav>
 
       <div className="sidebar-footer">
-        <div className="back-btn" onClick={goHome}>← Back to Portal Home</div>
+        <div className="back-btn" onClick={goHome}>{'\u2190'} Back to Portal Home</div>
       </div>
     </aside>
   )

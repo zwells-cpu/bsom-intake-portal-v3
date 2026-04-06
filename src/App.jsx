@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useTheme }       from './hooks/useTheme'
-import { useReferrals }   from './hooks/useReferrals'
+import { useTheme } from './hooks/useTheme'
+import { useReferrals } from './hooks/useReferrals'
 import { useAssessments } from './hooks/useAssessments'
 import { MODULES, MODULE_NAV, ALL_ROLES } from './lib/constants'
 
-import { HomePage }        from './components/HomePage'
-import { Sidebar }         from './components/Sidebar'
-import { ThemeToggle }     from './components/ThemeToggle'
-import { ReferralModal }   from './components/ReferralModal'
+import { HomePage } from './components/HomePage'
+import { Sidebar } from './components/Sidebar'
+import { ThemeToggle } from './components/ThemeToggle'
+import { ReferralModal } from './components/ReferralModal'
 import { AssessmentDetailModal } from './components/AssessmentDetailModal'
 
-import { DashboardPage }   from './pages/DashboardPage'
+import { DashboardPage } from './pages/DashboardPage'
 import { AllReferralsPage } from './pages/AllReferralsPage'
-import { NewReferralPage }  from './pages/NewReferralPage'
+import { NewReferralPage } from './pages/NewReferralPage'
 import { IntakeDashboard, PendingDocsPage, InsuranceVerifPage, NonResponsivePage } from './pages/IntakePages'
 import { AboutPortalPage, LocationsPage } from './pages/AboutPage'
 import { AssessmentTracker, ParentInterviewsPage, BCBAAssignmentsPage, AssessmentProgressPage, TreatmentPlansPage, ReadyForServicesPage } from './pages/AssessmentPages'
@@ -24,17 +24,16 @@ export default function App() {
   const { refs, loading, error, saving, saved, setError, load, saveReferral, updateReferral, deleteReferral, setStatus, toggleParentInterview } = useReferrals()
   const { assessData, assessLoading, loadAssessments, saveAssessEdit, deleteAssessment } = useAssessments()
 
-  const [screen,  setScreen]  = useState('home')   // 'home' | 'module'
-  const [module,  setModule]  = useState(null)
+  const [screen, setScreen] = useState('home')
+  const [module, setModule] = useState(null)
   const [subpage, setSubpage] = useState(null)
-  const [selId,   setSelId]   = useState(null)
+  const [selId, setSelId] = useState(null)
   const [selAssessId, setSelAssessId] = useState(null)
-  const [role,    setRole]    = useState('All Staff')
+  const [role, setRole] = useState('All Staff')
   const [routeFilter, setRouteFilter] = useState(null)
 
   useEffect(() => { load() }, [load])
 
-  // Listen for sidebar cross-module navigation
   useEffect(() => {
     const h = (e) => enterModule(e.detail)
     window.addEventListener('enter-module', h)
@@ -67,10 +66,10 @@ export default function App() {
     setRouteFilter(null)
   }
 
-  const active  = useMemo(() => refs.filter(r => r.status === 'active'), [refs])
-  const nr      = useMemo(() => refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out'), [refs])
+  const active = useMemo(() => refs.filter(r => r.status === 'active'), [refs])
+  const nr = useMemo(() => refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out'), [refs])
   const pending = useMemo(() => active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase())), [active])
-  const noIns   = useMemo(() => active.filter(r => !['yes', 'verified'].includes((r.insurance_verified || '').toLowerCase())).length, [active])
+  const noIns = useMemo(() => active.filter(r => !['yes', 'verified'].includes((r.insurance_verified || '').toLowerCase())).length, [active])
   const operationsRefs = useMemo(() => (
     role === 'All Staff'
       ? refs
@@ -148,32 +147,32 @@ export default function App() {
 
     if (module === 'intake') {
       if (subpage === 'intakedash') return <IntakeDashboard refs={refs} onSelectRef={setSelId} openModulePage={openModulePage} />
-      if (subpage === 'all')        return <AllReferralsPage refs={refs} role={role} setRole={setRole} onSelectRef={setSelId} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'new')        return <NewReferralPage onSave={saveReferral} saving={saving} />
-      if (subpage === 'pending')    return <PendingDocsPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'insurance')  return <InsuranceVerifPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'nr')         return <NonResponsivePage refs={refs} onRestore={(id) => setStatus(id, 'active')} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'all') return <AllReferralsPage refs={refs} role={role} setRole={setRole} onSelectRef={setSelId} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'new') return <NewReferralPage onSave={saveReferral} saving={saving} />
+      if (subpage === 'pending') return <PendingDocsPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'insurance') return <InsuranceVerifPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'nr') return <NonResponsivePage refs={refs} onRestore={(id) => setStatus(id, 'active')} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
     }
 
     if (module === 'about') {
-      if (subpage === 'portal')    return <AboutPortalPage />
+      if (subpage === 'portal') return <AboutPortalPage />
       if (subpage === 'locations') return <LocationsPage />
     }
 
     if (module === 'assessment') {
-      if (subpage === 'tracker')    return <AssessmentTracker assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'tracker') return <AssessmentTracker assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'interviews') return <ParentInterviewsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'bcba')       return <BCBAAssignmentsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'progress')   return <AssessmentProgressPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'txplan')     return <TreatmentPlansPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'readysvc')   return <ReadyForServicesPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'bcba') return <BCBAAssignmentsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'progress') return <AssessmentProgressPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'txplan') return <TreatmentPlansPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'readysvc') return <ReadyForServicesPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
     }
 
     if (module === 'operations') {
-      if (subpage === 'pipeline')    return <PipelineOverviewPage refs={operationsRefs} assessData={operationsAssessData} openModulePage={openModulePage} />
-      if (subpage === 'aging')       return <ReferralAgingPage refs={operationsRefs} onSelectRef={setSelId} />
-      if (subpage === 'volume')      return <ClinicVolumePage refs={operationsRefs} />
-      if (subpage === 'conversion')  return <ConversionRatePage refs={operationsRefs} />
+      if (subpage === 'pipeline') return <PipelineOverviewPage refs={operationsRefs} assessData={operationsAssessData} openModulePage={openModulePage} />
+      if (subpage === 'aging') return <ReferralAgingPage refs={operationsRefs} onSelectRef={setSelId} />
+      if (subpage === 'volume') return <ClinicVolumePage refs={operationsRefs} />
+      if (subpage === 'conversion') return <ConversionRatePage refs={operationsRefs} />
       if (subpage === 'performance') return <IntakePerformancePage refs={operationsRefs} role={role} />
     }
 
@@ -203,13 +202,14 @@ export default function App() {
         <div className="content">
           <div className="topbar">
             <div className="topbar-title">
-              {m?.icon} {m?.name}{currentNavLabel ? ` — ${currentNavLabel}` : ''}
+              {m?.icon} {m?.name}{currentNavLabel ? ` - ${currentNavLabel}` : ''}
             </div>
             <div className="topbar-right">
               {(module === 'intake' || module === 'operations') && (
                 <select
                   style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 7, padding: '4px 10px', color: 'var(--text)', fontSize: 12, fontWeight: 600 }}
-                  value={role} onChange={e => setRole(e.target.value)}
+                  value={role}
+                  onChange={e => setRole(e.target.value)}
                 >
                   {ALL_ROLES.map(r => <option key={r}>{r}</option>)}
                 </select>
