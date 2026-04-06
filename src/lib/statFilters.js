@@ -58,6 +58,29 @@ export function matchesStatFilter(record, filter) {
     return true
   }
 
+  if (target === 'parent-interviews') {
+    const status = record.parent_interview_status || ''
+    if (key === 'awaiting-assignment') return !status || status === 'Awaiting Assignment'
+    if (key === 'scheduled') return status === 'Scheduled'
+    if (key === 'completed') return status === 'Completed'
+    if (key === 'no-show') return status === 'No Show'
+    return true
+  }
+
+  if (target === 'bcba-assignments') {
+    if (key === 'unassigned') return !record.assigned_bcba
+    if (key === 'assigned') return Boolean(record.assigned_bcba)
+    return true
+  }
+
+  if (target === 'assessment-progress') {
+    const status = record.assessment_status || ''
+    if (key === 'not-started') return !status || status === 'Not Started'
+    if (key === 'in-progress') return status === 'In Progress'
+    if (key === 'completed') return status === 'Completed'
+    return true
+  }
+
   if (target === 'treatment-plans') {
     return normalizeTreatmentPlanStatus(record.treatment_plan_status) === key
   }
@@ -70,6 +93,7 @@ export function matchesStatFilter(record, filter) {
         && !['Approved'].includes(record.authorization_status || record.pa_status || '')
         && !record.ready_for_services
     }
+    if (key === 'not-ready') return record.ready_for_services !== true
     return !record.ready_for_services
   }
 

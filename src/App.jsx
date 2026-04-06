@@ -169,11 +169,11 @@ export default function App() {
 
     if (module === 'assessment') {
       if (subpage === 'tracker')    return <AssessmentTracker assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'interviews') return <ParentInterviewsPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
-      if (subpage === 'bcba')       return <BCBAAssignmentsPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
-      if (subpage === 'progress')   return <AssessmentProgressPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
+      if (subpage === 'interviews') return <ParentInterviewsPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'bcba')       return <BCBAAssignmentsPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'progress')   return <AssessmentProgressPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'txplan')     return <TreatmentPlansPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'readysvc')   return <ReadyForServicesPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'readysvc')   return <ReadyForServicesPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
     }
 
     if (module === 'operations') {
