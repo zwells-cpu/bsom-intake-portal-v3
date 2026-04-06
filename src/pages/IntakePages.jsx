@@ -1,5 +1,5 @@
 import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
-import { pct, normalizeOffice } from '../lib/utils'
+import { pct, displayStaffName, normalizeOffice, normalizeStaffName } from '../lib/utils'
 
 // ══════════════════════════════════════
 // INTAKE DASHBOARD
@@ -17,7 +17,15 @@ export function IntakeDashboard({ refs, onSelectRef, setSubpage }) {
   active.forEach(r => { const s = r.current_stage || 'New Referral'; byStage[s] = (byStage[s] || 0) + 1 })
   const stageOrder = ['New Referral', 'Intake', 'Initial Assessment', 'PA Submitted', 'PA In Review', 'PA Approved', 'Active Client', 'Reauth Needed', 'Discharged']
 
-  const staffList = [...new Set(active.map(r => r.intake_personnel).filter(Boolean))]
+  const staffCounts = {}
+  active.forEach(r => {
+    const staffKey = normalizeStaffName(r.intake_personnel)
+    if (!staffKey) return
+    if (!staffCounts[staffKey]) staffCounts[staffKey] = { label: displayStaffName(r.intake_personnel), total: 0, pending: 0 }
+    staffCounts[staffKey].total += 1
+    if (!['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase())) staffCounts[staffKey].pending += 1
+  })
+  const staffList = Object.values(staffCounts)
 
   return (
     <>
@@ -72,14 +80,12 @@ export function IntakeDashboard({ refs, onSelectRef, setSubpage }) {
           <div className="card card-pad">
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>👥 By Staff Member</div>
             {staffList.map(staff => {
-              const mine = active.filter(r => r.intake_personnel === staff)
-              const myPending = mine.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
               return (
-                <div key={staff} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #0a1525' }}>
-                  <span style={{ fontSize: 13, fontWeight: 600 }}>{staff}</span>
+                <div key={staff.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #0a1525' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>{staff.label}</span>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <span className="bdg" style={{ background: '#6366f120', color: '#a5b4fc', border: '1px solid #6366f130' }}>{mine.length} total</span>
-                    {myPending.length ? <span className="bdg" style={{ background: '#f59e0b20', color: '#f59e0b', border: '1px solid #f59e0b30' }}>{myPending.length} pending</span> : null}
+                    <span className="bdg" style={{ background: '#6366f120', color: '#a5b4fc', border: '1px solid #6366f130' }}>{staff.total} total</span>
+                    {staff.pending ? <span className="bdg" style={{ background: '#f59e0b20', color: '#f59e0b', border: '1px solid #f59e0b30' }}>{staff.pending} pending</span> : null}
                   </div>
                 </div>
               )

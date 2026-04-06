@@ -1,5 +1,5 @@
 import { StagePill } from '../components/Badge'
-import { normalizeOffice, normalizeTreatmentPlanStatus } from '../lib/utils'
+import { displayStaffName, normalizeOffice, normalizeStaffName, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 // ── Shared helpers ──
 function daysSince(dateStr) {
@@ -58,7 +58,12 @@ export function PipelineOverviewPage({ refs, assessData = [] }) {
   const maxVal = Math.max(...Object.values(byStage), 1)
 
   const byStaff = {}
-  active.forEach(r => { if (r.intake_personnel) byStaff[r.intake_personnel] = (byStaff[r.intake_personnel] || 0) + 1 })
+  active.forEach(r => {
+    const staffKey = normalizeStaffName(r.intake_personnel)
+    if (!staffKey) return
+    if (!byStaff[staffKey]) byStaff[staffKey] = { label: displayStaffName(r.intake_personnel), count: 0 }
+    byStaff[staffKey].count += 1
+  })
 
   const byIns = {}
   active.forEach(r => { if (r.insurance) byIns[r.insurance] = (byIns[r.insurance] || 0) + 1 })
@@ -100,13 +105,13 @@ export function PipelineOverviewPage({ refs, assessData = [] }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card card-pad">
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>👤 By Staff Member</div>
-            {Object.entries(byStaff).sort((a, b) => b[1] - a[1]).map(([s, c]) => (
-              <div key={s} style={{ marginBottom: 10 }}>
+            {Object.values(byStaff).sort((a, b) => b.count - a.count).map(({ label, count }) => (
+              <div key={label} style={{ marginBottom: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600 }}>{s}</span>
-                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>{c}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
+                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>{count}</span>
                 </div>
-                <MiniBar val={c} max={Math.max(...Object.values(byStaff), 1)} color="#22c55e" />
+                <MiniBar val={count} max={Math.max(...Object.values(byStaff).map(item => item.count), 1)} color="#22c55e" />
               </div>
             ))}
           </div>
@@ -459,19 +464,19 @@ export function ConversionRatePage({ refs }) {
 // ══════════════════════════════════════
 // INTAKE PERFORMANCE
 // ══════════════════════════════════════
-export function IntakePerformancePage({ refs }) {
+export function IntakePerformancePage({ refs, role }) {
   const active     = refs.filter(r => r.status === 'active')
-  const STAFF_LIST = [...new Set(active.map(r => r.intake_personnel).filter(Boolean))].sort()
+  const STAFF_LIST = [...new Set(active.map(r => normalizeStaffName(r.intake_personnel)).filter(Boolean))].sort()
 
   const perf = STAFF_LIST.map(staff => {
-    const mine     = active.filter(r => r.intake_personnel === staff)
+    const mine     = active.filter(r => normalizeStaffName(r.intake_personnel) === normalizeStaffName(staff))
     const signed   = mine.filter(r => (r.intake_paperwork || '').toLowerCase().includes('signed')).length
     const verified = mine.filter(r => r.insurance_verified === 'YES').length
     const dxRecvd  = mine.filter(r => (r.autism_diagnosis || '').toLowerCase().includes('received')).length
     const activeC  = mine.filter(r => r.current_stage === 'Active Client').length
     const pending  = mine.filter(r => !['signed','completed'].includes((r.intake_paperwork || '').toLowerCase())).length
     const score    = mine.length > 0 ? Math.round(((signed + verified + dxRecvd) / ((mine.length * 3) || 1)) * 100) : 0
-    return { staff, total: mine.length, signed, verified, dxRecvd, active: activeC, pending, score }
+    return { staff: displayStaffName(staff), total: mine.length, signed, verified, dxRecvd, active: activeC, pending, score }
   })
 
   const totalActive   = active.length

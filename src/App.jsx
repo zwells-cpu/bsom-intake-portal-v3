@@ -17,6 +17,7 @@ import { IntakeDashboard, PendingDocsPage, InsuranceVerifPage, NonResponsivePage
 import { AboutPortalPage, LocationsPage } from './pages/AboutPage'
 import { AssessmentTracker, ParentInterviewsPage, BCBAAssignmentsPage, AssessmentProgressPage, TreatmentPlansPage, ReadyForServicesPage } from './pages/AssessmentPages'
 import { PipelineOverviewPage, ReferralAgingPage, ClinicVolumePage, ConversionRatePage, IntakePerformancePage } from './pages/OperationsPages'
+import { normalizeStaffName } from './lib/utils'
 
 function normalizeClientName(first = '', last = '') {
   return `${first} ${last}`.trim().toLowerCase().replace(/\s+/g, ' ')
@@ -58,7 +59,7 @@ function mergeAssessmentRecord(assessment, refs) {
 
 export default function App() {
   const { theme, setTheme } = useTheme()
-  const { refs, loading, error, saving, saved, setError, load, saveReferral, updateReferral, setStatus, toggleParentInterview } = useReferrals()
+  const { refs, loading, error, saving, saved, setError, load, saveReferral, updateReferral, deleteReferral, setStatus, toggleParentInterview } = useReferrals()
   const { assessData, assessLoading, loadAssessments, saveAssessEdit } = useAssessments()
 
   const [screen,  setScreen]  = useState('home')   // 'home' | 'module'
@@ -92,6 +93,12 @@ export default function App() {
   const pending = active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
   const noIns   = active.filter(r => !['yes', 'verified'].includes((r.insurance_verified || '').toLowerCase())).length
   const mergedAssessData = assessData.map(record => mergeAssessmentRecord(record, refs))
+  const operationsRefs = role === 'All Staff'
+    ? refs
+    : refs.filter(ref => normalizeStaffName(ref.intake_personnel) === normalizeStaffName(role))
+  const operationsAssessData = role === 'All Staff'
+    ? mergedAssessData
+    : mergedAssessData.filter(record => normalizeStaffName(record.intake_personnel) === normalizeStaffName(role))
 
   const selectedRef = selId ? refs.find(r => r.id === selId) : null
   const selectedAssess = selAssess
@@ -145,11 +152,11 @@ export default function App() {
     }
 
     if (module === 'operations') {
-      if (subpage === 'pipeline')    return <PipelineOverviewPage refs={refs} assessData={mergedAssessData} />
-      if (subpage === 'aging')       return <ReferralAgingPage refs={refs} onSelectRef={setSelId} />
-      if (subpage === 'volume')      return <ClinicVolumePage refs={refs} />
-      if (subpage === 'conversion')  return <ConversionRatePage refs={refs} />
-      if (subpage === 'performance') return <IntakePerformancePage refs={refs} />
+      if (subpage === 'pipeline')    return <PipelineOverviewPage refs={operationsRefs} assessData={operationsAssessData} />
+      if (subpage === 'aging')       return <ReferralAgingPage refs={operationsRefs} onSelectRef={setSelId} />
+      if (subpage === 'volume')      return <ClinicVolumePage refs={operationsRefs} />
+      if (subpage === 'conversion')  return <ConversionRatePage refs={operationsRefs} />
+      if (subpage === 'performance') return <IntakePerformancePage refs={operationsRefs} role={role} />
     }
 
     return (
@@ -181,7 +188,7 @@ export default function App() {
               {m?.icon} {m?.name}{currentNavLabel ? ` — ${currentNavLabel}` : ''}
             </div>
             <div className="topbar-right">
-              {module === 'intake' && (
+              {(module === 'intake' || module === 'operations') && (
                 <select
                   style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 7, padding: '4px 10px', color: 'var(--text)', fontSize: 12, fontWeight: 600 }}
                   value={role} onChange={e => setRole(e.target.value)}
@@ -231,6 +238,7 @@ export default function App() {
           referral={selectedRef}
           onClose={() => setSelId(null)}
           onSave={updateReferral}
+          onDelete={deleteReferral}
           onSetStatus={(id, status) => { setStatus(id, status); setSelId(null) }}
           onToggleParentInterview={toggleParentInterview}
         />

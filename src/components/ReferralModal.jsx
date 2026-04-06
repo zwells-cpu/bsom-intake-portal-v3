@@ -3,7 +3,7 @@ import { Badge, OfficePill, ProgressRing } from './Badge'
 import { INSURANCES, BOOL, STAT, STAFF, OFFICES, CHECKLIST_FIELDS } from '../lib/constants'
 import { pct } from '../lib/utils'
 
-export function ReferralModal({ referral, onClose, onSave, onSetStatus, onToggleParentInterview }) {
+export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus, onToggleParentInterview }) {
   const [editMode, setEditMode] = useState(false)
   const [form, setForm] = useState({ ...referral })
   const [saving, setSaving] = useState(false)
@@ -21,6 +21,17 @@ export function ReferralModal({ referral, onClose, onSave, onSetStatus, onToggle
     delete patch.user_id
     const res = await onSave(r.id, patch)
     if (res?.success) setEditMode(false)
+    setSaving(false)
+  }
+
+  const handleDelete = async () => {
+    if (!window.confirm('Delete this referral permanently? This cannot be undone.')) return
+    setSaving(true)
+    const res = await onDelete(r.id)
+    if (res?.success) {
+      setEditMode(false)
+      onClose()
+    }
     setSaving(false)
   }
 
@@ -194,6 +205,14 @@ export function ReferralModal({ referral, onClose, onSave, onSetStatus, onToggle
         <div className="modal-foot">
           <FootLeft />
           <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className="btn-ghost"
+              onClick={handleDelete}
+              disabled={saving}
+              style={{ color: '#ef4444', borderColor: '#ef444440' }}
+            >
+              Delete
+            </button>
             {editMode ? (
               <>
                 <button className="btn-ghost" onClick={() => setEditMode(false)}>Cancel</button>

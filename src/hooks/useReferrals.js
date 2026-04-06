@@ -68,6 +68,21 @@ export function useReferrals() {
     }
   }, [])
 
+  const deleteReferral = useCallback(async (id) => {
+    try {
+      const { error: err } = await supabase
+        .from('referrals')
+        .delete()
+        .eq('id', id)
+      if (err) throw err
+      setRefs(prev => prev.filter(ref => ref.id !== id))
+      return { success: true }
+    } catch (e) {
+      setError('Could not delete referral.')
+      return { success: false }
+    }
+  }, [])
+
   const setStatus = useCallback(async (id, status) => {
     return updateReferral(id, { status })
   }, [updateReferral])
@@ -79,6 +94,6 @@ export function useReferrals() {
   return {
     refs, loading, error, saving, saved,
     setError,
-    load, saveReferral, updateReferral, setStatus, toggleParentInterview,
+    load, saveReferral, updateReferral, deleteReferral, setStatus, toggleParentInterview,
   }
 }

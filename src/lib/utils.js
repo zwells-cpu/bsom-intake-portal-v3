@@ -41,6 +41,27 @@ export function normalizeOffice(o) {
   return o
 }
 
+export function normalizeStaffName(name) {
+  const normalized = String(name || '').trim().toLowerCase().replace(/\s+/g, '')
+  if (!normalized) return ''
+  if (normalized === 'lashannon') return 'lashannon'
+  if (normalized === 'aerianna' || normalized === 'ariana') return 'aerianna'
+  if (normalized === 'keiara') return 'keiara'
+  if (normalized === 'zanteria') return 'zanteria'
+  if (normalized === 'celia') return 'celia'
+  return normalized
+}
+
+export function displayStaffName(name) {
+  const normalized = normalizeStaffName(name)
+  if (normalized === 'zanteria') return 'Zanteria'
+  if (normalized === 'aerianna') return 'Aerianna'
+  if (normalized === 'lashannon') return 'LaShannon'
+  if (normalized === 'keiara') return 'Keiara'
+  if (normalized === 'celia') return 'Celia'
+  return String(name || '').trim()
+}
+
 export function normalizeTreatmentPlanStatus(status) {
   if (!status) return 'Not Started'
 
