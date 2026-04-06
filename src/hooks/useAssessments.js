@@ -2,8 +2,48 @@ import { useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { removeRecordById, replaceRecordById } from '../lib/recordStore'
 
+const ASSESSMENT_DB_FIELDS = [
+  'client_name',
+  'clinic',
+  'assigned_bcba',
+  'caregiver',
+  'caregiver_phone',
+  'caregiver_email',
+  'insurance',
+  'vineland',
+  'srs2',
+  'parent_interview_status',
+  'parent_interview_scheduled_date',
+  'parent_interview_completed_date',
+  'assessment_status',
+  'assessment_started_date',
+  'assessment_completed_date',
+  'direct_obs',
+  'treatment_plan_status',
+  'treatment_plan_started_date',
+  'treatment_plan_completed_date',
+  'authorization_status',
+  'authorization_submitted_date',
+  'authorization_approved_date',
+  'ready_for_services',
+  'active_client_date',
+  'in_school',
+  'other_services',
+  'notes',
+]
+
 function getAssessmentId(record) {
   return record?.assessment_id ?? record?.id ?? null
+}
+
+function normalizeBoolean(value) {
+  if (value === true || value === false) return value
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    if (normalized === 'true') return true
+    if (normalized === 'false') return false
+  }
+  return value
 }
 
 function normalizeAssessmentRecord(record, fallbackId = null) {
@@ -11,13 +51,36 @@ function normalizeAssessmentRecord(record, fallbackId = null) {
 
   const assessmentId = getAssessmentId(record) ?? fallbackId
   const authorizationStatus = record.authorization_status ?? record.pa_status ?? ''
+  const clinic = record.clinic ?? record.office ?? ''
 
   return {
     ...record,
     assessment_id: assessmentId,
+    client_name: record.client_name || record.name || '',
+    clinic,
+    office: clinic,
     authorization_status: authorizationStatus,
     pa_status: authorizationStatus,
+    ready_for_services: normalizeBoolean(record.ready_for_services) === true,
   }
+}
+
+function sanitizeAssessmentPatch(patch = {}) {
+  const cleaned = {}
+  ASSESSMENT_DB_FIELDS.forEach((field) => {
+    if (!Object.prototype.hasOwnProperty.call(patch, field)) return
+    const value = patch[field]
+    if (field === 'ready_for_services') {
+      cleaned[field] = normalizeBoolean(value) === true
+      return
+    }
+    if (field.endsWith('_date')) {
+      cleaned[field] = value || null
+      return
+    }
+    cleaned[field] = value ?? ''
+  })
+  return cleaned
 }
 
 export function useAssessments() {
@@ -45,7 +108,7 @@ export function useAssessments() {
   const saveAssessEdit = useCallback(async (id, patch) => {
     try {
       setAssessError(null)
-      const normalizedPatch = normalizeAssessmentRecord({ assessment_id: id, ...patch }, id)
+      const normalizedPatch = sanitizeAssessmentPatch(patch)
 
       const { data, error } = await supabase
         .from('assessments')
@@ -68,7 +131,7 @@ export function useAssessments() {
       }
 
       if (!nextRecord) {
-        nextRecord = normalizedPatch
+        nextRecord = normalizeAssessmentRecord({ assessment_id: id, ...normalizedPatch }, id)
       }
 
       setAssessData(prev => replaceRecordById(prev, nextRecord, getAssessmentId))

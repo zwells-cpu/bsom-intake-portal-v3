@@ -81,13 +81,12 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
   }
 
   const src = assessData.map(record => ({
-      ...record,
-      client_name: record.client_name || record.name || '',
-      clinic: record.clinic || record.office || '',
-      assessment_id: getAssessmentRecordId(record),
-      pa_status: getAuthorizationStatus(record),
-      authorization_status: getAuthorizationStatus(record),
-    }))
+    ...record,
+    client_name: record.client_name || record.name || '',
+    clinic: record.clinic || record.office || '',
+    assessment_id: getAssessmentRecordId(record),
+    authorization_status: getAuthorizationStatus(record),
+  }))
 
   const { activeFilter, toggleFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'assessment-tracker')
 
@@ -97,14 +96,14 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
     const query = search.toLowerCase()
 
     return (name.includes(query) || caregiver.includes(query))
-      && (office === 'ALL' || record.clinic === office)
-      && (paFilter === 'All' || getAuthorizationStatus(record) === paFilter)
+      && (office === 'ALL' || (record.clinic || '').toUpperCase() === office)
+      && (paFilter === 'All' || record.authorization_status === paFilter)
       && matchesStatFilter(record, activeFilter)
   })
 
-  const approved = filtered.filter(record => ['Approved', 'No PA Needed', 'Approved/Discharged'].includes(getAuthorizationStatus(record))).length
+  const approved = filtered.filter(record => ['Approved', 'No PA Needed', 'Approved/Discharged'].includes(record.authorization_status)).length
   const inProgress = filtered.filter(record => record.assessment_status === 'In Progress').length
-  const denied = filtered.filter(record => ['Denied', 'Appeal Pending'].includes(getAuthorizationStatus(record))).length
+  const denied = filtered.filter(record => ['Denied', 'Appeal Pending'].includes(record.authorization_status)).length
   return (
     <>
       <div className="stats-row stats-4" style={{ marginBottom: 20 }}>
@@ -139,7 +138,7 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
       <div className="card">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Client</th><th>Office</th><th>Insurance</th><th>Vineland</th><th>SRS-2</th><th>Parent Interview</th><th>Direct Obs.</th><th>In School</th><th>Other Services</th><th>PA Status</th></tr></thead>
+            <thead><tr><th>Client</th><th>Clinic</th><th>Insurance</th><th>Vineland</th><th>SRS-2</th><th>Parent Interview</th><th>Direct Obs.</th><th>In School</th><th>Other Services</th><th>PA Status</th></tr></thead>
             <tbody>
               {filtered.length === 0
                 ? <tr><td colSpan={10} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No clients match your filters.</td></tr>
@@ -155,11 +154,11 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.insurance || '--'}</td>
                     <td>{assessVal(record.vineland)}</td>
                     <td>{assessVal(record.srs2)}</td>
-                    <td>{assessVal(record.parent_interview)}</td>
+                    <td>{sBdg(record.parent_interview_status || 'Awaiting Assignment')}</td>
                     <td>{assessVal(record.direct_obs)}</td>
                     <td>{assessVal(record.in_school)}</td>
-                    <td style={{ fontSize: 11, color: 'var(--dim)', maxWidth: 140 }}>{record.other_services || '--'}</td>
-                    <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
+                    <td style={{ fontSize: 11, color: record.other_services ? 'var(--muted)' : 'var(--dim)', maxWidth: 140 }}>{record.other_services || '--'}</td>
+                    <td><PaStatusBadge status={record.authorization_status} /></td>
                   </tr>
                 ))}
             </tbody>

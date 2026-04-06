@@ -17,49 +17,7 @@ import { IntakeDashboard, PendingDocsPage, InsuranceVerifPage, NonResponsivePage
 import { AboutPortalPage, LocationsPage } from './pages/AboutPage'
 import { AssessmentTracker, ParentInterviewsPage, BCBAAssignmentsPage, AssessmentProgressPage, TreatmentPlansPage, ReadyForServicesPage } from './pages/AssessmentPages'
 import { PipelineOverviewPage, ReferralAgingPage, ClinicVolumePage, ConversionRatePage, IntakePerformancePage } from './pages/OperationsPages'
-import { getAssessmentRecordId, getAuthorizationStatus, normalizeStaffName } from './lib/utils'
-
-function normalizeClientName(first = '', last = '') {
-  return `${first} ${last}`.trim().toLowerCase().replace(/\s+/g, ' ')
-}
-
-function getReferralMatch(assessment, refs) {
-  const assessmentReferralId = assessment?.referral_id
-
-  if (assessmentReferralId !== undefined && assessmentReferralId !== null && assessmentReferralId !== '') {
-    const referralIdText = String(assessmentReferralId)
-    const directMatch = refs.find(ref => String(ref.id) === referralIdText || String(ref.referral_id || '') === referralIdText)
-    if (directMatch) return directMatch
-  }
-
-  const assessmentName = (assessment?.client_name || assessment?.name || '').toLowerCase().replace(/\s+/g, ' ').trim()
-  if (!assessmentName) return null
-
-  return refs.find(ref => normalizeClientName(ref.first_name, ref.last_name) === assessmentName) || null
-}
-
-function mergeAssessmentRecord(assessment, refs) {
-  const referral = getReferralMatch(assessment, refs)
-  const authorizationStatus = getAuthorizationStatus(assessment)
-  if (!referral) return assessment
-
-  return {
-    ...referral,
-    ...assessment,
-    assessment_id: getAssessmentRecordId(assessment),
-    client_name: assessment.client_name || assessment.name || `${referral.first_name || ''} ${referral.last_name || ''}`.trim(),
-    caregiver: assessment.caregiver || referral.caregiver || '',
-    caregiver_phone: assessment.caregiver_phone || referral.caregiver_phone || '',
-    caregiver_email: assessment.caregiver_email || referral.caregiver_email || '',
-    clinic: assessment.clinic || assessment.office || referral.office || '',
-    office: assessment.office || referral.office || '',
-    insurance: assessment.insurance || referral.insurance || '',
-    secondary_insurance: assessment.secondary_insurance || referral.secondary_insurance || '',
-    referral_id: assessment.referral_id || referral.referral_id || referral.id || '',
-    authorization_status: authorizationStatus,
-    pa_status: authorizationStatus,
-  }
-}
+import { getAssessmentRecordId, normalizeStaffName } from './lib/utils'
 
 export default function App() {
   const { theme, setTheme } = useTheme()
@@ -113,7 +71,6 @@ export default function App() {
   const nr      = useMemo(() => refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out'), [refs])
   const pending = useMemo(() => active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase())), [active])
   const noIns   = useMemo(() => active.filter(r => !['yes', 'verified'].includes((r.insurance_verified || '').toLowerCase())).length, [active])
-  const mergedAssessData = useMemo(() => assessData.map(record => mergeAssessmentRecord(record, refs)), [assessData, refs])
   const operationsRefs = useMemo(() => (
     role === 'All Staff'
       ? refs
@@ -121,13 +78,13 @@ export default function App() {
   ), [refs, role])
   const operationsAssessData = useMemo(() => (
     role === 'All Staff'
-      ? mergedAssessData
-      : mergedAssessData.filter(record => normalizeStaffName(record.intake_personnel) === normalizeStaffName(role))
-  ), [mergedAssessData, role])
+      ? assessData
+      : assessData.filter(record => normalizeStaffName(record.intake_personnel) === normalizeStaffName(role))
+  ), [assessData, role])
 
   const selectedRef = selId ? refs.find(r => r.id === selId) : null
   const selectedAssess = selAssessId
-    ? mergedAssessData.find(r => String(getAssessmentRecordId(r) || '') === String(selAssessId))
+    ? assessData.find(r => String(getAssessmentRecordId(r) || '') === String(selAssessId))
     : null
 
   useEffect(() => {
@@ -204,12 +161,12 @@ export default function App() {
     }
 
     if (module === 'assessment') {
-      if (subpage === 'tracker')    return <AssessmentTracker assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'interviews') return <ParentInterviewsPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'bcba')       return <BCBAAssignmentsPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'progress')   return <AssessmentProgressPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'txplan')     return <TreatmentPlansPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'readysvc')   return <ReadyForServicesPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'tracker')    return <AssessmentTracker assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'interviews') return <ParentInterviewsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'bcba')       return <BCBAAssignmentsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'progress')   return <AssessmentProgressPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'txplan')     return <TreatmentPlansPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'readysvc')   return <ReadyForServicesPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
     }
 
     if (module === 'operations') {

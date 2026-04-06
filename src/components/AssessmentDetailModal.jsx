@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react'
+import { OFFICES, STAT, BOOL } from '../lib/constants'
 import { normalizeTreatmentPlanStatus } from '../lib/utils'
 
 const INTERVIEW_STATUSES = ['Awaiting Assignment', 'Scheduled', 'Completed', 'No Show']
+const ASSESSMENT_STATUSES = ['Not Started', 'In Progress', 'Completed']
 const TREATMENT_PLAN_STATUSES = ['Not Started', 'In Progress', 'Finalized']
 const AUTHORIZATION_STATUSES = ['Not Submitted', 'Pending', 'In Review', 'Approved', 'Reauthorization Needed', 'Appeal Pending', 'Denied', 'No PA Needed', 'Approved/Discharged', 'Referred Out']
 
+function asBoolString(value) {
+  return value === true || value === 'true' ? 'true' : 'false'
+}
+
 function displayValue(value) {
+  if (value === true) return 'Yes'
+  if (value === false) return 'No'
   return value || '--'
 }
 
@@ -14,6 +22,39 @@ function DetailRow({ label, value }) {
     <div className="info-row">
       <span className="info-label">{label}</span>
       <span className="info-val">{displayValue(value)}</span>
+    </div>
+  )
+}
+
+function TextField({ label, value, onChange, placeholder = '' }) {
+  return (
+    <div>
+      <div className="label">{label}</div>
+      <input className="edit-input" value={value || ''} placeholder={placeholder} onChange={ev => onChange(ev.target.value)} />
+    </div>
+  )
+}
+
+function SelectField({ label, value, onChange, options }) {
+  return (
+    <div>
+      <div className="label">{label}</div>
+      <select className="edit-select" value={value || ''} onChange={ev => onChange(ev.target.value)}>
+        <option value="">-- Select --</option>
+        {options.map(option => <option key={option} value={option}>{option}</option>)}
+      </select>
+    </div>
+  )
+}
+
+function DateField({ label, value, onChange }) {
+  return (
+    <div>
+      <div className="label">{label}</div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <input className="edit-input" type="date" value={value || ''} onChange={ev => onChange(ev.target.value)} style={{ flex: 1 }} />
+        <button className="btn-ghost" type="button" onClick={() => onChange('')}>Clear</button>
+      </div>
     </div>
   )
 }
@@ -28,7 +69,7 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
   }, [assessment])
 
   const recordId = form?.assessment_id ?? form?.id ?? null
-  const office = form?.clinic || form?.office || ''
+  const clinic = form?.clinic || form?.office || ''
 
   const setField = (key) => (value) => setForm(prev => ({ ...prev, [key]: value }))
 
@@ -36,16 +77,32 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
     if (!recordId) return
     setSaving(true)
     const patch = {
+      client_name: form.client_name || '',
+      clinic: form.clinic || form.office || '',
       assigned_bcba: form.assigned_bcba || '',
+      caregiver: form.caregiver || '',
+      caregiver_phone: form.caregiver_phone || '',
+      caregiver_email: form.caregiver_email || '',
+      insurance: form.insurance || '',
+      vineland: form.vineland || '',
+      srs2: form.srs2 || '',
+      parent_interview_status: form.parent_interview_status || '',
+      parent_interview_scheduled_date: form.parent_interview_scheduled_date || null,
+      parent_interview_completed_date: form.parent_interview_completed_date || null,
+      assessment_status: form.assessment_status || '',
+      assessment_started_date: form.assessment_started_date || null,
+      assessment_completed_date: form.assessment_completed_date || null,
+      direct_obs: form.direct_obs || '',
       treatment_plan_status: normalizeTreatmentPlanStatus(form.treatment_plan_status || 'Not Started'),
       treatment_plan_started_date: form.treatment_plan_started_date || null,
       treatment_plan_completed_date: form.treatment_plan_completed_date || null,
       authorization_status: form.authorization_status || '',
+      authorization_submitted_date: form.authorization_submitted_date || null,
+      authorization_approved_date: form.authorization_approved_date || null,
       ready_for_services: form.ready_for_services === true || form.ready_for_services === 'true',
-      parent_interview_status: form.parent_interview_status || '',
-      parent_interview_scheduled_date: form.parent_interview_scheduled_date || null,
-      parent_interview_completed_date: form.parent_interview_completed_date || null,
-      insurance: form.insurance || '',
+      active_client_date: form.active_client_date || null,
+      in_school: form.in_school || '',
+      other_services: form.other_services || '',
       notes: form.notes || '',
     }
     const res = await onSave(recordId, patch)
@@ -56,64 +113,48 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
   const handleDelete = async () => {
     if (!recordId || !onDelete) return
     if (!window.confirm('Delete this assessment record? This action cannot be undone.')) return
-
     setDeleting(true)
     const res = await onDelete(recordId)
     if (res?.success) onClose()
     setDeleting(false)
   }
 
-  const renderEditableDate = (label, key) => (
-    <div>
-      <div className="label">{label}</div>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <input
-          className="edit-input"
-          type="date"
-          value={form?.[key] || ''}
-          onChange={ev => setField(key)(ev.target.value)}
-          style={{ flex: 1 }}
-        />
-        <button className="btn-ghost" type="button" onClick={() => setField(key)('')}>
-          Clear
-        </button>
-      </div>
-    </div>
-  )
-
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="modal" onClick={ev => ev.stopPropagation()}>
+      <div className="modal" onClick={ev => ev.stopPropagation()} style={{ maxWidth: 1080 }}>
         <div className="modal-head">
           <div>
-            <div className="modal-title">{displayValue(form?.client_name || form?.name)}</div>
-            <div className="modal-sub">Parent interview details and scheduling</div>
+            <div className="modal-title">{displayValue(form?.client_name)}</div>
+            <div className="modal-sub">Live assessment record editor</div>
           </div>
           <button className="close-btn" onClick={onClose}>x</button>
         </div>
 
-        <div className="modal-body">
+        <div className="modal-body" style={{ gridTemplateColumns: '1fr 1.2fr' }}>
           <div>
-            <div className="section-hdr">Client Details</div>
-            <DetailRow label="Client Name" value={form?.client_name || form?.name} />
-            <DetailRow label="Office" value={office} />
+            <div className="section-hdr">Assessment Summary</div>
+            <DetailRow label="Client Name" value={form?.client_name} />
+            <DetailRow label="Clinic" value={clinic} />
             <DetailRow label="Assigned BCBA" value={form?.assigned_bcba} />
-            <DetailRow label="Interview Status" value={form?.parent_interview_status || 'Awaiting Assignment'} />
-            <DetailRow label="Scheduled Date" value={form?.parent_interview_scheduled_date} />
-            <DetailRow label="Completed Date" value={form?.parent_interview_completed_date} />
-            <DetailRow label="Treatment Plan Status" value={normalizeTreatmentPlanStatus(form?.treatment_plan_status)} />
-            <DetailRow label="Treatment Plan Started" value={form?.treatment_plan_started_date} />
-            <DetailRow label="Treatment Plan Completed" value={form?.treatment_plan_completed_date} />
-            <DetailRow label="Authorization Status" value={form?.authorization_status || form?.pa_status} />
-            <DetailRow label="Ready for Services" value={form?.ready_for_services ? 'Yes' : 'No'} />
             <DetailRow label="Insurance" value={form?.insurance} />
-            <DetailRow label="Caregiver Name" value={form?.caregiver} />
+            <DetailRow label="Parent Interview" value={form?.parent_interview_status} />
+            <DetailRow label="Assessment Status" value={form?.assessment_status} />
+            <DetailRow label="Treatment Plan" value={normalizeTreatmentPlanStatus(form?.treatment_plan_status)} />
+            <DetailRow label="Authorization Status" value={form?.authorization_status} />
+            <DetailRow label="Ready for Services" value={form?.ready_for_services === true ? 'Yes' : 'No'} />
+            <DetailRow label="Active Client Date" value={form?.active_client_date} />
+            <DetailRow label="Vineland" value={form?.vineland} />
+            <DetailRow label="SRS-2" value={form?.srs2} />
+            <DetailRow label="Direct Observation" value={form?.direct_obs} />
+            <DetailRow label="In School" value={form?.in_school} />
+            <DetailRow label="Other Services" value={form?.other_services} />
+            <DetailRow label="Caregiver" value={form?.caregiver} />
             <DetailRow label="Caregiver Phone" value={form?.caregiver_phone} />
             <DetailRow label="Caregiver Email" value={form?.caregiver_email} />
 
             <div style={{ marginTop: 14 }}>
               <div className="label">Notes</div>
-              <div style={{ color: 'var(--muted)', fontSize: 13, minHeight: 20 }}>
+              <div style={{ color: 'var(--muted)', fontSize: 13, minHeight: 20, whiteSpace: 'pre-wrap' }}>
                 {displayValue(form?.notes)}
               </div>
             </div>
@@ -121,100 +162,69 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
 
           <div>
             <div className="section-hdr">Edit Assessment</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div>
-                <div className="label">Assigned BCBA</div>
-                <input
-                  className="edit-input"
-                  value={form?.assigned_bcba || ''}
-                  onChange={ev => setField('assigned_bcba')(ev.target.value)}
-                />
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <TextField label="Client Name" value={form?.client_name} onChange={setField('client_name')} />
+              <SelectField label="Clinic" value={form?.clinic || form?.office || ''} onChange={setField('clinic')} options={OFFICES} />
 
-              <div>
-                <div className="label">Interview Status</div>
-                <select
-                  className="edit-select"
-                  value={form?.parent_interview_status || ''}
-                  onChange={ev => setField('parent_interview_status')(ev.target.value)}
-                >
-                  <option value="">-- Select --</option>
-                  {INTERVIEW_STATUSES.map(status => <option key={status} value={status}>{status}</option>)}
-                </select>
-              </div>
+              <TextField label="Assigned BCBA" value={form?.assigned_bcba} onChange={setField('assigned_bcba')} />
+              <TextField label="Insurance" value={form?.insurance} onChange={setField('insurance')} />
 
-              {renderEditableDate('Scheduled Date', 'parent_interview_scheduled_date')}
-              {renderEditableDate('Completed Date', 'parent_interview_completed_date')}
+              <TextField label="Caregiver" value={form?.caregiver} onChange={setField('caregiver')} />
+              <TextField label="Caregiver Phone" value={form?.caregiver_phone} onChange={setField('caregiver_phone')} />
 
-              <div>
-                <div className="label">Treatment Plan Status</div>
-                <select
-                  className="edit-select"
-                  value={normalizeTreatmentPlanStatus(form?.treatment_plan_status)}
-                  onChange={ev => setField('treatment_plan_status')(ev.target.value)}
-                >
-                  {TREATMENT_PLAN_STATUSES.map(status => <option key={status} value={status}>{status}</option>)}
-                </select>
-              </div>
+              <TextField label="Caregiver Email" value={form?.caregiver_email} onChange={setField('caregiver_email')} />
+              <SelectField label="Vineland" value={form?.vineland} onChange={setField('vineland')} options={STAT} />
 
-              {renderEditableDate('Treatment Plan Started', 'treatment_plan_started_date')}
-              {renderEditableDate('Treatment Plan Completed', 'treatment_plan_completed_date')}
+              <SelectField label="SRS-2" value={form?.srs2} onChange={setField('srs2')} options={STAT} />
+              <SelectField label="Parent Interview Status" value={form?.parent_interview_status} onChange={setField('parent_interview_status')} options={INTERVIEW_STATUSES} />
 
-              <div>
-                <div className="label">Authorization Status</div>
-                <select
-                  className="edit-select"
-                  value={form?.authorization_status || form?.pa_status || 'Not Submitted'}
-                  onChange={ev => setField('authorization_status')(ev.target.value)}
-                >
-                  {AUTHORIZATION_STATUSES.map(status => <option key={status} value={status}>{status}</option>)}
-                </select>
-              </div>
+              <DateField label="Interview Scheduled" value={form?.parent_interview_scheduled_date} onChange={setField('parent_interview_scheduled_date')} />
+              <DateField label="Interview Completed" value={form?.parent_interview_completed_date} onChange={setField('parent_interview_completed_date')} />
+
+              <SelectField label="Assessment Status" value={form?.assessment_status} onChange={setField('assessment_status')} options={ASSESSMENT_STATUSES} />
+              <DateField label="Assessment Started" value={form?.assessment_started_date} onChange={setField('assessment_started_date')} />
+
+              <DateField label="Assessment Completed" value={form?.assessment_completed_date} onChange={setField('assessment_completed_date')} />
+              <SelectField label="Direct Observation" value={form?.direct_obs} onChange={setField('direct_obs')} options={STAT} />
+
+              <SelectField label="Treatment Plan Status" value={normalizeTreatmentPlanStatus(form?.treatment_plan_status)} onChange={setField('treatment_plan_status')} options={TREATMENT_PLAN_STATUSES} />
+              <DateField label="Treatment Plan Started" value={form?.treatment_plan_started_date} onChange={setField('treatment_plan_started_date')} />
+
+              <DateField label="Treatment Plan Completed" value={form?.treatment_plan_completed_date} onChange={setField('treatment_plan_completed_date')} />
+              <SelectField label="Authorization Status" value={form?.authorization_status || ''} onChange={setField('authorization_status')} options={AUTHORIZATION_STATUSES} />
+
+              <DateField label="Auth Submitted" value={form?.authorization_submitted_date} onChange={setField('authorization_submitted_date')} />
+              <DateField label="Auth Approved" value={form?.authorization_approved_date} onChange={setField('authorization_approved_date')} />
 
               <div>
                 <div className="label">Ready for Services</div>
-                <select
-                  className="edit-select"
-                  value={form?.ready_for_services ? 'true' : 'false'}
-                  onChange={ev => setField('ready_for_services')(ev.target.value)}
-                >
+                <select className="edit-select" value={asBoolString(form?.ready_for_services)} onChange={ev => setField('ready_for_services')(ev.target.value)}>
                   <option value="false">No</option>
                   <option value="true">Yes</option>
                 </select>
               </div>
+              <DateField label="Active Client Date" value={form?.active_client_date} onChange={setField('active_client_date')} />
 
-              <div>
-                <div className="label">Insurance</div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input
-                    className="edit-input"
-                    value={form?.insurance || ''}
-                    onChange={ev => setField('insurance')(ev.target.value)}
-                    style={{ flex: 1 }}
-                  />
-                  <button className="btn-ghost" type="button" onClick={() => setField('insurance')('')}>
-                    Clear
-                  </button>
-                </div>
-              </div>
+              <SelectField label="In School" value={form?.in_school} onChange={setField('in_school')} options={BOOL} />
+              <TextField label="Other Services" value={form?.other_services} onChange={setField('other_services')} placeholder="ABA, OT, speech, etc." />
+            </div>
 
-              <div>
-                <div className="label">Notes</div>
-                <textarea
-                  className="edit-input"
-                  rows={4}
-                  value={form?.notes || ''}
-                  onChange={ev => setField('notes')(ev.target.value)}
-                  style={{ resize: 'vertical' }}
-                />
-              </div>
+            <div style={{ marginTop: 14 }}>
+              <div className="label">Notes</div>
+              <textarea
+                className="edit-input"
+                rows={4}
+                value={form?.notes || ''}
+                onChange={ev => setField('notes')(ev.target.value)}
+                style={{ resize: 'vertical' }}
+              />
             </div>
           </div>
         </div>
 
         <div className="modal-foot">
           <div style={{ color: 'var(--dim)', fontSize: 12 }}>
-            {recordId ? 'Changes save to the assessment record.' : 'This record cannot be saved yet.'}
+            {recordId ? `Saving to assessment_id ${recordId}.` : 'This record cannot be saved yet.'}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button
