@@ -18,6 +18,44 @@ import { AboutPortalPage, LocationsPage } from './pages/AboutPage'
 import { AssessmentTracker, ParentInterviewsPage, BCBAAssignmentsPage, AssessmentProgressPage, TreatmentPlansPage, ReadyForServicesPage } from './pages/AssessmentPages'
 import { PipelineOverviewPage, ReferralAgingPage, ClinicVolumePage, ConversionRatePage, IntakePerformancePage } from './pages/OperationsPages'
 
+function normalizeClientName(first = '', last = '') {
+  return `${first} ${last}`.trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+function getReferralMatch(assessment, refs) {
+  const assessmentReferralId = assessment?.referral_id
+
+  if (assessmentReferralId !== undefined && assessmentReferralId !== null && assessmentReferralId !== '') {
+    const referralIdText = String(assessmentReferralId)
+    const directMatch = refs.find(ref => String(ref.id) === referralIdText || String(ref.referral_id || '') === referralIdText)
+    if (directMatch) return directMatch
+  }
+
+  const assessmentName = (assessment?.client_name || assessment?.name || '').toLowerCase().replace(/\s+/g, ' ').trim()
+  if (!assessmentName) return null
+
+  return refs.find(ref => normalizeClientName(ref.first_name, ref.last_name) === assessmentName) || null
+}
+
+function mergeAssessmentRecord(assessment, refs) {
+  const referral = getReferralMatch(assessment, refs)
+  if (!referral) return assessment
+
+  return {
+    ...referral,
+    ...assessment,
+    client_name: assessment.client_name || assessment.name || `${referral.first_name || ''} ${referral.last_name || ''}`.trim(),
+    caregiver: assessment.caregiver || referral.caregiver || '',
+    caregiver_phone: assessment.caregiver_phone || referral.caregiver_phone || '',
+    caregiver_email: assessment.caregiver_email || referral.caregiver_email || '',
+    clinic: assessment.clinic || assessment.office || referral.office || '',
+    office: assessment.office || referral.office || '',
+    insurance: assessment.insurance || referral.insurance || '',
+    secondary_insurance: assessment.secondary_insurance || referral.secondary_insurance || '',
+    referral_id: assessment.referral_id || referral.referral_id || referral.id || '',
+  }
+}
+
 export default function App() {
   const { theme, setTheme } = useTheme()
   const { refs, loading, error, saving, saved, setError, load, saveReferral, updateReferral, setStatus, toggleParentInterview } = useReferrals()
@@ -44,7 +82,7 @@ export default function App() {
     setModule(id)
     setSubpage(defaults[id] || 'overview')
     setScreen('module')
-    if (id === 'assessment' && assessData.length === 0) loadAssessments()
+    if ((id === 'assessment' || id === 'operations') && assessData.length === 0) loadAssessments()
   }
 
   const goHome = () => { setScreen('home'); setModule(null); setSelId(null); setSelAssess(null) }
@@ -53,10 +91,11 @@ export default function App() {
   const nr      = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
   const pending = active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
   const noIns   = active.filter(r => !['yes', 'verified'].includes((r.insurance_verified || '').toLowerCase())).length
+  const mergedAssessData = assessData.map(record => mergeAssessmentRecord(record, refs))
 
   const selectedRef = selId ? refs.find(r => r.id === selId) : null
   const selectedAssess = selAssess
-    ? assessData.find(r => (r.assessment_id ?? r.id) === (selAssess.assessment_id ?? selAssess.id)) || selAssess
+    ? mergedAssessData.find(r => r.assessment_id === selAssess.assessment_id) || selAssess
     : null
 
   if (screen === 'home') {
@@ -97,16 +136,16 @@ export default function App() {
     }
 
     if (module === 'assessment') {
-      if (subpage === 'tracker')    return <AssessmentTracker assessData={assessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
-      if (subpage === 'interviews') return <ParentInterviewsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
-      if (subpage === 'bcba')       return <BCBAAssignmentsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
-      if (subpage === 'progress')   return <AssessmentProgressPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
-      if (subpage === 'txplan')     return <TreatmentPlansPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
-      if (subpage === 'readysvc')   return <ReadyForServicesPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
+      if (subpage === 'tracker')    return <AssessmentTracker assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
+      if (subpage === 'interviews') return <ParentInterviewsPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
+      if (subpage === 'bcba')       return <BCBAAssignmentsPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
+      if (subpage === 'progress')   return <AssessmentProgressPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
+      if (subpage === 'txplan')     return <TreatmentPlansPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
+      if (subpage === 'readysvc')   return <ReadyForServicesPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
     }
 
     if (module === 'operations') {
-      if (subpage === 'pipeline')    return <PipelineOverviewPage refs={refs} />
+      if (subpage === 'pipeline')    return <PipelineOverviewPage refs={refs} assessData={mergedAssessData} />
       if (subpage === 'aging')       return <ReferralAgingPage refs={refs} onSelectRef={setSelId} />
       if (subpage === 'volume')      return <ClinicVolumePage refs={refs} />
       if (subpage === 'conversion')  return <ConversionRatePage refs={refs} />
@@ -157,7 +196,15 @@ export default function App() {
                 </span>
               )}
               <ThemeToggle theme={theme} setTheme={setTheme} />
-              <button className="btn-sm" onClick={load}>↻ Refresh</button>
+              <button
+                className="btn-sm"
+                onClick={() => {
+                  load()
+                  if (module === 'assessment' || module === 'operations') loadAssessments()
+                }}
+              >
+                ↻ Refresh
+              </button>
             </div>
           </div>
 

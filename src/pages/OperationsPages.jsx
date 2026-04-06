@@ -1,5 +1,5 @@
 import { StagePill } from '../components/Badge'
-import { normalizeOffice } from '../lib/utils'
+import { normalizeOffice, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 // ── Shared helpers ──
 function daysSince(dateStr) {
@@ -47,9 +47,10 @@ function StatCard({ num, label, color, sub }) {
 // ══════════════════════════════════════
 // PIPELINE OVERVIEW
 // ══════════════════════════════════════
-export function PipelineOverviewPage({ refs }) {
+export function PipelineOverviewPage({ refs, assessData = [] }) {
   const active = refs.filter(r => r.status === 'active')
   const nr     = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
+  const txInProgress = assessData.filter(record => normalizeTreatmentPlanStatus(record.treatment_plan_status) === 'In Progress').length
 
   const stageOrder = ['New Referral','Intake','Initial Assessment','PA Submitted','PA In Review','PA Approved','Active Client','Reauth Needed','Discharged']
   const byStage = {}
@@ -70,10 +71,11 @@ export function PipelineOverviewPage({ refs }) {
         <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Full view of where every referral sits in the intake pipeline</div>
       </div>
 
-      <div className="stats-row stats-4" style={{ marginBottom: 24 }}>
+      <div className="stats-row" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', marginBottom: 24 }}>
         <StatCard num={active.length} label="Active Referrals" color="#6366f1" />
         <StatCard num={active.filter(r => r.current_stage === 'Active Client').length} label="Active Clients" color="#22c55e" sub="receiving services" />
         <StatCard num={active.filter(r => ['PA Submitted','PA In Review'].includes(r.current_stage)).length} label="Awaiting PA" color="#f59e0b" sub="submitted to insurance" />
+        <StatCard num={txInProgress} label="Treatment Plans In Progress" color="#a5b4fc" sub="from assessments" />
         <StatCard num={nr.length} label="Non-Responsive" color="#ef4444" sub="or referred out" />
       </div>
 

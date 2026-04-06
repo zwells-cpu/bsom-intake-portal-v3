@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PaStatusBadge } from '../components/Badge'
+import { normalizeTreatmentPlanStatus } from '../lib/utils'
 
 function assessVal(value) {
   if (!value) return <span style={{ color: 'var(--dim)', fontSize: 12 }}>--</span>
@@ -26,6 +27,7 @@ function assessVal(value) {
 }
 
 function sBdg(status) {
+  const normalizedStatus = normalizeTreatmentPlanStatus(status)
   const map = {
     Completed: '#22c55e',
     Done: '#22c55e',
@@ -39,12 +41,12 @@ function sBdg(status) {
     'In Review': '#6366f1',
     Written: '#22c55e',
   }
-  const color = map[status] || '#64748b'
-  return <span className="bdg" style={{ background: `${color}20`, color, border: `1px solid ${color}35` }}>{status || '--'}</span>
+  const color = map[normalizedStatus] || '#64748b'
+  return <span className="bdg" style={{ background: `${color}20`, color, border: `1px solid ${color}35` }}>{normalizedStatus || '--'}</span>
 }
 
 const ALL_PA = ['All', 'Approved', 'In Review', 'Pending', 'Reauthorization Needed', 'Appeal Pending', 'Denied', 'No PA Needed', 'Approved/Discharged', 'Referred Out']
-const TX_STATUSES = ['Not Started', 'In Progress', 'Draft Complete', 'In Review', 'Finalized']
+const TX_STATUSES = ['Not Started', 'In Progress', 'Finalized']
 
 function getAssessRecordId(record) {
   return record?.assessment_id || record?.id || null
@@ -61,7 +63,7 @@ function renderClientCell(record, secondaryText) {
 
 function txColor(status) {
   if (['Finalized', 'Done', 'Completed'].includes(status)) return '#22c55e'
-  if (['In Progress', 'In Review', 'Draft Complete'].includes(status)) return '#f59e0b'
+  if (['In Progress'].includes(status)) return '#f59e0b'
   return '#ef4444'
 }
 
@@ -356,12 +358,23 @@ export function AssessmentProgressPage({ assessData, assessLoading, onSelectAsse
 }
 
 export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess }) {
+  const [activeStatusFilter, setActiveStatusFilter] = useState('All')
+
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
+
+  const normalizedRecords = assessData.map(record => ({
+    ...record,
+    treatment_plan_status: normalizeTreatmentPlanStatus(record.treatment_plan_status),
+  }))
 
   const byStatus = {}
   TX_STATUSES.forEach(status => {
-    byStatus[status] = assessData.filter(record => (record.treatment_plan_status || 'Not Started') === status).length
+    byStatus[status] = normalizedRecords.filter(record => record.treatment_plan_status === status).length
   })
+
+  const filteredRecords = activeStatusFilter === 'All'
+    ? normalizedRecords
+    : normalizedRecords.filter(record => record.treatment_plan_status === activeStatusFilter)
 
   return (
     <>
@@ -369,20 +382,41 @@ export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess }
         <div style={{ fontWeight: 800, fontSize: 18 }}>Treatment Plan Status</div>
         <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Track treatment plan drafting, completion, and finalization</div>
       </div>
-      <div className="stats-row" style={{ gridTemplateColumns: 'repeat(5,1fr)', marginBottom: 22 }}>
+      <div className="stats-row" style={{ gridTemplateColumns: 'repeat(3,1fr)', marginBottom: 12 }}>
         {TX_STATUSES.map(status => (
-          <div key={status} className="stat-box">
+          <button
+            key={status}
+            type="button"
+            className="stat-box"
+            onClick={() => setActiveStatusFilter(status)}
+            style={{
+              textAlign: 'left',
+              cursor: 'pointer',
+              border: activeStatusFilter === status ? `1px solid ${txColor(status)}66` : undefined,
+              boxShadow: activeStatusFilter === status ? `0 0 0 1px ${txColor(status)}33 inset` : undefined,
+            }}
+          >
             <div className="stat-num" style={{ color: txColor(status) }}>{byStatus[status] || 0}</div>
             <div className="stat-label">{status}</div>
-          </div>
+          </button>
         ))}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 22, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+          Showing: <span style={{ color: 'var(--text)', fontWeight: 700 }}>{activeStatusFilter === 'All' ? 'All treatment plans' : activeStatusFilter}</span>
+        </div>
+        <button type="button" className="btn-ghost" onClick={() => setActiveStatusFilter('All')} disabled={activeStatusFilter === 'All'}>
+          Clear Filter
+        </button>
       </div>
       <div className="card">
         <div className="table-wrap">
           <table>
             <thead><tr><th>Client</th><th>BCBA</th><th>Assessment</th><th>Treatment Plan</th><th>Authorization</th><th>Started</th><th>Completed</th><th /></tr></thead>
             <tbody>
-              {assessData.map(record => (
+              {filteredRecords.length === 0 ? (
+                <tr><td colSpan={8} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No treatment plans match the current filter.</td></tr>
+              ) : filteredRecords.map(record => (
                 <tr
                   key={record.assessment_id || record.client_name}
                   className="row-hover"

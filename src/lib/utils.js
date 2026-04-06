@@ -41,6 +41,19 @@ export function normalizeOffice(o) {
   return o
 }
 
+export function normalizeTreatmentPlanStatus(status) {
+  if (!status) return 'Not Started'
+
+  const value = String(status).trim()
+  const upper = value.toUpperCase()
+
+  if (['DRAFTING', 'DRAFT COMPLETE', 'WRITTEN', 'IN REVIEW', 'IN PROGRESS'].includes(upper)) return 'In Progress'
+  if (['FINALIZED', 'DONE', 'COMPLETED'].includes(upper)) return 'Finalized'
+  if (upper === 'NOT STARTED') return 'Not Started'
+
+  return value
+}
+
 // ── Status color helper for assessments ──
 export function statusColor(s) {
   if (['Finalized','Done','Completed'].includes(s)) return '#22c55e'
