@@ -13,14 +13,22 @@ export function AllReferralsPage({ refs, role, setRole, onSelectRef, statFilter,
   const [sortDir, setSortDir] = useState('asc')
   const activeFilter = isStatFilterTarget(statFilter, 'all-referrals')
 
+  const visibleBeforeOfficeFilter = active.filter(r => {
+    const n = `${r.first_name} ${r.last_name}`.toLowerCase()
+    return (n.includes(search.toLowerCase()) || (r.caregiver || '').toLowerCase().includes(search.toLowerCase()))
+      && (role === 'All Staff' || normalizeStaffName(r.intake_personnel) === normalizeStaffName(role))
+      && matchesStatFilter(r, activeFilter)
+  })
+
+  const officeCounts = ['ALL', ...OFFICES].reduce((acc, officeKey) => {
+    acc[officeKey] = officeKey === 'ALL'
+      ? visibleBeforeOfficeFilter.length
+      : visibleBeforeOfficeFilter.filter(r => normalizeOffice(r.office) === officeKey || r.office === officeKey).length
+    return acc
+  }, {})
+
   const filtered = sortList(
-    active.filter(r => {
-        const n = `${r.first_name} ${r.last_name}`.toLowerCase()
-        return (n.includes(search.toLowerCase()) || (r.caregiver || '').toLowerCase().includes(search.toLowerCase()))
-        && (office === 'ALL' || normalizeOffice(r.office) === office || r.office === office)
-        && (role === 'All Staff' || normalizeStaffName(r.intake_personnel) === normalizeStaffName(role))
-        && matchesStatFilter(r, activeFilter)
-    }),
+    visibleBeforeOfficeFilter.filter(r => office === 'ALL' || normalizeOffice(r.office) === office || r.office === office),
     sortCol, sortDir
   )
 
@@ -44,7 +52,7 @@ export function AllReferralsPage({ refs, role, setRole, onSelectRef, statFilter,
         </div>
         <div className="filter-btns">
           {['ALL', ...OFFICES].map(o => (
-            <button key={o} className={`filter-btn ${office === o ? 'active' : ''}`} onClick={() => setOffice(o)}>{o}</button>
+            <button key={o} className={`filter-btn ${office === o ? 'active' : ''}`} onClick={() => setOffice(o)}>{o} ({officeCounts[o] || 0})</button>
           ))}
         </div>
         <div style={{ marginLeft: 'auto' }}>
