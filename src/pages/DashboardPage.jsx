@@ -72,7 +72,7 @@ export function DashboardPage({ refs, setSelectedId, setModule, setSubpage }) {
                 {recent.map(r => (
                   <tr key={r.id} className="row-hover" onClick={() => { setSelectedId(r.id); setModule('intake'); setSubpage('all') }}>
                     <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.date_received || ''}</div></td>
-                    <td><OfficePill office={r.office} /></td>
+                    <td><OfficePill office={r.office} previousOffice={r.previous_office} /></td>
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>
                     <td><Badge value={r.intake_paperwork} /></td>
                     <td><ProgressRing value={pct(r)} /></td>

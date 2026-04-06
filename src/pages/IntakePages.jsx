@@ -158,7 +158,7 @@ export function PendingDocsPage({ refs, onSelectRef }) {
                   <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}>
                     <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.caregiver || ''}</div></td>
                     <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--dim)' }}>{r.referral_id || '--'}</td>
-                    <td><OfficePill office={r.office} /></td>
+                    <td><OfficePill office={r.office} previousOffice={r.previous_office} /></td>
                     <td><Badge value={r.intake_paperwork} /></td>
                     <td><Badge value={r.autism_diagnosis} /></td>
                     <td><Badge value={r.vineland} /></td>
@@ -211,7 +211,7 @@ export function InsuranceVerifPage({ refs, onSelectRef }) {
                   ? <tr><td colSpan={5} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>✅ All insurance verified!</td></tr>
                   : unverified.map(r => (
                     <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}>
-                      <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11 }}><OfficePill office={r.office} /></div></td>
+                      <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11 }}><OfficePill office={r.office} previousOffice={r.previous_office} /></div></td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.insurance || '--'}</td>
                       <td><Badge value={r.insurance_verified} /></td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>
@@ -269,7 +269,7 @@ export function NonResponsivePage({ refs, onRestore }) {
                     <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.date_received || ''}</div></td>
                     <td style={{ color: 'var(--muted)', fontSize: 13 }}>{r.caregiver || '--'}</td>
                     <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: 'var(--dim)' }}>{r.caregiver_phone || '--'}</td>
-                    <td><OfficePill office={r.office} /></td>
+                    <td><OfficePill office={r.office} previousOffice={r.previous_office} /></td>
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.insurance || '--'}</td>
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>
                     <td><span className="bdg" style={{ background: r.status === 'referred-out' ? '#8b5cf620' : '#ef444420', color: r.status === 'referred-out' ? '#8b5cf6' : '#ef4444', border: `1px solid ${r.status === 'referred-out' ? '#8b5cf640' : '#ef444440'}` }}>{r.status}</span></td>

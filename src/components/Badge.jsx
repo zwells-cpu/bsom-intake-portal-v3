@@ -17,22 +17,28 @@ export function Badge({ value }) {
   )
 }
 
-export function OfficePill({ office }) {
+export function OfficePill({ office, previousOffice }) {
   const norm = normalizeOfficeFn(office)
-  const isPrev = office === 'NEWTON' || office === 'JACKSON'
-  const prevLabel = office === 'NEWTON' ? 'NEWTON' : 'JACKSON'
+  const showPreviousOffice = Boolean(
+    previousOffice
+    && previousOffice !== office
+    && !(office === 'FLOWOOD' && previousOffice === 'JACKSON')
+  )
+
   return (
-    <>
+    <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', minHeight: 28 }}>
       <span className="office-pill">{norm || ''}</span>
-      {isPrev && <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: 600 }}> ↩ prev. {prevLabel}</span>}
-    </>
+      <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: 600, visibility: showPreviousOffice ? 'visible' : 'hidden' }}>
+        ↩ prev. {showPreviousOffice ? previousOffice : ' '}
+      </span>
+    </span>
   )
 }
 
 function normalizeOfficeFn(o) {
   if (o === 'JACKSON') return 'FLOWOOD'
-  if (o === 'SCHOOL')  return 'DAY TREATMENT'
-  if (o === 'NEWTON')  return 'FOREST'
+  if (o === 'SCHOOL') return 'DAY TREATMENT'
+  if (o === 'NEWTON') return 'FOREST'
   return o
 }
 
@@ -78,14 +84,23 @@ export function PaStatusBadge({ status }) {
 }
 
 export function ProgressRing({ value }) {
-  const radius = 18, circ = 2 * Math.PI * radius
+  const radius = 18
+  const circ = 2 * Math.PI * radius
   const col = value >= 80 ? '#22c55e' : value >= 50 ? '#f59e0b' : '#ef4444'
   return (
     <svg width="44" height="44" viewBox="0 0 44 44">
       <circle cx="22" cy="22" r={radius} fill="none" stroke="#1a2840" strokeWidth="4" />
-      <circle cx="22" cy="22" r={radius} fill="none" stroke={col} strokeWidth="4"
-        strokeDasharray={`${value / 100 * circ} ${circ}`} strokeLinecap="round"
-        transform="rotate(-90 22 22)" />
+      <circle
+        cx="22"
+        cy="22"
+        r={radius}
+        fill="none"
+        stroke={col}
+        strokeWidth="4"
+        strokeDasharray={`${value / 100 * circ} ${circ}`}
+        strokeLinecap="round"
+        transform="rotate(-90 22 22)"
+      />
       <text x="22" y="26" textAnchor="middle" fontSize="10" fontWeight="700" fill={col} fontFamily="DM Mono,monospace">
         {value}%
       </text>
