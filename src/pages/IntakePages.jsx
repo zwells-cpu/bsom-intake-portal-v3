@@ -1,32 +1,7 @@
 import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
+import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
 import { pct, displayStaffName, normalizeOffice, normalizeStaffName } from '../lib/utils'
-
-function matchesPendingDocsFilter(referral, filterKey) {
-  const paperwork = (referral.intake_paperwork || '').toLowerCase()
-  const dx = (referral.autism_diagnosis || '').toLowerCase()
-
-  if (filterKey === 'not-yet-sent') return !paperwork.includes('emailed') && !['signed', 'completed'].includes(paperwork)
-  if (filterKey === 'emailed') return paperwork.includes('emailed')
-  if (filterKey === 'needs-dx') return dx !== 'received'
-  return !['signed', 'completed'].includes(paperwork)
-}
-
-function matchesInsuranceFilter(referral, filterKey) {
-  const status = (referral.insurance_verified || '').toLowerCase()
-
-  if (filterKey === 'verified') return status === 'yes'
-  if (filterKey === 'awaiting') return status === 'awaiting'
-  if (filterKey === 'not-started') return status === 'no'
-  if (filterKey === 'total-active') return true
-  return status !== 'yes'
-}
-
-function matchesNonResponsiveFilter(referral, filterKey) {
-  if (filterKey === 'referred-out') return referral.status === 'referred-out'
-  if (filterKey === 'non-responsive-only') return referral.status === 'non-responsive'
-  return referral.status === 'non-responsive' || referral.status === 'referred-out'
-}
 
 // ══════════════════════════════════════
 // INTAKE DASHBOARD
@@ -166,10 +141,10 @@ export function PendingDocsPage({ refs, onSelectRef, statFilter, onSetStatFilter
   const needsPaperwork = pending.filter(r => !(r.intake_paperwork || '').toLowerCase().includes('emailed'))
   const emailed        = pending.filter(r => (r.intake_paperwork || '').toLowerCase().includes('emailed'))
   const needsDx        = active.filter(r => !['received'].includes((r.autism_diagnosis || '').toLowerCase()))
-  const activeFilter = statFilter?.target === 'pending-docs' ? statFilter : null
-  const toggleFilter = (key, label) => onSetStatFilter(activeFilter?.key === key ? null : { target: 'pending-docs', key, label })
+  const activeFilter = isStatFilterTarget(statFilter, 'pending-docs')
+  const toggleFilter = (key, label) => onSetStatFilter(toggleStatFilter(activeFilter, { target: 'pending-docs', key, label }))
   const filteredRows = (activeFilter ? active : pending)
-    .filter(r => matchesPendingDocsFilter(r, activeFilter?.key))
+    .filter(r => matchesStatFilter(r, activeFilter))
     .sort((a, b) => (a.date_received || '').localeCompare(b.date_received || ''))
 
   return (
@@ -226,9 +201,9 @@ export function InsuranceVerifPage({ refs, onSelectRef, statFilter, onSetStatFil
   const byProvider = {}
   unverified.forEach(r => { const p = r.insurance || 'Unknown'; byProvider[p] = (byProvider[p] || 0) + 1 })
   const verRate = active.length ? Math.round(verified.length / active.length * 100) : 0
-  const activeFilter = statFilter?.target === 'insurance-verification' ? statFilter : null
-  const toggleFilter = (key, label) => onSetStatFilter(activeFilter?.key === key ? null : { target: 'insurance-verification', key, label })
-  const filteredRows = active.filter(r => matchesInsuranceFilter(r, activeFilter?.key))
+  const activeFilter = isStatFilterTarget(statFilter, 'insurance-verification')
+  const toggleFilter = (key, label) => onSetStatFilter(toggleStatFilter(activeFilter, { target: 'insurance-verification', key, label }))
+  const filteredRows = active.filter(r => matchesStatFilter(r, activeFilter))
 
   return (
     <>
@@ -293,8 +268,8 @@ export function InsuranceVerifPage({ refs, onSelectRef, statFilter, onSetStatFil
 // ══════════════════════════════════════
 export function NonResponsivePage({ refs, onRestore, statFilter, onClearStatFilter }) {
   const nr = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
-  const activeFilter = statFilter?.target === 'non-responsive' ? statFilter : null
-  const filteredRows = nr.filter(r => matchesNonResponsiveFilter(r, activeFilter?.key))
+  const activeFilter = isStatFilterTarget(statFilter, 'non-responsive')
+  const filteredRows = nr.filter(r => matchesStatFilter(r, activeFilter))
   return (
     <>
       <div style={{ marginBottom: 20 }}>

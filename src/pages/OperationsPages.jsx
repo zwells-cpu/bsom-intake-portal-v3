@@ -1,4 +1,5 @@
 import { StagePill } from '../components/Badge'
+import { ClickableStatCard } from '../components/StatFilterControls'
 import { displayStaffName, normalizeOffice, normalizeStaffName, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 // ── Shared helpers ──
@@ -47,9 +48,11 @@ function StatCard({ num, label, color, sub }) {
 // ══════════════════════════════════════
 // PIPELINE OVERVIEW
 // ══════════════════════════════════════
-export function PipelineOverviewPage({ refs, assessData = [] }) {
+export function PipelineOverviewPage({ refs, assessData = [], openModulePage }) {
   const active = refs.filter(r => r.status === 'active')
   const nr     = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
+  const activeClients = assessData.filter(record => Boolean(record.active_client_date)).length
+  const awaitingPA = assessData.filter(record => ['Pending', 'In Review'].includes(record.pa_status)).length
   const txInProgress = assessData.filter(record => normalizeTreatmentPlanStatus(record.treatment_plan_status) === 'In Progress').length
 
   const stageOrder = ['New Referral','Intake','Initial Assessment','PA Submitted','PA In Review','PA Approved','Active Client','Reauth Needed','Discharged']
@@ -77,11 +80,11 @@ export function PipelineOverviewPage({ refs, assessData = [] }) {
       </div>
 
       <div className="stats-row" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', marginBottom: 24 }}>
-        <StatCard num={active.length} label="Active Referrals" color="#6366f1" />
-        <StatCard num={active.filter(r => r.current_stage === 'Active Client').length} label="Active Clients" color="#22c55e" sub="receiving services" />
-        <StatCard num={active.filter(r => ['PA Submitted','PA In Review'].includes(r.current_stage)).length} label="Awaiting PA" color="#f59e0b" sub="submitted to insurance" />
-        <StatCard num={txInProgress} label="Treatment Plans In Progress" color="#a5b4fc" sub="from assessments" />
-        <StatCard num={nr.length} label="Non-Responsive" color="#ef4444" sub="or referred out" />
+        <ClickableStatCard value={active.length} label="Active Referrals" color="#6366f1" onClick={() => openModulePage('intake', 'all', { target: 'all-referrals', key: 'active-referrals', label: 'Active Referrals' })} />
+        <ClickableStatCard value={activeClients} label="Active Clients" color="#22c55e" sublabel="receiving services" onClick={() => openModulePage('assessment', 'readysvc', { target: 'ready-for-services', key: 'active-clients', label: 'Active Clients' })} />
+        <ClickableStatCard value={awaitingPA} label="Awaiting PA" color="#f59e0b" sublabel="submitted to insurance" onClick={() => openModulePage('assessment', 'tracker', { target: 'assessment-tracker', key: 'awaiting-pa', label: 'Assessment Tracker: Awaiting PA' })} />
+        <ClickableStatCard value={txInProgress} label="Treatment Plans In Progress" color="#a5b4fc" sublabel="from assessments" onClick={() => openModulePage('assessment', 'txplan', { target: 'treatment-plans', key: 'In Progress', label: 'Treatment Plans: In Progress' })} />
+        <ClickableStatCard value={nr.length} label="Non-Responsive" color="#ef4444" sublabel="or referred out" onClick={() => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'non-responsive-only', label: 'Non-Responsive' })} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>

@@ -2,15 +2,8 @@ import { useState } from 'react'
 import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
 import { ActiveFilterBanner } from '../components/StatFilterControls'
 import { OFFICES, ALL_ROLES } from '../lib/constants'
+import { isStatFilterTarget, matchesStatFilter } from '../lib/statFilters'
 import { sortList, normalizeOffice, normalizeStaffName, exportCSV } from '../lib/utils'
-
-function matchesAllReferralFilter(referral, filterKey) {
-  const paperwork = (referral.intake_paperwork || '').toLowerCase()
-
-  if (filterKey === 'paperwork-signed') return paperwork.includes('signed')
-  if (filterKey === 'paperwork-pending') return !['signed', 'completed'].includes(paperwork)
-  return true
-}
 
 export function AllReferralsPage({ refs, role, setRole, onSelectRef, statFilter, onClearStatFilter }) {
   const active = refs.filter(r => r.status === 'active')
@@ -18,7 +11,7 @@ export function AllReferralsPage({ refs, role, setRole, onSelectRef, statFilter,
   const [office, setOffice]   = useState('ALL')
   const [sortCol, setSortCol] = useState(null)
   const [sortDir, setSortDir] = useState('asc')
-  const activeFilter = statFilter?.target === 'all-referrals' ? statFilter : null
+  const activeFilter = isStatFilterTarget(statFilter, 'all-referrals')
 
   const filtered = sortList(
     active.filter(r => {
@@ -26,7 +19,7 @@ export function AllReferralsPage({ refs, role, setRole, onSelectRef, statFilter,
         return (n.includes(search.toLowerCase()) || (r.caregiver || '').toLowerCase().includes(search.toLowerCase()))
         && (office === 'ALL' || normalizeOffice(r.office) === office || r.office === office)
         && (role === 'All Staff' || normalizeStaffName(r.intake_personnel) === normalizeStaffName(role))
-        && matchesAllReferralFilter(r, activeFilter?.key)
+        && matchesStatFilter(r, activeFilter)
     }),
     sortCol, sortDir
   )

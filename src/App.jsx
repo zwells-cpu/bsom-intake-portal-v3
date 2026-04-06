@@ -168,16 +168,16 @@ export default function App() {
     }
 
     if (module === 'assessment') {
-      if (subpage === 'tracker')    return <AssessmentTracker assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
+      if (subpage === 'tracker')    return <AssessmentTracker assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'interviews') return <ParentInterviewsPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
       if (subpage === 'bcba')       return <BCBAAssignmentsPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
       if (subpage === 'progress')   return <AssessmentProgressPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
-      if (subpage === 'txplan')     return <TreatmentPlansPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
-      if (subpage === 'readysvc')   return <ReadyForServicesPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} />
+      if (subpage === 'txplan')     return <TreatmentPlansPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'readysvc')   return <ReadyForServicesPage assessData={mergedAssessData} assessLoading={assessLoading} onSelectAssess={setSelAssess} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
     }
 
     if (module === 'operations') {
-      if (subpage === 'pipeline')    return <PipelineOverviewPage refs={operationsRefs} assessData={operationsAssessData} />
+      if (subpage === 'pipeline')    return <PipelineOverviewPage refs={operationsRefs} assessData={operationsAssessData} openModulePage={openModulePage} />
       if (subpage === 'aging')       return <ReferralAgingPage refs={operationsRefs} onSelectRef={setSelId} />
       if (subpage === 'volume')      return <ClinicVolumePage refs={operationsRefs} />
       if (subpage === 'conversion')  return <ConversionRatePage refs={operationsRefs} />

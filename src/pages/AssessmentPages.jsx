@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { PaStatusBadge } from '../components/Badge'
+import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
+import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
 import { normalizeTreatmentPlanStatus } from '../lib/utils'
 
 function assessVal(value) {
@@ -67,7 +69,7 @@ function txColor(status) {
   return '#ef4444'
 }
 
-export function AssessmentTracker({ assessData, assessLoading, onSelectAssess }) {
+export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, statFilter, onSetStatFilter, onClearStatFilter }) {
   const [search, setSearch] = useState('')
   const [office, setOffice] = useState('ALL')
   const [paFilter, setPaFilter] = useState('All')
@@ -83,6 +85,8 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess })
     assessment_id: record.assessment_id || record.id || null,
   }))
 
+  const activeFilter = isStatFilterTarget(statFilter, 'assessment-tracker')
+
   const filtered = src.filter(record => {
     const name = (record.client_name || '').toLowerCase()
     const caregiver = (record.caregiver || '').toLowerCase()
@@ -91,20 +95,23 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess })
     return (name.includes(query) || caregiver.includes(query))
       && (office === 'ALL' || record.clinic === office)
       && (paFilter === 'All' || record.pa_status === paFilter)
+      && matchesStatFilter(record, activeFilter)
   })
 
   const approved = filtered.filter(record => ['Approved', 'No PA Needed', 'Approved/Discharged'].includes(record.pa_status)).length
-  const inProgress = filtered.filter(record => (record.vineland || '').toLowerCase().includes('progress') || (record.direct_obs || '').toLowerCase().includes('progress')).length
+  const inProgress = filtered.filter(record => record.assessment_status === 'In Progress').length
   const denied = filtered.filter(record => ['Denied', 'Appeal Pending'].includes(record.pa_status)).length
+  const toggleFilter = (key, label) => onSetStatFilter(toggleStatFilter(activeFilter, { target: 'assessment-tracker', key, label }))
 
   return (
     <>
       <div className="stats-row stats-4" style={{ marginBottom: 20 }}>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#6366f1' }}>{filtered.length}</div><div className="stat-label">Total Clients</div><div className="stat-sub">showing</div></div>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#22c55e' }}>{approved}</div><div className="stat-label">PA Approved</div><div className="stat-sub">incl. no PA needed</div></div>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#f59e0b' }}>{inProgress}</div><div className="stat-label">In Progress</div></div>
-        <div className="stat-box"><div className="stat-num" style={{ color: '#ef4444' }}>{denied}</div><div className="stat-label">Denied / Appealed</div></div>
+        <ClickableStatCard value={filtered.length} label="Total Clients" color="#6366f1" sublabel="showing" active={activeFilter?.key === 'all'} onClick={() => toggleFilter('all', 'Assessment Tracker: All Clients')} />
+        <ClickableStatCard value={approved} label="PA Approved" color="#22c55e" sublabel="incl. no PA needed" active={activeFilter?.key === 'pa-approved'} onClick={() => toggleFilter('pa-approved', 'Assessment Tracker: PA Approved')} />
+        <ClickableStatCard value={inProgress} label="In Progress" color="#f59e0b" active={activeFilter?.key === 'in-progress'} onClick={() => toggleFilter('in-progress', 'Assessment Tracker: In Progress')} />
+        <ClickableStatCard value={denied} label="Denied / Appealed" color="#ef4444" active={activeFilter?.key === 'denied-appealed'} onClick={() => toggleFilter('denied-appealed', 'Assessment Tracker: Denied / Appealed')} />
       </div>
+      <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered assessment records" />
 
       <div className="filter-row">
         <div className="search-wrap">
@@ -357,9 +364,7 @@ export function AssessmentProgressPage({ assessData, assessLoading, onSelectAsse
   )
 }
 
-export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess }) {
-  const [activeStatusFilter, setActiveStatusFilter] = useState('All')
-
+export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess, statFilter, onSetStatFilter, onClearStatFilter }) {
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
   const normalizedRecords = assessData.map(record => ({
@@ -372,9 +377,11 @@ export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess }
     byStatus[status] = normalizedRecords.filter(record => record.treatment_plan_status === status).length
   })
 
-  const filteredRecords = activeStatusFilter === 'All'
+  const activeFilter = isStatFilterTarget(statFilter, 'treatment-plans')
+  const filteredRecords = !activeFilter
     ? normalizedRecords
-    : normalizedRecords.filter(record => record.treatment_plan_status === activeStatusFilter)
+    : normalizedRecords.filter(record => matchesStatFilter(record, activeFilter))
+  const toggleFilter = (status) => onSetStatFilter(toggleStatFilter(activeFilter, { target: 'treatment-plans', key: status, label: `Treatment Plans: ${status}` }))
 
   return (
     <>
@@ -384,31 +391,17 @@ export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess }
       </div>
       <div className="stats-row" style={{ gridTemplateColumns: 'repeat(3,1fr)', marginBottom: 12 }}>
         {TX_STATUSES.map(status => (
-          <button
+          <ClickableStatCard
             key={status}
-            type="button"
-            className="stat-box"
-            onClick={() => setActiveStatusFilter(status)}
-            style={{
-              textAlign: 'left',
-              cursor: 'pointer',
-              border: activeStatusFilter === status ? `1px solid ${txColor(status)}66` : undefined,
-              boxShadow: activeStatusFilter === status ? `0 0 0 1px ${txColor(status)}33 inset` : undefined,
-            }}
-          >
-            <div className="stat-num" style={{ color: txColor(status) }}>{byStatus[status] || 0}</div>
-            <div className="stat-label">{status}</div>
-          </button>
+            value={byStatus[status] || 0}
+            label={status}
+            color={txColor(status)}
+            active={activeFilter?.key === status}
+            onClick={() => toggleFilter(status)}
+          />
         ))}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 22, flexWrap: 'wrap' }}>
-        <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-          Showing: <span style={{ color: 'var(--text)', fontWeight: 700 }}>{activeStatusFilter === 'All' ? 'All treatment plans' : activeStatusFilter}</span>
-        </div>
-        <button type="button" className="btn-ghost" onClick={() => setActiveStatusFilter('All')} disabled={activeStatusFilter === 'All'}>
-          Clear Filter
-        </button>
-      </div>
+      <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered treatment plans" />
       <div className="card">
         <div className="table-wrap">
           <table>
@@ -441,7 +434,7 @@ export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess }
   )
 }
 
-export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess }) {
+export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess, statFilter, onClearStatFilter }) {
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
   const ready = assessData.filter(record => record.ready_for_services === true)
@@ -451,6 +444,10 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
     && !record.ready_for_services
   )
   const notReady = assessData.filter(record => !record.ready_for_services && !almostAuth.includes(record))
+  const activeFilter = isStatFilterTarget(statFilter, 'ready-for-services')
+  const readyRows = ready.filter(record => matchesStatFilter(record, activeFilter))
+  const almostAuthRows = almostAuth.filter(record => matchesStatFilter(record, activeFilter))
+  const notReadyRows = notReady.filter(record => matchesStatFilter(record, activeFilter))
 
   return (
     <>
@@ -458,21 +455,22 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
         <div style={{ fontWeight: 800, fontSize: 18 }}>Ready for Services</div>
         <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Clients who have completed all pre-service requirements</div>
       </div>
+      <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered service-readiness records" />
       <div className="stats-row stats-3" style={{ marginBottom: 22 }}>
         <div className="stat-box"><div className="stat-num" style={{ color: '#22c55e' }}>{ready.length}</div><div className="stat-label">Ready for Services</div></div>
         <div className="stat-box"><div className="stat-num" style={{ color: '#f59e0b' }}>{almostAuth.length}</div><div className="stat-label">Awaiting Authorization</div></div>
         <div className="stat-box"><div className="stat-num" style={{ color: '#ef4444' }}>{notReady.length}</div><div className="stat-label">Not Ready</div></div>
       </div>
 
-      {ready.length > 0 && (
+      {readyRows.length > 0 && (
         <>
-          <div style={{ marginBottom: 14, fontSize: 13, fontWeight: 700, color: '#22c55e' }}>Ready for Services ({ready.length})</div>
+          <div style={{ marginBottom: 14, fontSize: 13, fontWeight: 700, color: '#22c55e' }}>Ready for Services ({readyRows.length})</div>
           <div className="card" style={{ marginBottom: 20 }}>
             <div className="table-wrap">
               <table>
                 <thead><tr><th>Client</th><th>BCBA</th><th>Authorization</th><th>Auth Approved</th><th>Active Date</th><th>Notes</th><th /></tr></thead>
                 <tbody>
-                  {ready.map(record => (
+                  {readyRows.map(record => (
                     <tr
                       key={record.assessment_id || record.client_name}
                       className="row-hover"
@@ -498,15 +496,15 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
         </>
       )}
 
-      {almostAuth.length > 0 && (
+      {almostAuthRows.length > 0 && (
         <>
-          <div style={{ marginBottom: 14, fontSize: 13, fontWeight: 700, color: '#f59e0b' }}>Awaiting Authorization ({almostAuth.length})</div>
+          <div style={{ marginBottom: 14, fontSize: 13, fontWeight: 700, color: '#f59e0b' }}>Awaiting Authorization ({almostAuthRows.length})</div>
           <div className="card">
             <div className="table-wrap">
               <table>
                 <thead><tr><th>Client</th><th>BCBA</th><th>Assessment</th><th>Treatment Plan</th><th>Authorization</th><th>Submitted</th><th /></tr></thead>
                 <tbody>
-                  {almostAuth.map(record => (
+                  {almostAuthRows.map(record => (
                     <tr
                       key={record.assessment_id || record.client_name}
                       className="row-hover"
@@ -527,6 +525,12 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
             </div>
           </div>
         </>
+      )}
+
+      {activeFilter && readyRows.length === 0 && almostAuthRows.length === 0 && notReadyRows.length === 0 && (
+        <div className="card card-pad" style={{ textAlign: 'center', color: 'var(--dim)' }}>
+          No service-readiness records match the current filter.
+        </div>
       )}
     </>
   )
