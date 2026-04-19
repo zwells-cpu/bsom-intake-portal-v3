@@ -101,7 +101,7 @@ input::placeholder,textarea::placeholder{ color:var(--dim); }
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  padding:40px 20px;
+  padding:72px 20px 56px;
   background:
     radial-gradient(ellipse at 20% 50%,#6366f108 0%,transparent 60%),
     radial-gradient(ellipse at 80% 20%,#8b5cf608 0%,transparent 60%);
@@ -133,12 +133,42 @@ input::placeholder,textarea::placeholder{ color:var(--dim); }
 .home-logo{
   width:90px; height:90px; border-radius:20px; overflow:hidden;
   background:white; display:flex; align-items:center; justify-content:center;
-  margin-bottom:20px;
+  margin-bottom:24px;
   box-shadow:0 0 0 1px #ffffff10,0 20px 60px rgba(0,0,0,0.4);
 }
 .home-logo img{ width:90px; height:90px; object-fit:contain; }
-.home-title{ font-size:28px; font-weight:800; letter-spacing:-0.03em; margin-bottom:4px; text-align:center; }
-.home-sub{ color:var(--muted); font-size:12.5px; letter-spacing:-0.01em; line-height:1.35; margin-bottom:40px; text-align:center; }
+.home-hero{
+  width:min(100%, 720px);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  gap:10px;
+  margin-bottom:44px;
+}
+.home-eyebrow{
+  color:var(--accent);
+  opacity:0.82;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+}
+.home-title{
+  font-size:clamp(2.25rem, 4vw, 3.5rem);
+  font-weight:900;
+  letter-spacing:-0.045em;
+  line-height:1.02;
+  text-align:center;
+}
+.home-sub{
+  max-width:620px;
+  color:var(--muted);
+  font-size:clamp(0.95rem, 1.4vw, 1.05rem);
+  letter-spacing:-0.01em;
+  line-height:1.6;
+  text-align:center;
+}
 .module-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; max-width:780px; width:100%; }
 .module-card{
   background:var(--surface); border:1px solid var(--border); border-radius:18px;
@@ -155,6 +185,10 @@ input::placeholder,textarea::placeholder{ color:var(--dim); }
   box-shadow:0 8px 32px rgba(0,0,0,0.3);
 }
 @media (max-width: 640px){
+  .home-screen{
+    justify-content:flex-start;
+    padding:104px 16px 40px;
+  }
   .home-topbar{
     left:16px;
     right:16px;
@@ -164,6 +198,23 @@ input::placeholder,textarea::placeholder{ color:var(--dim); }
   .home-account-card{
     flex:1 1 260px;
     justify-content:space-between;
+  }
+  .home-logo{
+    width:84px;
+    height:84px;
+    margin-bottom:20px;
+  }
+  .home-logo img{ width:84px; height:84px; }
+  .home-hero{
+    gap:8px;
+    margin-bottom:32px;
+  }
+  .home-eyebrow{
+    font-size:11px;
+    letter-spacing:0.12em;
+  }
+  .module-grid{
+    grid-template-columns:1fr;
   }
 }
 .module-icon{ font-size:28px; margin-bottom:14px; }

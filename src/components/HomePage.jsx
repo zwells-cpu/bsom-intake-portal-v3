@@ -17,8 +17,11 @@ export function HomePage({ onEnterModule, theme, setTheme, topRightContent = nul
         />
       </div>
 
-      <div className="home-title">BSOM Intake Portal</div>
-      <div className="home-sub">Behavioral Solutions of Mississippi Intake Operations Portal</div>
+      <div className="home-hero">
+        <div className="home-eyebrow">Behavioral Solutions of Mississippi</div>
+        <div className="home-title">Intake Operations Portal</div>
+        <div className="home-sub">A complete intake management system for behavioral health clinics</div>
+      </div>
 
       <div className="module-grid">
         {MODULES.map(m => (
