@@ -383,8 +383,8 @@ export default function App() {
     setLoginError(null)
     setResetSuccess(null)
 
-    if (resetPassword.length < 6) {
-      setLoginError('Password must be at least 6 characters long.')
+    if (resetPassword.length < 8) {
+      setLoginError('Password must be at least 8 characters long.')
       setResetPending(false)
       return
     }
