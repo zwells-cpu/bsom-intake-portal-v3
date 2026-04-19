@@ -3,10 +3,24 @@ import { Badge, OfficePill, ProgressRing } from './Badge'
 import { INSURANCES, BOOL, STAFF, OFFICES, CHECKLIST_FIELDS } from '../lib/constants'
 import { pct, formatInsurance, normalizeAutismDx } from '../lib/utils'
 
-export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus, onToggleParentInterview }) {
+const DOCUMENT_TYPE_OPTIONS = ['Referral Form', 'Insurance Card', 'Diagnosis Report', 'Assessment Report', 'IEP/School Records', 'Consent Form', 'Other']
+
+function formatFileSize(size) {
+  if (!size) return '--'
+  if (size < 1024) return `${size} B`
+  if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`
+}
+
+export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus, onToggleParentInterview, onUploadDocument }) {
   const [editMode, setEditMode] = useState(false)
   const [form, setForm] = useState({ ...referral, autism_diagnosis: normalizeAutismDx(referral.autism_diagnosis) })
   const [saving, setSaving] = useState(false)
+  const [docType, setDocType] = useState('Referral Form')
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState(null)
+  const [uploadSuccess, setUploadSuccess] = useState(null)
 
   const r = referral
   const e = editMode ? form : referral
@@ -34,6 +48,30 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
       onClose()
     }
     setSaving(false)
+  }
+
+  const handleDocumentUpload = async () => {
+    if (!selectedFile || !onUploadDocument) return
+
+    setUploading(true)
+    setUploadError(null)
+    setUploadSuccess(null)
+
+    const res = await onUploadDocument({
+      referral: r,
+      documentType: docType,
+      file: selectedFile,
+    })
+
+    if (res?.success) {
+      setUploadSuccess(`Uploaded ${selectedFile.name}`)
+      setSelectedFile(null)
+      setDocType('Referral Form')
+    } else {
+      setUploadError(res?.error || 'Could not upload document.')
+    }
+
+    setUploading(false)
   }
 
   const isNR = r.status === 'non-responsive' || r.status === 'referred-out'
@@ -200,6 +238,58 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
                 <div style={{ color: 'var(--muted)', fontSize: 13 }}>{r.notes}</div>
               </div>
             ) : null}
+
+            <div className="section-hdr" style={{ marginTop: 18 }}>Client Documents</div>
+            <div className="card card-pad" style={{ background: 'var(--bg)', border: '1px solid var(--border)', boxShadow: 'none' }}>
+              <div style={{ display: 'grid', gap: 12 }}>
+                <div>
+                  <div className="label">Document Type</div>
+                  <select className="edit-select" value={docType} onChange={ev => setDocType(ev.target.value)}>
+                    {DOCUMENT_TYPE_OPTIONS.map(option => <option key={option}>{option}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <div className="label">File</div>
+                  <input
+                    className="edit-input"
+                    type="file"
+                    accept=".pdf,image/*"
+                    onChange={ev => {
+                      const nextFile = ev.target.files?.[0] || null
+                      setSelectedFile(nextFile)
+                      setUploadError(null)
+                      setUploadSuccess(null)
+                    }}
+                  />
+                  <div style={{ marginTop: 6, fontSize: 11, color: 'var(--dim)' }}>
+                    PDF and image files only.
+                  </div>
+                </div>
+
+                {selectedFile && (
+                  <div style={{ fontSize: 12, color: 'var(--muted)', padding: '10px 12px', borderRadius: 10, background: 'var(--surface2)', border: '1px solid var(--border2)' }}>
+                    {selectedFile.name} · {formatFileSize(selectedFile.size)}
+                  </div>
+                )}
+
+                {uploadError && (
+                  <div className="error-bar" style={{ margin: 0 }}>
+                    {uploadError}
+                  </div>
+                )}
+
+                {uploadSuccess && (
+                  <div style={{ borderRadius: 10, border: '1px solid #16a34a33', background: '#16a34a12', color: '#16a34a', padding: '10px 12px', fontSize: 12, fontWeight: 700 }}>
+                    {uploadSuccess}
+                  </div>
+                )}
+
+                <button className="btn-save" onClick={handleDocumentUpload} disabled={!selectedFile || uploading}>
+                  {uploading ? 'Uploading...' : 'Upload Document'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
