@@ -27,7 +27,6 @@ export function HomePage({
       <div className="home-hero">
         <div className="home-eyebrow">Behavioral Solutions of Mississippi</div>
         <div className="home-title">Intake Operations Portal</div>
-        <div className="home-sub">A complete intake management system for behavioral health clinics</div>
       </div>
 
       <div className="module-grid">
