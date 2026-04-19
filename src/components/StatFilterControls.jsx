@@ -1,5 +1,6 @@
-export function ClickableStatCard({ value, label, color, sublabel, active = false, onClick }) {
+export function ClickableStatCard({ value, label, color, sublabel, active = false, onClick, icon = null }) {
   const Component = onClick ? 'button' : 'div'
+  const Icon = icon
 
   return (
     <Component
@@ -7,6 +8,11 @@ export function ClickableStatCard({ value, label, color, sublabel, active = fals
       className={`stat-box${onClick ? ' stat-box-clickable' : ''}${active ? ' active' : ''}`}
       onClick={onClick}
     >
+      {Icon ? (
+        <div className="stat-icon" style={{ color }}>
+          <Icon size={16} strokeWidth={1.8} />
+        </div>
+      ) : null}
       <div className="stat-num" style={{ color }}>{value}</div>
       <div className="stat-label">{label}</div>
       {sublabel ? <div className="stat-sub">{sublabel}</div> : null}

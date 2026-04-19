@@ -1,3 +1,4 @@
+import { Activity, BarChart3, Clock, FileText, PieChart, UserCheck, Users, UserX } from 'lucide-react'
 import { StagePill } from '../components/Badge'
 import { ClickableStatCard } from '../components/StatFilterControls'
 import { displayStaffName, getAuthorizationStatus, isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, normalizeOffice, normalizeStaffName, normalizeTreatmentPlanStatus } from '../lib/utils'
@@ -45,6 +46,19 @@ function StatCard({ num, label, color, sub }) {
   )
 }
 
+function SectionHeader({ icon: Icon, children }) {
+  return (
+    <div className="section-title-with-icon">
+      {Icon ? (
+        <span className="section-title-icon" aria-hidden="true">
+          <Icon size={16} strokeWidth={1.8} />
+        </span>
+      ) : null}
+      <span>{children}</span>
+    </div>
+  )
+}
+
 // ══════════════════════════════════════
 // PIPELINE OVERVIEW
 // ══════════════════════════════════════
@@ -80,16 +94,16 @@ export function PipelineOverviewPage({ refs, assessData = [], openModulePage }) 
       </div>
 
       <div className="stats-row" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', marginBottom: 24 }}>
-        <ClickableStatCard value={active.length} label="Active Referrals" color="#6366f1" onClick={() => openModulePage('intake', 'all', { target: 'all-referrals', key: 'active-referrals', label: 'Active Referrals' })} />
-        <ClickableStatCard value={activeClients} label="Active Clients" color="#22c55e" sublabel="receiving services" onClick={() => openModulePage('assessment', 'readysvc', { target: 'ready-for-services', key: 'active-clients', label: 'Active Clients' })} />
-        <ClickableStatCard value={awaitingPA} label="Awaiting PA" color="#f59e0b" sublabel="submitted to insurance" onClick={() => openModulePage('assessment', 'tracker', { target: 'assessment-tracker', key: 'awaiting-pa', label: 'Assessment Tracker: Awaiting PA' })} />
-        <ClickableStatCard value={txInProgress} label="Treatment Plans In Progress" color="#a5b4fc" sublabel="from assessments" onClick={() => openModulePage('assessment', 'txplan', { target: 'treatment-plans', key: 'In Progress', label: 'Treatment Plans: In Progress' })} />
-        <ClickableStatCard value={nr.length} label="Non-Responsive" color="#ef4444" sublabel="or referred out" onClick={() => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'non-responsive-only', label: 'Non-Responsive' })} />
+        <ClickableStatCard value={active.length} label="Active Referrals" color="#6366f1" icon={Users} onClick={() => openModulePage('intake', 'all', { target: 'all-referrals', key: 'active-referrals', label: 'Active Referrals' })} />
+        <ClickableStatCard value={activeClients} label="Active Clients" color="#22c55e" icon={UserCheck} sublabel="receiving services" onClick={() => openModulePage('assessment', 'readysvc', { target: 'ready-for-services', key: 'active-clients', label: 'Active Clients' })} />
+        <ClickableStatCard value={awaitingPA} label="Awaiting PA" color="#f59e0b" icon={Clock} sublabel="submitted to insurance" onClick={() => openModulePage('assessment', 'tracker', { target: 'assessment-tracker', key: 'awaiting-pa', label: 'Assessment Tracker: Awaiting PA' })} />
+        <ClickableStatCard value={txInProgress} label="Treatment Plans In Progress" color="#a5b4fc" icon={FileText} sublabel="from assessments" onClick={() => openModulePage('assessment', 'txplan', { target: 'treatment-plans', key: 'In Progress', label: 'Treatment Plans: In Progress' })} />
+        <ClickableStatCard value={nr.length} label="Non-Responsive" color="#ef4444" icon={UserX} sublabel="or referred out" onClick={() => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'non-responsive-only', label: 'Non-Responsive' })} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
         <div className="card card-pad">
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Stage Distribution</div>
+          <SectionHeader icon={BarChart3}>Stage Distribution</SectionHeader>
           {stageOrder.map(s => {
             const count = byStage[s] || 0
             if (!count) return null
@@ -107,7 +121,7 @@ export function PipelineOverviewPage({ refs, assessData = [], openModulePage }) 
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card card-pad">
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>By Staff Member</div>
+            <SectionHeader icon={Users}>By Staff Member</SectionHeader>
             {Object.values(byStaff).sort((a, b) => b.count - a.count).map(({ label, count }) => (
               <div key={label} style={{ marginBottom: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -119,7 +133,7 @@ export function PipelineOverviewPage({ refs, assessData = [], openModulePage }) 
             ))}
           </div>
           <div className="card card-pad">
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Insurance Mix</div>
+            <SectionHeader icon={PieChart}>Insurance Mix</SectionHeader>
             {Object.entries(byIns).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([ins, c]) => (
               <div key={ins} style={{ marginBottom: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>

@@ -27,13 +27,14 @@ export function Sidebar({ module, subpage, setSubpage, goHome, pendingCount, nrC
         <div className="nav-section-label">Navigation</div>
         {navItems.map(n => {
           const badge = badgeFor(n.id)
+          const Icon = n.icon
           return (
             <div
               key={n.id}
               className={`nav-item ${subpage === n.id ? 'active' : ''}`}
               onClick={() => setSubpage(n.id)}
             >
-              {n.icon ? <span className="nav-icon">{n.icon}</span> : null}
+              {Icon ? <span className="nav-icon"><Icon size={16} strokeWidth={1.8} /></span> : null}
               <span>{n.label}</span>
               {badge && <span className="nav-badge">{badge}</span>}
             </div>
