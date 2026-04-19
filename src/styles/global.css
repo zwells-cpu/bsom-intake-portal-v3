@@ -188,6 +188,17 @@ input::placeholder,textarea::placeholder{ color:var(--dim); }
   color:var(--card-color,var(--accent));
   transform:none;
 }
+.module-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:34px;
+  height:34px;
+  margin-bottom:14px;
+  border-radius:10px;
+  background:color-mix(in srgb, var(--card-color, var(--accent)) 10%, transparent);
+  color:color-mix(in srgb, var(--card-color, var(--accent)) 72%, var(--text));
+}
 .quick-actions{
   display:flex;
   flex-direction:column;
@@ -198,6 +209,10 @@ input::placeholder,textarea::placeholder{ color:var(--dim); }
 }
 .quick-action-btn{
   width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:10px;
   border-radius:12px;
   padding:11px 14px;
   font-size:13px;
@@ -208,6 +223,14 @@ input::placeholder,textarea::placeholder{ color:var(--dim); }
 }
 .quick-action-btn:hover{
   transform:translateY(-1px);
+}
+.quick-action-btn-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:18px;
+  height:18px;
+  flex-shrink:0;
 }
 .quick-action-btn-primary{
   border:1px solid transparent;
