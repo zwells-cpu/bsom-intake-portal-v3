@@ -28,10 +28,15 @@ export default function App() {
   const [profile, setProfile] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [profileLoading, setProfileLoading] = useState(false)
+  const [recoveryMode, setRecoveryMode] = useState(false)
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
+  const [resetPassword, setResetPassword] = useState('')
+  const [resetConfirmPassword, setResetConfirmPassword] = useState('')
   const [loginError, setLoginError] = useState(null)
   const [loginPending, setLoginPending] = useState(false)
+  const [resetPending, setResetPending] = useState(false)
+  const [resetSuccess, setResetSuccess] = useState(null)
   const [signOutPending, setSignOutPending] = useState(false)
 
   const [screen, setScreen] = useState('home')
@@ -44,6 +49,11 @@ export default function App() {
 
   useEffect(() => {
     let mounted = true
+    const isRecoveryLink = () => {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+      const searchParams = new URLSearchParams(window.location.search)
+      return hashParams.get('type') === 'recovery' || searchParams.get('type') === 'recovery'
+    }
 
     const initSession = async () => {
       const { data, error: sessionError } = await supabase.auth.getSession()
@@ -54,13 +64,24 @@ export default function App() {
         setLoginError(sessionError.message)
       }
 
+      setRecoveryMode(isRecoveryLink())
       setSession(data.session ?? null)
       setAuthLoading(false)
     }
 
     initSession()
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setRecoveryMode(true)
+        setResetSuccess(null)
+        setLoginError(null)
+      } else if (event === 'SIGNED_OUT') {
+        setRecoveryMode(false)
+      } else if (!isRecoveryLink()) {
+        setRecoveryMode(false)
+      }
+
       setSession(nextSession ?? null)
       setAuthLoading(false)
       setLoginError(null)
@@ -73,15 +94,15 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (!session) return
+    if (!session || recoveryMode) return
     load()
-  }, [load, session])
+  }, [load, recoveryMode, session])
 
   useEffect(() => {
     let cancelled = false
 
     const loadProfile = async () => {
-      if (!session?.user?.id) {
+      if (!session?.user?.id || recoveryMode) {
         setProfile(null)
         setProfileLoading(false)
         return
@@ -112,7 +133,7 @@ export default function App() {
     return () => {
       cancelled = true
     }
-  }, [session])
+  }, [recoveryMode, session])
 
   useEffect(() => {
     const h = (e) => enterModule(e.detail)
@@ -202,6 +223,7 @@ export default function App() {
     e.preventDefault()
     setLoginPending(true)
     setLoginError(null)
+    setResetSuccess(null)
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: loginEmail.trim(),
@@ -213,6 +235,47 @@ export default function App() {
     }
 
     setLoginPending(false)
+  }
+
+  const handlePasswordReset = async (e) => {
+    e.preventDefault()
+    setResetPending(true)
+    setLoginError(null)
+    setResetSuccess(null)
+
+    if (resetPassword.length < 6) {
+      setLoginError('Password must be at least 6 characters long.')
+      setResetPending(false)
+      return
+    }
+
+    if (resetPassword !== resetConfirmPassword) {
+      setLoginError('Passwords do not match.')
+      setResetPending(false)
+      return
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: resetPassword,
+    })
+
+    if (updateError) {
+      setLoginError(updateError.message)
+      setResetPending(false)
+      return
+    }
+
+    setResetSuccess('Password updated. Please sign in with your new password.')
+    setResetPassword('')
+    setResetConfirmPassword('')
+    setRecoveryMode(false)
+
+    if (window.location.hash || window.location.search.includes('type=recovery')) {
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+
+    await supabase.auth.signOut()
+    setResetPending(false)
   }
 
   const handleSignOut = async () => {
@@ -246,7 +309,7 @@ export default function App() {
     )
   }
 
-  if (!session) {
+  if (!session || recoveryMode) {
     return (
       <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '32px', background: 'var(--bg)' }}>
         <div style={{ width: '100%', maxWidth: 420, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 24, boxShadow: 'var(--shadow)', padding: 28 }}>
@@ -259,33 +322,63 @@ export default function App() {
           </div>
 
           <p style={{ margin: '0 0 20px', color: 'var(--muted)', fontSize: 14, lineHeight: 1.6 }}>
-            Use your Supabase account credentials to continue.
+            {recoveryMode ? 'Choose a new password for your account.' : 'Use your Supabase account credentials to continue.'}
           </p>
 
-          <form onSubmit={handleLogin} style={{ display: 'grid', gap: 14 }}>
-            <label style={{ display: 'grid', gap: 6 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>Email</span>
-              <input
-                type="email"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                autoComplete="email"
-                required
-                style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
-              />
-            </label>
+          <form onSubmit={recoveryMode ? handlePasswordReset : handleLogin} style={{ display: 'grid', gap: 14 }}>
+            {recoveryMode ? (
+              <>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>New Password</span>
+                  <input
+                    type="password"
+                    value={resetPassword}
+                    onChange={(e) => setResetPassword(e.target.value)}
+                    autoComplete="new-password"
+                    required
+                    style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
+                  />
+                </label>
 
-            <label style={{ display: 'grid', gap: 6 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>Password</span>
-              <input
-                type="password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                autoComplete="current-password"
-                required
-                style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
-              />
-            </label>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>Confirm Password</span>
+                  <input
+                    type="password"
+                    value={resetConfirmPassword}
+                    onChange={(e) => setResetConfirmPassword(e.target.value)}
+                    autoComplete="new-password"
+                    required
+                    style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
+                  />
+                </label>
+              </>
+            ) : (
+              <>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>Email</span>
+                  <input
+                    type="email"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    autoComplete="email"
+                    required
+                    style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
+                  />
+                </label>
+
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>Password</span>
+                  <input
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    autoComplete="current-password"
+                    required
+                    style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
+                  />
+                </label>
+              </>
+            )}
 
             {loginError && (
               <div className="error-bar" style={{ margin: 0 }}>
@@ -293,12 +386,18 @@ export default function App() {
               </div>
             )}
 
+            {resetSuccess && (
+              <div style={{ margin: 0, borderRadius: 12, border: '1px solid #16a34a33', background: '#16a34a12', color: '#16a34a', padding: '12px 14px', fontSize: 13, fontWeight: 600 }}>
+                {resetSuccess}
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={loginPending}
-              style={{ border: 'none', borderRadius: 12, padding: '13px 16px', background: 'var(--accent)', color: '#fff', fontWeight: 800, fontSize: 14, cursor: loginPending ? 'wait' : 'pointer', opacity: loginPending ? 0.75 : 1 }}
+              disabled={recoveryMode ? resetPending : loginPending}
+              style={{ border: 'none', borderRadius: 12, padding: '13px 16px', background: 'var(--accent)', color: '#fff', fontWeight: 800, fontSize: 14, cursor: (recoveryMode ? resetPending : loginPending) ? 'wait' : 'pointer', opacity: (recoveryMode ? resetPending : loginPending) ? 0.75 : 1 }}
             >
-              {loginPending ? 'Signing in...' : 'Sign In'}
+              {recoveryMode ? (resetPending ? 'Updating password...' : 'Reset Password') : (loginPending ? 'Signing in...' : 'Sign In')}
             </button>
           </form>
         </div>
