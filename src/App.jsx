@@ -701,6 +701,8 @@ export default function App() {
       <>
         <HomePage
           onEnterModule={enterModule}
+          onAddReferral={() => openModulePage('intake', 'new')}
+          onScheduleParentInterview={() => openModulePage('assessment', 'interviews')}
           theme={theme}
           setTheme={setTheme}
           topRightContent={(
