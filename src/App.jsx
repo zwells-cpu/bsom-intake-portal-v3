@@ -1,6 +1,7 @@
 import { supabase } from './lib/supabase'
 import { useEffect, useMemo, useState } from 'react'
 import { useTheme } from './hooks/useTheme'
+import { useIdleTimeout } from './hooks/useIdleTimeout'
 import { useReferrals } from './hooks/useReferrals'
 import { useAssessments } from './hooks/useAssessments'
 import { MODULES, MODULE_NAV } from './lib/constants'
@@ -439,6 +440,61 @@ export default function App() {
     setSignOutPending(false)
   }
 
+  const { isWarning, secondsLeft, resetTimer } = useIdleTimeout({
+    onTimeout: handleSignOut,
+    enabled: !!session && !recoveryMode,
+  })
+
+  const idleWarningModal = isWarning ? (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+      display: 'grid', placeItems: 'center', padding: 24,
+    }}>
+      <div style={{
+        width: '100%', maxWidth: 400,
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 20, boxShadow: 'var(--shadow)', padding: 28,
+        display: 'grid', gap: 16,
+      }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 8 }}>
+            Session Timeout
+          </div>
+          <h2 style={{ margin: 0, fontSize: 22 }}>Are you still there?</h2>
+        </div>
+        <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)', lineHeight: 1.5 }}>
+          You'll be signed out automatically due to inactivity in{' '}
+          <strong style={{ color: 'var(--text)' }}>
+            {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, '0')}
+          </strong>.
+        </p>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={resetTimer}
+            style={{
+              flex: 1, border: 'none', borderRadius: 12, padding: '12px 16px',
+              background: 'var(--accent)', color: '#fff', fontWeight: 800,
+              fontSize: 14, cursor: 'pointer',
+            }}
+          >
+            Stay Logged In
+          </button>
+          <button
+            onClick={handleSignOut}
+            style={{
+              flex: 1, borderRadius: 12, padding: '12px 16px',
+              background: 'transparent', border: '1px solid var(--border2)',
+              color: 'var(--text)', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+            }}
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null
+
   if (authLoading) {
     return (
       <div className="loader-wrap">
@@ -560,6 +616,7 @@ export default function App() {
           )}
         />
         {saved && <div className="toast">✅ Referral saved!</div>}
+        {idleWarningModal}
       </>
     )
   }
@@ -716,6 +773,8 @@ export default function App() {
           onDelete={(id) => deleteRecord('assessment', id)}
         />
       )}
+
+      {idleWarningModal}
     </>
   )
 }
