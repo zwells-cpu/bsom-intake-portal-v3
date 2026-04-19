@@ -4,8 +4,8 @@ import { RecentActivityCard } from '../components/dashboard/RecentActivityCard'
 import { useActivityLogs } from '../hooks/useActivityLogs'
 import { isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, pct } from '../lib/utils'
 
-export function DashboardPage({ refs, setSelectedId, openModulePage }) {
-  const { logs, loading: activityLoading } = useActivityLogs(8)
+export function DashboardPage({ refs, setSelectedId, openModulePage, activityRefreshKey = 0 }) {
+  const { logs, loading: activityLoading } = useActivityLogs(8, activityRefreshKey)
   const active = refs.filter((r) => r.status === 'active')
   const nr = refs.filter((r) => r.status === 'non-responsive' || r.status === 'referred-out')
   const signed = active.filter((r) => (r.intake_paperwork || '').toLowerCase().includes('signed'))

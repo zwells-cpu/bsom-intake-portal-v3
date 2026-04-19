@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchRecentActivityLogs } from '../lib/activityLogs'
 
-export function useActivityLogs(limit = 10) {
+export function useActivityLogs(limit = 10, refreshKey = 0) {
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -20,7 +20,7 @@ export function useActivityLogs(limit = 10) {
 
   useEffect(() => {
     refreshLogs()
-  }, [refreshLogs])
+  }, [refreshKey, refreshLogs])
 
   return { logs, loading, refreshLogs }
 }

@@ -40,6 +40,7 @@ export default function App() {
   const [resetPending, setResetPending] = useState(false)
   const [resetSuccess, setResetSuccess] = useState(null)
   const [signOutPending, setSignOutPending] = useState(false)
+  const [activityRefreshKey, setActivityRefreshKey] = useState(0)
 
   const [screen, setScreen] = useState('home')
   const [module, setModule] = useState(null)
@@ -196,6 +197,10 @@ export default function App() {
   }
 
   const deleteRecord = async (type, id) => {
+    const record = type === 'assessment'
+      ? assessData.find(item => String(getAssessmentRecordId(item) || '') === String(id))
+      : refs.find(item => item.id === id)
+
     const res = type === 'assessment'
       ? await deleteAssessment(id)
       : await deleteReferral(id)
@@ -203,6 +208,29 @@ export default function App() {
     if (res?.success) {
       if (type === 'assessment') setSelAssessId(current => (String(current) === String(id) ? null : current))
       else setSelId(current => (current === id ? null : current))
+
+      if (type === 'assessment' && record) {
+        await writeAssessmentActivity({
+          action: 'assessment_deleted',
+          record,
+          description: `${formatAssessmentName(record)} assessment was deleted.`,
+          metadata: {
+            deleted: true,
+            clinic: record.clinic || record.office || '',
+          },
+        })
+      } else if (type === 'referral' && record) {
+        await writeReferralActivity({
+          action: 'referral_deleted',
+          record,
+          description: `${formatReferralName(record)} referral was deleted.`,
+          metadata: {
+            deleted: true,
+            office: record.office || '',
+            status: record.status || '',
+          },
+        })
+      }
     }
 
     return res
@@ -220,8 +248,11 @@ export default function App() {
   const safeCreateActivityLog = async (entry) => {
     try {
       await createActivityLog(entry)
+      setActivityRefreshKey(current => current + 1)
+      return true
     } catch (activityError) {
       console.error('Could not write activity log:', activityError.message)
+      return false
     }
   }
 
@@ -313,6 +344,18 @@ export default function App() {
       return { success: false, error: insertError.message }
     }
 
+    await writeReferralActivity({
+      action: 'document_uploaded',
+      record: referral,
+      description: `${clientName} had a ${documentType} uploaded.`,
+      metadata: {
+        document_type: documentType,
+        file_name: file.name,
+        mime_type: file.type || 'application/octet-stream',
+        file_size: file.size || 0,
+      },
+    })
+
     return { success: true, data }
   }
 
@@ -402,12 +445,14 @@ export default function App() {
   const handleToggleParentInterview = async (id, val) => {
     const res = await toggleParentInterview(id, val)
 
-    if (res?.success && res?.data && val) {
+    if (res?.success && res?.data) {
       await writeReferralActivity({
-        action: 'parent_interview_ready',
+        action: val ? 'parent_interview_ready' : 'parent_interview_unmarked',
         record: res.data,
-        description: `${formatReferralName(res.data)} was marked ready for parent interview.`,
-        metadata: { ready_for_parent_interview: true },
+        description: val
+          ? `${formatReferralName(res.data)} was marked ready for parent interview.`
+          : `${formatReferralName(res.data)} was removed from the ready for parent interview list.`,
+        metadata: { ready_for_parent_interview: val === true },
       })
     }
 
@@ -694,6 +739,7 @@ export default function App() {
           refs={refs}
           setSelectedId={setSelId}
           openModulePage={openModulePage}
+          activityRefreshKey={activityRefreshKey}
         />
       )
     }
