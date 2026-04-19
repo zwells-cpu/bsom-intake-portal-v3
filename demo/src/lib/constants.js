@@ -10,7 +10,7 @@ export const BOOL = ['YES', 'NO', 'AWAITING']
 export const STAT = ['Completed', 'Emailed', 'Awaiting', 'Please Send', 'N/A']
 export const AUTISM_DIAGNOSIS_OPTIONS = ['Received', 'Not Received', 'Requested']
 
-export const STAFF = ['Zanteria', 'Aerianna', 'LaShannon', 'Keiara', 'Celia', 'Other']
+export const STAFF = ['Jordan M.', 'Taylor R.', 'Casey L.', 'Morgan T.', 'Riley S.', 'Other']
 
 export const ALL_ROLES = ['All Staff', ...STAFF.filter((s) => s !== 'Other')]
 
