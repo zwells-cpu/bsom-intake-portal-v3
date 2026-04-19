@@ -467,7 +467,7 @@ export function ConversionRatePage({ refs }) {
 // ══════════════════════════════════════
 // INTAKE PERFORMANCE
 // ══════════════════════════════════════
-export function IntakePerformancePage({ refs, role }) {
+export function IntakePerformancePage({ refs }) {
   const active     = refs.filter(r => r.status === 'active')
   const STAFF_LIST = [...new Set(active.map(r => normalizeStaffName(r.intake_personnel)).filter(Boolean))].sort()
 

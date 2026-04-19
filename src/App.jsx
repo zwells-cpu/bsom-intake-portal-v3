@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTheme } from './hooks/useTheme'
 import { useReferrals } from './hooks/useReferrals'
 import { useAssessments } from './hooks/useAssessments'
-import { MODULES, MODULE_NAV, ALL_ROLES } from './lib/constants'
+import { MODULES, MODULE_NAV } from './lib/constants'
 
 import { HomePage } from './components/HomePage'
 import { Sidebar } from './components/Sidebar'
@@ -18,7 +18,7 @@ import { IntakeDashboard, PendingDocsPage, InsuranceVerifPage, NonResponsivePage
 import { AboutPortalPage, LocationsPage } from './pages/AboutPage'
 import { AssessmentTracker, ParentInterviewsPage, BCBAAssignmentsPage, AssessmentProgressPage, TreatmentPlansPage, ReadyForServicesPage } from './pages/AssessmentPages'
 import { PipelineOverviewPage, ReferralAgingPage, ClinicVolumePage, ConversionRatePage, IntakePerformancePage } from './pages/OperationsPages'
-import { getAssessmentRecordId, normalizeStaffName } from './lib/utils'
+import { getAssessmentRecordId } from './lib/utils'
 
 export default function App() {
   const { theme, setTheme } = useTheme()
@@ -44,7 +44,6 @@ export default function App() {
   const [subpage, setSubpage] = useState(null)
   const [selId, setSelId] = useState(null)
   const [selAssessId, setSelAssessId] = useState(null)
-  const [role, setRole] = useState('All Staff')
   const [routeFilter, setRouteFilter] = useState(null)
 
   useEffect(() => {
@@ -171,16 +170,8 @@ export default function App() {
   const nr = useMemo(() => refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out'), [refs])
   const pending = useMemo(() => active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase())), [active])
   const noIns = useMemo(() => active.filter(r => !['yes', 'verified'].includes((r.insurance_verified || '').toLowerCase())).length, [active])
-  const operationsRefs = useMemo(() => (
-    role === 'All Staff'
-      ? refs
-      : refs.filter(ref => normalizeStaffName(ref.intake_personnel) === normalizeStaffName(role))
-  ), [refs, role])
-  const operationsAssessData = useMemo(() => (
-    role === 'All Staff'
-      ? assessData
-      : assessData.filter(record => normalizeStaffName(record.intake_personnel) === normalizeStaffName(role))
-  ), [assessData, role])
+  const operationsRefs = useMemo(() => refs, [refs])
+  const operationsAssessData = useMemo(() => assessData, [assessData])
 
   const selectedRef = selId ? refs.find(r => r.id === selId) : null
   const selectedAssess = selAssessId
@@ -218,11 +209,6 @@ export default function App() {
   const displayName = profile?.full_name || session?.user?.email || 'Signed-in user'
   const displayRole = profile?.role || 'Role pending'
   const displayOffice = profile?.office || 'Office pending'
-  const normalizedProfileRole = (profile?.role || '').trim().toLowerCase()
-  const isAdmin = normalizedProfileRole === 'admin'
-  const isIntake = normalizedProfileRole === 'intake'
-  const canViewAssessments = Boolean(session)
-  const canViewOperationalInsights = Boolean(session)
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -452,7 +438,7 @@ export default function App() {
 
     if (module === 'intake') {
       if (subpage === 'intakedash') return <IntakeDashboard refs={refs} onSelectRef={setSelId} openModulePage={openModulePage} />
-      if (subpage === 'all') return <AllReferralsPage refs={refs} role={role} setRole={setRole} onSelectRef={setSelId} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'all') return <AllReferralsPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'new') return <NewReferralPage onSave={saveReferral} saving={saving} />
       if (subpage === 'pending') return <PendingDocsPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'insurance') return <InsuranceVerifPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
@@ -478,7 +464,7 @@ export default function App() {
       if (subpage === 'aging') return <ReferralAgingPage refs={operationsRefs} onSelectRef={setSelId} />
       if (subpage === 'volume') return <ClinicVolumePage refs={operationsRefs} />
       if (subpage === 'conversion') return <ConversionRatePage refs={operationsRefs} />
-      if (subpage === 'performance') return <IntakePerformancePage refs={operationsRefs} role={role} />
+      if (subpage === 'performance') return <IntakePerformancePage refs={operationsRefs} />
     }
 
     return (
@@ -518,15 +504,6 @@ export default function App() {
                   <div style={{ fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</div>
                 </div>
               </div>
-              {(module === 'intake' || module === 'operations') && (
-                <select
-                  style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 7, padding: '4px 10px', color: 'var(--text)', fontSize: 12, fontWeight: 600 }}
-                  value={role}
-                  onChange={e => setRole(e.target.value)}
-                >
-                  {ALL_ROLES.map(r => <option key={r}>{r}</option>)}
-                </select>
-              )}
               <span className="badge-pill">✓ {active.length} Active</span>
               {pending.length > 0 && (
                 <span style={{ background: '#f59e0b18', color: '#f59e0b', border: '1px solid #f59e0b30', borderRadius: 20, padding: '3px 12px', fontSize: '11.5px', fontWeight: 700 }}>

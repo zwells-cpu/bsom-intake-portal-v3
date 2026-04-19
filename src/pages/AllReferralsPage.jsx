@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
 import { ActiveFilterBanner } from '../components/StatFilterControls'
-import { OFFICES, ALL_ROLES } from '../lib/constants'
+import { OFFICES } from '../lib/constants'
 import { isStatFilterTarget, matchesStatFilter } from '../lib/statFilters'
-import { sortList, normalizeOffice, normalizeStaffName, normalizeAutismDx, formatInsurance, exportCSV, pct } from '../lib/utils'
+import { sortList, normalizeOffice, normalizeAutismDx, formatInsurance, exportCSV, pct } from '../lib/utils'
 
-export function AllReferralsPage({ refs, role, setRole, onSelectRef, statFilter, onClearStatFilter }) {
+export function AllReferralsPage({ refs, onSelectRef, statFilter, onClearStatFilter }) {
   const active = refs.filter(r => r.status === 'active')
   const [search, setSearch]   = useState('')
   const [office, setOffice]   = useState('ALL')
@@ -16,7 +16,6 @@ export function AllReferralsPage({ refs, role, setRole, onSelectRef, statFilter,
   const visibleBeforeOfficeFilter = active.filter(r => {
     const n = `${r.first_name} ${r.last_name}`.toLowerCase()
     return (n.includes(search.toLowerCase()) || (r.caregiver || '').toLowerCase().includes(search.toLowerCase()))
-      && (role === 'All Staff' || normalizeStaffName(r.intake_personnel) === normalizeStaffName(role))
       && matchesStatFilter(r, activeFilter)
   })
 
