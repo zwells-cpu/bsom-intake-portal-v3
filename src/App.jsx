@@ -19,6 +19,7 @@ import { IntakeDashboard, PendingDocsPage, InsuranceVerifPage, NonResponsivePage
 import { AboutPortalPage, LocationsPage } from './pages/AboutPage'
 import { AssessmentTracker, ParentInterviewsPage, BCBAAssignmentsPage, AssessmentProgressPage, TreatmentPlansPage, ReadyForServicesPage } from './pages/AssessmentPages'
 import { PipelineOverviewPage, ReferralAgingPage, ClinicVolumePage, ConversionRatePage, IntakePerformancePage } from './pages/OperationsPages'
+import { createActivityLog } from './lib/activityLogs'
 import { getAssessmentRecordId } from './lib/utils'
 
 export default function App() {
@@ -216,6 +217,45 @@ export default function App() {
     return fullName || 'Referral'
   }
   const formatAssessmentName = (record) => record?.client_name || 'Assessment'
+  const safeCreateActivityLog = async (entry) => {
+    try {
+      await createActivityLog(entry)
+    } catch (activityError) {
+      console.error('Could not write activity log:', activityError.message)
+    }
+  }
+
+  const writeReferralActivity = async ({ action, record, description, metadata = {} }) => {
+    if (!session?.user?.id || !record) return
+
+    await safeCreateActivityLog({
+      action,
+      entity_type: 'referral',
+      entity_id: String(record.id ?? ''),
+      client_name: formatReferralName(record),
+      description,
+      office: record.office || '',
+      actor: `${displayName}${displayRole ? ` (${displayRole})` : ''}`,
+      metadata,
+      created_at: new Date().toISOString(),
+    })
+  }
+
+  const writeAssessmentActivity = async ({ action, record, description, metadata = {} }) => {
+    if (!session?.user?.id || !record) return
+
+    await safeCreateActivityLog({
+      action,
+      entity_type: 'assessment',
+      entity_id: String(getAssessmentRecordId(record) ?? ''),
+      client_name: formatAssessmentName(record),
+      description,
+      office: record.clinic || record.office || '',
+      actor: `${displayName}${displayRole ? ` (${displayRole})` : ''}`,
+      metadata,
+      created_at: new Date().toISOString(),
+    })
+  }
   const sanitizeFileName = (name) => (name || 'document')
     .replace(/[^a-zA-Z0-9._-]/g, '-')
     .replace(/-+/g, '-')
@@ -276,39 +316,15 @@ export default function App() {
     return { success: true, data }
   }
 
-  const logActivity = async ({ actionType, entityType, entityId, entityName, details }) => {
-    if (!session?.user?.id) return
-
-    const payload = {
-      user_id: session.user.id,
-      user_name: displayName,
-      user_role: displayRole,
-      action_type: actionType,
-      entity_type: entityType,
-      entity_id: String(entityId ?? ''),
-      entity_name: entityName,
-      details: typeof details === 'string' ? details : JSON.stringify(details ?? {}),
-    }
-
-    const { error: activityError } = await supabase
-      .from('activity_logs')
-      .insert(payload)
-
-    if (activityError) {
-      console.error('Could not write activity log:', activityError.message)
-    }
-  }
-
   const handleCreateReferral = async (form) => {
     const res = await saveReferral(form)
 
     if (res?.success && res?.data) {
-      await logActivity({
-        actionType: 'referral created',
-        entityType: 'referral',
-        entityId: res.data.id,
-        entityName: formatReferralName(res.data),
-        details: {
+      await writeReferralActivity({
+        action: 'referral_created',
+        record: res.data,
+        description: `${formatReferralName(res.data)} was added to the intake pipeline.`,
+        metadata: {
           office: res.data.office || '',
           insurance: res.data.insurance || '',
           status: res.data.status || '',
@@ -323,17 +339,27 @@ export default function App() {
     const res = await updateReferral(id, patch)
 
     if (res?.success && res?.data) {
-      await logActivity({
-        actionType: 'referral updated',
-        entityType: 'referral',
-        entityId: res.data.id || id,
-        entityName: formatReferralName(res.data),
-        details: {
-          updated_fields: Object.keys(patch || {}),
-          office: res.data.office || '',
-          status: res.data.status || '',
-        },
-      })
+      const updatedFields = Object.keys(patch || {})
+
+      if (updatedFields.length === 1 && updatedFields[0] === 'insurance_verified') {
+        await writeReferralActivity({
+          action: 'insurance_verified',
+          record: res.data,
+          description: `${formatReferralName(res.data)} insurance was updated to ${res.data.insurance_verified || patch.insurance_verified}.`,
+          metadata: { insurance_verified: res.data.insurance_verified || patch.insurance_verified || '' },
+        })
+      } else {
+        await writeReferralActivity({
+          action: 'referral_updated',
+          record: res.data,
+          description: `${formatReferralName(res.data)} was updated.`,
+          metadata: {
+            updated_fields: updatedFields,
+            office: res.data.office || '',
+            status: res.data.status || '',
+          },
+        })
+      }
     }
 
     return res
@@ -343,16 +369,45 @@ export default function App() {
     const res = await saveAssessEdit(id, patch)
 
     if (res?.success && res?.data) {
-      await logActivity({
-        actionType: 'assessment updated',
-        entityType: 'assessment',
-        entityId: getAssessmentRecordId(res.data) || id,
-        entityName: formatAssessmentName(res.data),
-        details: {
+      await writeAssessmentActivity({
+        action: 'assessment_updated',
+        record: res.data,
+        description: `${formatAssessmentName(res.data)} assessment details were updated.`,
+        metadata: {
           updated_fields: Object.keys(patch || {}),
           clinic: res.data.clinic || res.data.office || '',
           authorization_status: res.data.authorization_status || '',
         },
+      })
+    }
+
+    return res
+  }
+
+  const handleSetReferralStatus = async (id, status) => {
+    const res = await setStatus(id, status)
+
+    if (res?.success && res?.data) {
+      await writeReferralActivity({
+        action: 'referral_status_changed',
+        record: res.data,
+        description: `${formatReferralName(res.data)} status changed to ${status}.`,
+        metadata: { status },
+      })
+    }
+
+    return res
+  }
+
+  const handleToggleParentInterview = async (id, val) => {
+    const res = await toggleParentInterview(id, val)
+
+    if (res?.success && res?.data && val) {
+      await writeReferralActivity({
+        action: 'parent_interview_ready',
+        record: res.data,
+        description: `${formatReferralName(res.data)} was marked ready for parent interview.`,
+        metadata: { ready_for_parent_interview: true },
       })
     }
 
@@ -649,7 +704,7 @@ export default function App() {
       if (subpage === 'new') return <NewReferralPage onSave={handleCreateReferral} saving={saving} />
       if (subpage === 'pending') return <PendingDocsPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'insurance') return <InsuranceVerifPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'nr') return <NonResponsivePage refs={refs} onRestore={(id) => setStatus(id, 'active')} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'nr') return <NonResponsivePage refs={refs} onRestore={(id) => handleSetReferralStatus(id, 'active')} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
     }
 
     if (module === 'about') {
@@ -760,8 +815,8 @@ export default function App() {
           onSave={handleUpdateReferral}
           onUploadDocument={handleUploadClientDocument}
           onDelete={(id) => deleteRecord('referral', id)}
-          onSetStatus={(id, status) => { setStatus(id, status); setSelId(null) }}
-          onToggleParentInterview={toggleParentInterview}
+          onSetStatus={(id, status) => { handleSetReferralStatus(id, status); setSelId(null) }}
+          onToggleParentInterview={handleToggleParentInterview}
         />
       )}
 
