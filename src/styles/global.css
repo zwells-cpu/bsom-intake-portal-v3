@@ -115,7 +115,7 @@ input::placeholder,textarea::placeholder{ color:var(--dim); }
 }
 .home-logo img{ width:90px; height:90px; object-fit:contain; }
 .home-title{ font-size:28px; font-weight:800; letter-spacing:-0.03em; margin-bottom:4px; text-align:center; }
-.home-sub{ color:var(--muted); font-size:13px; margin-bottom:48px; text-align:center; }
+.home-sub{ color:var(--muted); font-size:12.5px; letter-spacing:-0.01em; line-height:1.35; margin-bottom:40px; text-align:center; }
 .module-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; max-width:780px; width:100%; }
 .module-card{
   background:var(--surface); border:1px solid var(--border); border-radius:18px;

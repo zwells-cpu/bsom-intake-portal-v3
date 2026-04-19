@@ -307,14 +307,10 @@ export default function App() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 20 }}>
             <div>
               <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--accent)' }}>Secure Access</div>
-              <h1 style={{ margin: '8px 0 0', fontSize: 28, lineHeight: 1.1 }}>Sign in to the intake portal</h1>
+              <h1 style={{ margin: '8px 0 0', fontSize: 28, lineHeight: 1.1 }}>{recoveryMode ? 'Reset password' : 'Sign in'}</h1>
             </div>
             <ThemeToggle theme={theme} setTheme={setTheme} />
           </div>
-
-          <p style={{ margin: '0 0 20px', color: 'var(--muted)', fontSize: 14, lineHeight: 1.6 }}>
-            {recoveryMode ? 'Choose a new password for your account.' : 'Use your Supabase account credentials to continue.'}
-          </p>
 
           <form onSubmit={recoveryMode ? handlePasswordReset : handleLogin} style={{ display: 'grid', gap: 14 }}>
             {recoveryMode ? (
