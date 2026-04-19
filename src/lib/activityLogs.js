@@ -11,15 +11,22 @@ function normalizeEntityId(value) {
 }
 
 function buildActivityLogPayload(entry = {}) {
+  const action = String(entry.action || '').trim()
+  const clientName = String(entry.client_name || '').trim()
+  const metadata = entry.metadata && typeof entry.metadata === 'object' ? entry.metadata : {}
+
   return {
-    action: String(entry.action || '').trim(),
+    action,
+    action_type: action,
     entity_type: String(entry.entity_type || '').trim(),
     entity_id: normalizeEntityId(entry.entity_id),
-    client_name: String(entry.client_name || '').trim(),
+    entity_name: clientName || null,
+    client_name: clientName,
     description: String(entry.description || '').trim(),
     office: String(entry.office || '').trim(),
     actor: String(entry.actor || '').trim(),
-    metadata: entry.metadata && typeof entry.metadata === 'object' ? entry.metadata : {},
+    details: metadata,
+    metadata,
   }
 }
 
