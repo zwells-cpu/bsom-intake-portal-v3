@@ -218,6 +218,11 @@ export default function App() {
   const displayName = profile?.full_name || session?.user?.email || 'Signed-in user'
   const displayRole = profile?.role || 'Role pending'
   const displayOffice = profile?.office || 'Office pending'
+  const normalizedProfileRole = (profile?.role || '').trim().toLowerCase()
+  const isAdmin = normalizedProfileRole === 'admin'
+  const isIntake = normalizedProfileRole === 'intake'
+  const canViewAssessments = Boolean(session)
+  const canViewOperationalInsights = Boolean(session)
 
   const handleLogin = async (e) => {
     e.preventDefault()
