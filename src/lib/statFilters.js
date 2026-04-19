@@ -1,4 +1,4 @@
-import { getAssessmentWorkflowStatus, getAuthorizationStatus, normalizeAutismDx, normalizeTreatmentPlanStatus } from './utils'
+import { getAssessmentWorkflowStatus, getAuthorizationStatus, isAuthorizationApproved, normalizeAutismDx, normalizeTreatmentPlanStatus } from './utils'
 
 export function isStatFilterTarget(filter, target) {
   return filter?.target === target ? filter : null
@@ -90,7 +90,7 @@ export function matchesStatFilter(record, filter) {
     if (key === 'ready') return record.ready_for_services === true
     if (key === 'awaiting-authorization') {
       return getAssessmentWorkflowStatus(record) === 'Completed'
-        && !['Approved'].includes(getAuthorizationStatus(record))
+        && !isAuthorizationApproved(record)
         && !record.ready_for_services
     }
     if (key === 'not-ready') return record.ready_for_services !== true

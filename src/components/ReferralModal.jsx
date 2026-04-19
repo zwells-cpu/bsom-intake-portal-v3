@@ -76,10 +76,18 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
 
   const isNR = r.status === 'non-responsive' || r.status === 'referred-out'
 
+  const handleStatusChange = async (status) => {
+    if (!onSetStatus) return
+    setSaving(true)
+    await onSetStatus(r.id, status)
+    setSaving(false)
+  }
+
   const FootLeft = () => {
     if (isNR) {
       return (
-        <button onClick={() => onSetStatus(r.id, 'active')}
+        <button onClick={() => handleStatusChange('active')}
+          disabled={saving}
           style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #22c55e40', background: '#22c55e15', color: '#22c55e', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
           ↩ Restore Active
         </button>
@@ -87,11 +95,13 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
     }
     return (
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button className="btn-ghost" onClick={() => onSetStatus(r.id, 'non-responsive')}
+        <button className="btn-ghost" onClick={() => handleStatusChange('non-responsive')}
+          disabled={saving}
           style={{ color: '#ef4444', borderColor: '#ef444440', fontSize: 12 }}>
           🚫 Non-Responsive
         </button>
-        <button className="btn-ghost" onClick={() => onSetStatus(r.id, 'referred-out')}
+        <button className="btn-ghost" onClick={() => handleStatusChange('referred-out')}
+          disabled={saving}
           style={{ color: '#8b5cf6', borderColor: '#8b5cf640', fontSize: 12 }}>
           🏁 Referred Out
         </button>

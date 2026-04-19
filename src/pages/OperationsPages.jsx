@@ -1,6 +1,6 @@
 import { StagePill } from '../components/Badge'
 import { ClickableStatCard } from '../components/StatFilterControls'
-import { displayStaffName, getAuthorizationStatus, normalizeAutismDx, normalizeOffice, normalizeStaffName, normalizeTreatmentPlanStatus } from '../lib/utils'
+import { displayStaffName, getAuthorizationStatus, isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, normalizeOffice, normalizeStaffName, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 // ── Shared helpers ──
 function daysSince(dateStr) {
@@ -147,7 +147,7 @@ export function ReferralAgingPage({ refs, onSelectRef }) {
     const received  = r.referral_received_date || r.date_received || null
     const daysTotal = daysSince(received)
     const daysAwaitPW  = !['signed','completed'].includes((r.intake_paperwork || '').toLowerCase()) ? daysSince(received) : null
-    const daysAwaitIns = r.insurance_verified !== 'YES' ? daysSince(received) : null
+    const daysAwaitIns = needsInsuranceVerification(r.insurance_verified) ? daysSince(received) : null
     const daysToActive = r.active_client_date ? daysBetween(received, r.active_client_date) : null
     return { ...r, received, daysTotal, daysAwaitPW, daysAwaitIns, daysToActive }
   }).filter(r => r.received)
@@ -232,7 +232,7 @@ export function ClinicVolumePage({ refs }) {
     open:     active.filter(r => normalizeOffice(r.office) === o).length,
     nr:       nr.filter(r => normalizeOffice(r.office) === o).length,
     signed:   active.filter(r => normalizeOffice(r.office) === o && (r.intake_paperwork || '').toLowerCase().includes('signed')).length,
-    verified: active.filter(r => normalizeOffice(r.office) === o && r.insurance_verified === 'YES').length,
+    verified: active.filter(r => normalizeOffice(r.office) === o && isInsuranceVerified(r.insurance_verified)).length,
   })).filter(s => s.total > 0).sort((a, b) => b.total - a.total)
 
   const maxTotal  = Math.max(...stats.map(s => s.total), 1)
@@ -366,7 +366,7 @@ export function ConversionRatePage({ refs }) {
   const FUNNEL = [
     { label: 'Referral Received',         count: total,                                                                                                      color: '#6366f1' },
     { label: 'Paperwork Completed',        count: active.filter(r => ['signed','completed'].some(v => (r.intake_paperwork||'').toLowerCase().includes(v))).length, color: '#8b5cf6' },
-    { label: 'Insurance Verified',         count: active.filter(r => (r.insurance_verified||'').toUpperCase() === 'YES').length,                             color: '#f59e0b' },
+    { label: 'Insurance Verified',         count: active.filter(r => isInsuranceVerified(r.insurance_verified)).length,                             color: '#f59e0b' },
     { label: 'Parent Interview Completed', count: active.filter(r => ['completed','yes','done'].some(v => (r.permission_assessment||'').toLowerCase().includes(v))).length, color: '#fb923c' },
     { label: 'Assessment Completed',       count: active.filter(r => normalizeAutismDx(r.autism_diagnosis) === 'Received').length,                    color: '#fb923c' },
     { label: 'Active Client',              count: active.filter(r => r.current_stage === 'Active Client').length,                                            color: '#22c55e' },
@@ -474,7 +474,7 @@ export function IntakePerformancePage({ refs }) {
   const perf = STAFF_LIST.map(staff => {
     const mine     = active.filter(r => normalizeStaffName(r.intake_personnel) === normalizeStaffName(staff))
     const signed   = mine.filter(r => (r.intake_paperwork || '').toLowerCase().includes('signed')).length
-    const verified = mine.filter(r => r.insurance_verified === 'YES').length
+    const verified = mine.filter(r => isInsuranceVerified(r.insurance_verified)).length
     const dxRecvd  = mine.filter(r => normalizeAutismDx(r.autism_diagnosis) === 'Received').length
     const activeC  = mine.filter(r => r.current_stage === 'Active Client').length
     const pending  = mine.filter(r => !['signed','completed'].includes((r.intake_paperwork || '').toLowerCase())).length
@@ -484,7 +484,7 @@ export function IntakePerformancePage({ refs }) {
 
   const totalActive   = active.length
   const totalSigned   = active.filter(r => (r.intake_paperwork || '').toLowerCase().includes('signed')).length
-  const totalVerified = active.filter(r => r.insurance_verified === 'YES').length
+  const totalVerified = active.filter(r => isInsuranceVerified(r.insurance_verified)).length
   const overallScore  = totalActive > 0 ? Math.round(((totalSigned + totalVerified) / (totalActive * 2)) * 100) : 0
 
   const months = {}

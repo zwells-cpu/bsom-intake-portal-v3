@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { PaStatusBadge } from '../components/Badge'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
-import { getAssessmentRecordId, getAssessmentWorkflowProgress, getAssessmentWorkflowStatus, getAuthorizationStatus, normalizeTreatmentPlanStatus } from '../lib/utils'
+import { getAssessmentRecordId, getAssessmentWorkflowProgress, getAssessmentWorkflowStatus, getAuthorizationStatus, isAuthorizationApproved, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 function assessVal(value) {
   if (!value) return <span style={{ color: 'var(--dim)', fontSize: 12 }}>--</span>
@@ -459,7 +459,7 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
   const ready = assessData.filter(record => record.ready_for_services === true)
   const almostAuth = assessData.filter(record =>
     getAssessmentWorkflowStatus(record) === 'Completed'
-    && !['Approved'].includes(getAuthorizationStatus(record))
+    && !isAuthorizationApproved(record)
     && !record.ready_for_services
   )
   const notReady = assessData.filter(record => !record.ready_for_services && !almostAuth.includes(record))

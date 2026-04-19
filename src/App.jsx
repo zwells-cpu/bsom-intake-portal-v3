@@ -20,7 +20,7 @@ import { AboutPortalPage, LocationsPage } from './pages/AboutPage'
 import { AssessmentTracker, ParentInterviewsPage, BCBAAssignmentsPage, AssessmentProgressPage, TreatmentPlansPage, ReadyForServicesPage } from './pages/AssessmentPages'
 import { PipelineOverviewPage, ReferralAgingPage, ClinicVolumePage, ConversionRatePage, IntakePerformancePage } from './pages/OperationsPages'
 import { createActivityLog } from './lib/activityLogs'
-import { getAssessmentRecordId } from './lib/utils'
+import { getAssessmentRecordId, needsInsuranceVerification } from './lib/utils'
 
 export default function App() {
   const { theme, setTheme } = useTheme()
@@ -171,7 +171,7 @@ export default function App() {
   const active = useMemo(() => refs.filter(r => r.status === 'active'), [refs])
   const nr = useMemo(() => refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out'), [refs])
   const pending = useMemo(() => active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase())), [active])
-  const noIns = useMemo(() => active.filter(r => !['yes', 'verified'].includes((r.insurance_verified || '').toLowerCase())).length, [active])
+  const noIns = useMemo(() => active.filter(r => needsInsuranceVerification(r.insurance_verified)).length, [active])
   const operationsRefs = useMemo(() => refs, [refs])
   const operationsAssessData = useMemo(() => assessData, [assessData])
 
@@ -815,7 +815,11 @@ export default function App() {
           onSave={handleUpdateReferral}
           onUploadDocument={handleUploadClientDocument}
           onDelete={(id) => deleteRecord('referral', id)}
-          onSetStatus={(id, status) => { handleSetReferralStatus(id, status); setSelId(null) }}
+          onSetStatus={async (id, status) => {
+            const res = await handleSetReferralStatus(id, status)
+            if (res?.success) setSelId(null)
+            return res
+          }}
           onToggleParentInterview={handleToggleParentInterview}
         />
       )}

@@ -2,7 +2,7 @@ import { Badge, OfficePill, ProgressRing } from '../components/Badge'
 import { ClickableStatCard } from '../components/StatFilterControls'
 import { RecentActivityCard } from '../components/dashboard/RecentActivityCard'
 import { useActivityLogs } from '../hooks/useActivityLogs'
-import { normalizeAutismDx, pct } from '../lib/utils'
+import { isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, pct } from '../lib/utils'
 
 export function DashboardPage({ refs, setSelectedId, openModulePage }) {
   const { logs, loading: activityLoading } = useActivityLogs(8)
@@ -10,7 +10,7 @@ export function DashboardPage({ refs, setSelectedId, openModulePage }) {
   const nr = refs.filter((r) => r.status === 'non-responsive' || r.status === 'referred-out')
   const signed = active.filter((r) => (r.intake_paperwork || '').toLowerCase().includes('signed'))
   const pending = active.filter((r) => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
-  const noIns = active.filter((r) => r.insurance_verified === 'NO' || r.insurance_verified === 'AWAITING')
+  const noIns = active.filter((r) => needsInsuranceVerification(r.insurance_verified))
   const readyForInterview = active.filter((r) => r.ready_for_parent_interview === true).length
   const aging14 = active.filter((r) => {
     const received = r.referral_received_date || r.date_received
@@ -112,7 +112,7 @@ export function DashboardPage({ refs, setSelectedId, openModulePage }) {
               </div>
             </div>
             <div className="info-row"><span className="info-label">Paperwork signed</span><span style={{ color: '#22c55e', fontWeight: 700 }}>{signed.length} / {active.length}</span></div>
-            <div className="info-row"><span className="info-label">Insurance verified</span><span style={{ color: '#f59e0b', fontWeight: 700 }}>{active.filter((r) => r.insurance_verified === 'YES').length} / {active.length}</span></div>
+            <div className="info-row"><span className="info-label">Insurance verified</span><span style={{ color: '#f59e0b', fontWeight: 700 }}>{active.filter((r) => isInsuranceVerified(r.insurance_verified)).length} / {active.length}</span></div>
             <div className="info-row" style={{ border: 'none' }}><span className="info-label">Autism DX received</span><span style={{ color: '#a5b4fc', fontWeight: 700 }}>{active.filter((r) => normalizeAutismDx(r.autism_diagnosis) === 'Received').length} / {active.length}</span></div>
           </div>
         </div>

@@ -164,6 +164,28 @@ export function getAuthorizationStatus(record) {
   return record?.authorization_status || record?.pa_status || ''
 }
 
+export function isAuthorizationApproved(record) {
+  const status = getAuthorizationStatus(record)
+  return ['Approved', 'No PA Needed', 'Approved/Discharged'].includes(status)
+}
+
+export function normalizeInsuranceVerifiedStatus(value) {
+  const normalized = String(value || '').trim().toUpperCase()
+  if (normalized === 'VERIFIED') return 'YES'
+  if (normalized === 'YES') return 'YES'
+  if (normalized === 'AWAITING') return 'AWAITING'
+  if (normalized === 'NO') return 'NO'
+  return normalized
+}
+
+export function isInsuranceVerified(value) {
+  return normalizeInsuranceVerifiedStatus(value) === 'YES'
+}
+
+export function needsInsuranceVerification(value) {
+  return !isInsuranceVerified(value)
+}
+
 // ── Status color helper for assessments ──
 export function statusColor(s) {
   if (['Finalized','Done','Completed'].includes(s)) return '#22c55e'
