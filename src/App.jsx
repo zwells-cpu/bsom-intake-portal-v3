@@ -1,3 +1,4 @@
+import { supabase } from './lib/supabase'
 import { useEffect, useMemo, useState } from 'react'
 import { useTheme } from './hooks/useTheme'
 import { useReferrals } from './hooks/useReferrals'
@@ -23,6 +24,15 @@ export default function App() {
   const { theme, setTheme } = useTheme()
   const { refs, loading, error, saving, saved, setError, load, saveReferral, updateReferral, deleteReferral, setStatus, toggleParentInterview } = useReferrals()
   const { assessData, assessLoading, loadAssessments, saveAssessEdit, deleteAssessment } = useAssessments()
+  const [session, setSession] = useState(null)
+  const [profile, setProfile] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [profileLoading, setProfileLoading] = useState(false)
+  const [loginEmail, setLoginEmail] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
+  const [loginError, setLoginError] = useState(null)
+  const [loginPending, setLoginPending] = useState(false)
+  const [signOutPending, setSignOutPending] = useState(false)
 
   const [screen, setScreen] = useState('home')
   const [module, setModule] = useState(null)
@@ -32,7 +42,77 @@ export default function App() {
   const [role, setRole] = useState('All Staff')
   const [routeFilter, setRouteFilter] = useState(null)
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    let mounted = true
+
+    const initSession = async () => {
+      const { data, error: sessionError } = await supabase.auth.getSession()
+
+      if (!mounted) return
+
+      if (sessionError) {
+        setLoginError(sessionError.message)
+      }
+
+      setSession(data.session ?? null)
+      setAuthLoading(false)
+    }
+
+    initSession()
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession ?? null)
+      setAuthLoading(false)
+      setLoginError(null)
+    })
+
+    return () => {
+      mounted = false
+      authListener.subscription.unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!session) return
+    load()
+  }, [load, session])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadProfile = async () => {
+      if (!session?.user?.id) {
+        setProfile(null)
+        setProfileLoading(false)
+        return
+      }
+
+      setProfileLoading(true)
+
+      const { data, error: profileError } = await supabase
+        .from('profiles')
+        .select('full_name, role, office')
+        .eq('id', session.user.id)
+        .maybeSingle()
+
+      if (cancelled) return
+
+      if (profileError) {
+        setLoginError(profileError.message)
+        setProfile(null)
+      } else {
+        setProfile(data ?? null)
+      }
+
+      setProfileLoading(false)
+    }
+
+    loadProfile()
+
+    return () => {
+      cancelled = true
+    }
+  }, [session])
 
   useEffect(() => {
     const h = (e) => enterModule(e.detail)
@@ -114,9 +194,130 @@ export default function App() {
     return res
   }
 
+  const displayName = profile?.full_name || session?.user?.email || 'Signed-in user'
+  const displayRole = profile?.role || 'Role pending'
+  const displayOffice = profile?.office || 'Office pending'
+
+  const handleLogin = async (e) => {
+    e.preventDefault()
+    setLoginPending(true)
+    setLoginError(null)
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: loginEmail.trim(),
+      password: loginPassword,
+    })
+
+    if (signInError) {
+      setLoginError(signInError.message)
+    }
+
+    setLoginPending(false)
+  }
+
+  const handleSignOut = async () => {
+    setSignOutPending(true)
+    setLoginError(null)
+
+    const { error: signOutError } = await supabase.auth.signOut()
+
+    if (signOutError) {
+      setLoginError(signOutError.message)
+    } else {
+      setProfile(null)
+      setScreen('home')
+      setModule(null)
+      setSubpage(null)
+      setSelId(null)
+      setSelAssessId(null)
+      setRouteFilter(null)
+      setLoginPassword('')
+    }
+
+    setSignOutPending(false)
+  }
+
+  if (authLoading) {
+    return (
+      <div className="loader-wrap">
+        <div className="spinner" />
+        <div style={{ color: 'var(--muted)' }}>Checking your session...</div>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '32px', background: 'var(--bg)' }}>
+        <div style={{ width: '100%', maxWidth: 420, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 24, boxShadow: 'var(--shadow)', padding: 28 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 20 }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--accent)' }}>Secure Access</div>
+              <h1 style={{ margin: '8px 0 0', fontSize: 28, lineHeight: 1.1 }}>Sign in to the intake portal</h1>
+            </div>
+            <ThemeToggle theme={theme} setTheme={setTheme} />
+          </div>
+
+          <p style={{ margin: '0 0 20px', color: 'var(--muted)', fontSize: 14, lineHeight: 1.6 }}>
+            Use your Supabase account credentials to continue.
+          </p>
+
+          <form onSubmit={handleLogin} style={{ display: 'grid', gap: 14 }}>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>Email</span>
+              <input
+                type="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                autoComplete="email"
+                required
+                style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
+              />
+            </label>
+
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>Password</span>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
+              />
+            </label>
+
+            {loginError && (
+              <div className="error-bar" style={{ margin: 0 }}>
+                {loginError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loginPending}
+              style={{ border: 'none', borderRadius: 12, padding: '13px 16px', background: 'var(--accent)', color: '#fff', fontWeight: 800, fontSize: 14, cursor: loginPending ? 'wait' : 'pointer', opacity: loginPending ? 0.75 : 1 }}
+            >
+              {loginPending ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+        </div>
+      </div>
+    )
+  }
+
   if (screen === 'home') {
     return (
       <>
+        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 30, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 16, background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 12, color: 'var(--muted)' }}>{profileLoading ? 'Loading profile...' : displayRole}</div>
+            <div style={{ fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{displayName}</div>
+          </div>
+          <button className="btn-sm" onClick={handleSignOut} disabled={signOutPending}>
+            {signOutPending ? 'Signing out...' : 'Sign Out'}
+          </button>
+        </div>
         <HomePage onEnterModule={enterModule} theme={theme} setTheme={setTheme} />
         {saved && <div className="toast">✅ Referral saved!</div>}
       </>
@@ -205,6 +406,14 @@ export default function App() {
               {m?.icon} {m?.name}{currentNavLabel ? ` - ${currentNavLabel}` : ''}
             </div>
             <div className="topbar-right">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '5px 12px', borderRadius: 999, background: 'var(--surface2)', border: '1px solid var(--border2)', maxWidth: 260 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>
+                    {profileLoading ? 'Loading profile' : `${displayRole} - ${displayOffice}`}
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</div>
+                </div>
+              </div>
               {(module === 'intake' || module === 'operations') && (
                 <select
                   style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 7, padding: '4px 10px', color: 'var(--text)', fontSize: 12, fontWeight: 600 }}
@@ -221,6 +430,9 @@ export default function App() {
                 </span>
               )}
               <ThemeToggle theme={theme} setTheme={setTheme} />
+              <button className="btn-sm" onClick={handleSignOut} disabled={signOutPending}>
+                {signOutPending ? 'Signing out...' : 'Sign Out'}
+              </button>
               <button
                 className="btn-sm"
                 onClick={() => {
