@@ -717,7 +717,7 @@ export default function App() {
             </div>
           )}
         />
-        {saved && <div className="toast">✅ Referral saved!</div>}
+        {saved && <div className="toast">Referral saved.</div>}
         {idleWarningModal}
       </>
     )
@@ -779,7 +779,6 @@ export default function App() {
 
     return (
       <div style={{ textAlign: 'center', padding: '80px 40px' }}>
-        <div style={{ fontSize: 40, marginBottom: 16 }}>🔍</div>
         <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Page not found</div>
       </div>
     )
@@ -787,7 +786,7 @@ export default function App() {
 
   return (
     <>
-      {saved && <div className="toast">✅ Referral saved!</div>}
+      {saved && <div className="toast">Referral saved.</div>}
 
       <div className="shell">
         <Sidebar
@@ -803,7 +802,7 @@ export default function App() {
         <div className="content">
           <div className="topbar">
             <div className="topbar-title">
-              {m?.icon} {m?.name}{currentNavLabel ? ` - ${currentNavLabel}` : ''}
+              {m?.name}{currentNavLabel ? ` - ${currentNavLabel}` : ''}
             </div>
             <div className="topbar-right">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '5px 12px', borderRadius: 999, background: 'var(--surface2)', border: '1px solid var(--border2)', maxWidth: 260 }}>
@@ -814,7 +813,7 @@ export default function App() {
                   <div style={{ fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</div>
                 </div>
               </div>
-              <span className="badge-pill">✓ {active.length} Active</span>
+              <span className="badge-pill">{active.length} Active</span>
               {pending.length > 0 && (
                 <span style={{ background: '#f59e0b18', color: '#f59e0b', border: '1px solid #f59e0b30', borderRadius: 20, padding: '3px 12px', fontSize: '11.5px', fontWeight: 700 }}>
                   {pending.length} Pending Docs
@@ -831,7 +830,7 @@ export default function App() {
                   if (module === 'assessment' || module === 'operations') loadAssessments()
                 }}
               >
-                ↻ Refresh
+                Refresh
               </button>
             </div>
           </div>
@@ -839,8 +838,8 @@ export default function App() {
           <div className="page">
             {error && (
               <div className="error-bar">
-                ⚠️ {error}
-                <button className="x-btn" onClick={() => setError(null)}>✕</button>
+                {error}
+                <button className="x-btn" onClick={() => setError(null)}>Close</button>
               </div>
             )}
             <div className={`page-inner ${module === 'intake' && subpage === 'all' ? 'page-inner-wide' : ''}`}>

@@ -8,6 +8,8 @@ export const INSURANCES = [
 export const BOOL = ['YES', 'NO', 'AWAITING']
 
 export const STAT = ['Completed', 'Emailed', 'Awaiting', 'Please Send', 'N/A']
+export const REFERRAL_FORM_OPTIONS = ['Received', 'Emailed', 'Awaiting', 'Please Send', 'N/A']
+export const IEP_REPORT_OPTIONS = ['Received', 'Not Received', 'Too Young']
 export const AUTISM_DIAGNOSIS_OPTIONS = ['Received', 'Not Received', 'Requested']
 
 export const STAFF = ['Zanteria', 'Aerianna', 'LaShannon', 'Keiara', 'Celia', 'Other']
@@ -15,43 +17,43 @@ export const STAFF = ['Zanteria', 'Aerianna', 'LaShannon', 'Keiara', 'Celia', 'O
 export const ALL_ROLES = ['All Staff', ...STAFF.filter((s) => s !== 'Other')]
 
 export const MODULES = [
-  { id: 'dashboard', icon: '\u{1F4CA}', name: 'Dashboard', desc: 'At-a-glance stats, alerts, and recent activity', color: '#6366f1' },
-  { id: 'intake', icon: '\u{1F4CB}', name: 'Intake', desc: 'Manage referrals, add new clients, track status', color: '#22c55e' },
-  { id: 'assessment', icon: '\u{1F9EA}', name: 'Initial Assessments', desc: 'Vineland, SRS-2, IEP and assessment tracking', color: '#f59e0b' },
-  { id: 'operations', icon: '\u{1F4C8}', name: 'Operational Insights', desc: 'Aging reports, volume, conversion rates, and team performance', color: '#fb923c' },
-  { id: 'about', icon: '\u2139\uFE0F', name: 'About', desc: 'Office locations, version history, portal info', color: '#8b5cf6' },
+  { id: 'dashboard', icon: '', name: 'Dashboard', desc: 'At-a-glance stats, alerts, and recent activity', color: '#6366f1' },
+  { id: 'intake', icon: '', name: 'Intake', desc: 'Manage referrals, add new clients, track status', color: '#22c55e' },
+  { id: 'assessment', icon: '', name: 'Initial Assessments', desc: 'Vineland, SRS-2, IEP and assessment tracking', color: '#f59e0b' },
+  { id: 'operations', icon: '', name: 'Operational Insights', desc: 'Aging reports, volume, conversion rates, and team performance', color: '#fb923c' },
+  { id: 'about', icon: '', name: 'About', desc: 'Office locations, version history, portal info', color: '#8b5cf6' },
 ]
 
 export const MODULE_NAV = {
   dashboard: [
-    { id: 'overview', icon: '\u{1F3E0}', label: 'Overview' },
+    { id: 'overview', icon: '', label: 'Overview' },
   ],
   intake: [
-    { id: 'intakedash', icon: '\u{1F3E0}', label: 'Intake Dashboard' },
-    { id: 'all', icon: '\u{1F4CB}', label: 'All Referrals' },
-    { id: 'new', icon: '+', label: 'New Referral' },
-    { id: 'pending', icon: '\u{1F4C4}', label: 'Pending Documents' },
-    { id: 'insurance', icon: '\u{1F6E1}\uFE0F', label: 'Insurance Verification' },
-    { id: 'nr', icon: '\u{1F6AB}', label: 'Non-Responsive' },
+    { id: 'intakedash', icon: '', label: 'Intake Dashboard' },
+    { id: 'all', icon: '', label: 'All Referrals' },
+    { id: 'new', icon: '', label: 'New Referral' },
+    { id: 'pending', icon: '', label: 'Pending Documents' },
+    { id: 'insurance', icon: '', label: 'Insurance Verification' },
+    { id: 'nr', icon: '', label: 'Non-Responsive' },
   ],
   assessment: [
-    { id: 'tracker', icon: '\u{1F9EA}', label: 'Assessment Tracker' },
-    { id: 'interviews', icon: '\u{1F5E3}\uFE0F', label: 'Parent Interviews' },
-    { id: 'bcba', icon: '\u{1F469}\u200D\u2695\uFE0F', label: 'BCBA Assignments' },
-    { id: 'progress', icon: '\u{1F4C8}', label: 'Assessment Progress' },
-    { id: 'txplan', icon: '\u{1F4DD}', label: 'Treatment Plan Status' },
-    { id: 'readysvc', icon: '\u2B50', label: 'Ready for Services' },
+    { id: 'tracker', icon: '', label: 'Assessment Tracker' },
+    { id: 'interviews', icon: '', label: 'Parent Interviews' },
+    { id: 'bcba', icon: '', label: 'BCBA Assignments' },
+    { id: 'progress', icon: '', label: 'Assessment Progress' },
+    { id: 'txplan', icon: '', label: 'Treatment Plan Status' },
+    { id: 'readysvc', icon: '', label: 'Ready for Services' },
   ],
   operations: [
-    { id: 'pipeline', icon: '\u{1F504}', label: 'Pipeline Overview' },
-    { id: 'aging', icon: '\u23F1\uFE0F', label: 'Referral Aging' },
-    { id: 'volume', icon: '\u{1F3E2}', label: 'Clinic Volume' },
-    { id: 'conversion', icon: '\u{1F4CA}', label: 'Conversion Rate' },
-    { id: 'performance', icon: '\u2B50', label: 'Intake Performance' },
+    { id: 'pipeline', icon: '', label: 'Pipeline Overview' },
+    { id: 'aging', icon: '', label: 'Referral Aging' },
+    { id: 'volume', icon: '', label: 'Clinic Volume' },
+    { id: 'conversion', icon: '', label: 'Conversion Rate' },
+    { id: 'performance', icon: '', label: 'Intake Performance' },
   ],
   about: [
-    { id: 'locations', icon: '\u{1F4CD}', label: 'Office Locations' },
-    { id: 'portal', icon: '\u2139\uFE0F', label: 'About the Portal' },
+    { id: 'locations', icon: '', label: 'Office Locations' },
+    { id: 'portal', icon: '', label: 'About the Portal' },
   ],
 }
 
@@ -70,15 +72,15 @@ export const PA_COLORS = {
 }
 
 export const PA_ICONS = {
-  Approved: '\u2713',
-  'Approved/Discharged': '\u{1F3C1}',
-  'No PA Needed': '\u2713',
-  Pending: '\u25D0',
-  'In Review': '\u{1F50D}',
-  'Reauthorization Needed': '\u{1F504}',
-  'Appeal Pending': '\u26A0\uFE0F',
-  Denied: '\u2717',
-  'Referred Out': '\u{1F3C1}',
+  Approved: '',
+  'Approved/Discharged': '',
+  'No PA Needed': '',
+  Pending: '',
+  'In Review': '',
+  'Reauthorization Needed': '',
+  'Appeal Pending': '',
+  Denied: '',
+  'Referred Out': '',
 }
 
 export const STAGE_COLORS = {
@@ -94,24 +96,24 @@ export const STAGE_COLORS = {
 }
 
 export const STAGE_ICONS = {
-  'New Referral': '\u{1F4E5}',
-  Intake: '\u{1F4CB}',
-  'Initial Assessment': '\u{1F9EA}',
-  'PA Submitted': '\u{1F4E4}',
-  'PA In Review': '\u{1F50D}',
-  'PA Approved': '\u2705',
-  'Active Client': '\u2B50',
-  'Reauth Needed': '\u{1F504}',
-  Discharged: '\u{1F3C1}',
+  'New Referral': '',
+  Intake: '',
+  'Initial Assessment': '',
+  'PA Submitted': '',
+  'PA In Review': '',
+  'PA Approved': '',
+  'Active Client': '',
+  'Reauth Needed': '',
+  Discharged: '',
 }
 
 export const CHECKLIST_FIELDS = [
-  ['Referral Form', 'referral_form', STAT],
+  ['Referral Form', 'referral_form', REFERRAL_FORM_OPTIONS],
   ['Permission Assessment', 'permission_assessment', STAT],
   ['Vineland', 'vineland', STAT],
   ['SRS-2', 'srs2', STAT],
   ['Attends School', 'attends_school', BOOL],
-  ['IEP Report', 'iep_report', STAT],
+  ['IEP Report', 'iep_report', IEP_REPORT_OPTIONS],
   ['Insurance Verified', 'insurance_verified', BOOL],
   ['Autism Diagnosis', 'autism_diagnosis', AUTISM_DIAGNOSIS_OPTIONS],
   ['Intake Paperwork', 'intake_paperwork', STAT],

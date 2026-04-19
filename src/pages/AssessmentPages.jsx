@@ -13,16 +13,12 @@ function assessVal(value) {
 
   if (['DONE', 'YES', 'COMPLETED'].some(token => upper.includes(token))) {
     color = '#22c55e'
-    icon = '✓ '
   } else if (['IN-PROGRESS', 'IN PROGRESS', 'NOW SCHEDULED', 'REPORT IN PROGRESS'].some(token => upper.includes(token))) {
     color = '#f59e0b'
-    icon = '◐ '
   } else if (['WAITING', 'TBD'].some(token => upper.includes(token))) {
     color = '#fb923c'
-    icon = '◷ '
   } else if (['NO', 'DECLINED'].some(token => upper.includes(token))) {
     color = '#ef4444'
-    icon = '✕ '
   }
 
   return <span className="bdg" style={{ background: `${color}20`, color, border: `1px solid ${color}35` }}>{icon}{value}</span>
@@ -116,7 +112,6 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
 
       <div className="filter-row">
         <div className="search-wrap">
-          <span className="search-icon">🔍</span>
           <input className="search-input" placeholder="Search client or caregiver..." value={search} onChange={event => setSearch(event.target.value)} />
         </div>
         <div className="filter-btns">

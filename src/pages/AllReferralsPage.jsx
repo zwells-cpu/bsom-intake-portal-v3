@@ -45,7 +45,6 @@ export function AllReferralsPage({ refs, onSelectRef, statFilter, onClearStatFil
     <>
       <div className="filter-row">
         <div className="search-wrap">
-          <span className="search-icon">🔍</span>
           <input className="search-input" placeholder="Search name or caregiver..."
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
@@ -55,7 +54,7 @@ export function AllReferralsPage({ refs, onSelectRef, statFilter, onClearStatFil
           ))}
         </div>
         <div style={{ marginLeft: 'auto' }}>
-          <button className="btn-export" onClick={() => exportCSV(refs)}>⬇ Export CSV</button>
+          <button className="btn-export" onClick={() => exportCSV(refs)}>Export CSV</button>
         </div>
       </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered referrals" />

@@ -45,7 +45,7 @@ export function IntakeDashboard({ refs, onSelectRef, openModulePage }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
         <div className="card card-pad">
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>📊 Pipeline by Stage</div>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Pipeline by Stage</div>
           {stageOrder.map(s => {
             const count = byStage[s] || 0
             if (!count) return null
@@ -68,19 +68,19 @@ export function IntakeDashboard({ refs, onSelectRef, openModulePage }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div className="card card-pad">
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>🔔 Action Items</div>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Action Items</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {pending.length ? <ActionItem color="#f59e0b" text={`◐ ${pending.length} pending documents`} onClick={() => openModulePage('intake', 'pending', { target: 'pending-docs', key: 'total-pending', label: 'Pending Documents' })} /> : null}
-              {noIns.length ? <ActionItem color="#a5b4fc" text={`🛡️ ${noIns.length} unverified insurance`} onClick={() => openModulePage('intake', 'insurance', { target: 'insurance-verification', key: 'unverified', label: 'Unverified Insurance' })} /> : null}
-              {noDx.length ? <ActionItem color="#fb923c" text={`◐ ${noDx.length} awaiting diagnosis docs`} /> : null}
-              {nr.length ? <ActionItem color="#ef4444" text={`✗ ${nr.length} non-responsive / referred out`} onClick={() => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'all', label: 'Non-Responsive / Referred Out' })} /> : null}
-              {readyPI.length ? <ActionItem color="#22c55e" text={`✓ ${readyPI.length} ready for parent interview`} /> : null}
-              {!pending.length && !noIns.length && !nr.length && <div style={{ color: 'var(--dim)', fontSize: 13, textAlign: 'center', padding: 16 }}>✅ No action items!</div>}
+              {pending.length ? <ActionItem color="#f59e0b" text={`${pending.length} pending documents`} onClick={() => openModulePage('intake', 'pending', { target: 'pending-docs', key: 'total-pending', label: 'Pending Documents' })} /> : null}
+              {noIns.length ? <ActionItem color="#a5b4fc" text={`${noIns.length} unverified insurance`} onClick={() => openModulePage('intake', 'insurance', { target: 'insurance-verification', key: 'unverified', label: 'Unverified Insurance' })} /> : null}
+              {noDx.length ? <ActionItem color="#fb923c" text={`${noDx.length} awaiting diagnosis docs`} /> : null}
+              {nr.length ? <ActionItem color="#ef4444" text={`${nr.length} non-responsive / referred out`} onClick={() => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'all', label: 'Non-Responsive / Referred Out' })} /> : null}
+              {readyPI.length ? <ActionItem color="#22c55e" text={`${readyPI.length} ready for parent interview`} /> : null}
+              {!pending.length && !noIns.length && !nr.length && <div style={{ color: 'var(--dim)', fontSize: 13, textAlign: 'center', padding: 16 }}>No action items.</div>}
             </div>
           </div>
 
           <div className="card card-pad">
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>👥 By Staff Member</div>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>By Staff Member</div>
             {staffList.map(staff => {
               return (
                 <div key={staff.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #0a1525' }}>
@@ -97,7 +97,7 @@ export function IntakeDashboard({ refs, onSelectRef, openModulePage }) {
       </div>
 
       <div>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>🕐 Recently Added</div>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Recently Added</div>
         <div className="card">
           <div className="table-wrap">
             <table>
@@ -166,7 +166,7 @@ export function PendingDocsPage({ refs, onSelectRef, statFilter, onSetStatFilter
             <thead><tr><th>Client</th><th>Referral ID</th><th>Office</th><th>Paperwork</th><th>Autism DX</th><th>Vineland</th><th>SRS-2</th><th>Staff</th><th>Date Received</th><th /></tr></thead>
             <tbody>
               {filteredRows.length === 0
-                ? <tr><td colSpan={10} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>✅ No pending documents!</td></tr>
+                ? <tr><td colSpan={10} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No pending documents.</td></tr>
                 : filteredRows.map(r => (
                   <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}>
                     <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.caregiver || ''}</div></td>
@@ -212,9 +212,9 @@ export function InsuranceVerifPage({ refs, onSelectRef, statFilter, onSetStatFil
         <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Track insurance verification status across all active referrals</div>
       </div>
       <div className="stats-row stats-4" style={{ marginBottom: 22 }}>
-        <ClickableStatCard value={verified.length} label="✓ Verified" color="#22c55e" active={activeFilter?.key === 'verified'} onClick={() => toggleFilter('verified', 'Insurance Verification: Verified')} />
-        <ClickableStatCard value={awaiting.length} label="◐ Awaiting" color="#f59e0b" active={activeFilter?.key === 'awaiting'} onClick={() => toggleFilter('awaiting', 'Insurance Verification: Awaiting')} />
-        <ClickableStatCard value={notStarted.length} label="✗ Not Started" color="#ef4444" active={activeFilter?.key === 'not-started'} onClick={() => toggleFilter('not-started', 'Insurance Verification: Not Started')} />
+        <ClickableStatCard value={verified.length} label="Verified" color="#22c55e" active={activeFilter?.key === 'verified'} onClick={() => toggleFilter('verified', 'Insurance Verification: Verified')} />
+        <ClickableStatCard value={awaiting.length} label="Awaiting" color="#f59e0b" active={activeFilter?.key === 'awaiting'} onClick={() => toggleFilter('awaiting', 'Insurance Verification: Awaiting')} />
+        <ClickableStatCard value={notStarted.length} label="Not Started" color="#ef4444" active={activeFilter?.key === 'not-started'} onClick={() => toggleFilter('not-started', 'Insurance Verification: Not Started')} />
         <ClickableStatCard value={active.length} label="Total Active" color="#6366f1" active={activeFilter?.key === 'total-active'} onClick={() => toggleFilter('total-active', 'Insurance Verification: Total Active')} />
       </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing insurance verification matches" />
@@ -225,7 +225,7 @@ export function InsuranceVerifPage({ refs, onSelectRef, statFilter, onSetStatFil
               <thead><tr><th>Client</th><th>Insurance</th><th>Verified</th><th>Staff</th><th /></tr></thead>
               <tbody>
                 {filteredRows.length === 0
-                  ? <tr><td colSpan={5} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>✅ All insurance verified!</td></tr>
+                  ? <tr><td colSpan={5} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>All insurance verified.</td></tr>
                   : filteredRows.map(r => (
                     <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}>
                       <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11 }}><OfficePill office={r.office} previousOffice={r.previous_office} /></div></td>
@@ -240,14 +240,14 @@ export function InsuranceVerifPage({ refs, onSelectRef, statFilter, onSetStatFil
           </div>
         </div>
         <div className="card card-pad">
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>🛡️ By Provider</div>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>By Provider</div>
           {Object.entries(byProvider).sort((a, b) => b[1] - a[1]).map(([p, c]) => (
             <div key={p} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #0a1525' }}>
               <span style={{ fontSize: 12, color: 'var(--muted)' }}>{p}</span>
               <span className="bdg" style={{ background: '#f59e0b20', color: '#f59e0b', border: '1px solid #f59e0b30' }}>{c} pending</span>
             </div>
           ))}
-          {Object.keys(byProvider).length === 0 && <div style={{ color: 'var(--dim)', fontSize: 13, textAlign: 'center', padding: 16 }}>✅ All clear!</div>}
+          {Object.keys(byProvider).length === 0 && <div style={{ color: 'var(--dim)', fontSize: 13, textAlign: 'center', padding: 16 }}>All clear.</div>}
           <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
               <span style={{ fontSize: 12, color: 'var(--muted)' }}>Verification rate</span>

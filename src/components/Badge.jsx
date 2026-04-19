@@ -1,4 +1,4 @@
-import { sc, badgeIcon } from '../lib/utils'
+import { sc } from '../lib/utils'
 
 export function Badge({ value }) {
   if (!value || value === '--') {
@@ -9,10 +9,9 @@ export function Badge({ value }) {
     )
   }
   const color = sc(value)
-  const icon = badgeIcon(value)
   return (
     <span className="bdg" style={{ background: `${color}20`, color, border: `1px solid ${color}35`, letterSpacing: '0.01em' }}>
-      {icon}{value}
+      {value}
     </span>
   )
 }
@@ -29,7 +28,7 @@ export function OfficePill({ office, previousOffice }) {
     <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', minHeight: 28 }}>
       <span className="office-pill">{norm || ''}</span>
       <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: 600, visibility: showPreviousOffice ? 'visible' : 'hidden' }}>
-        ↩ prev. {showPreviousOffice ? previousOffice : ' '}
+        Prev. {showPreviousOffice ? previousOffice : ' '}
       </span>
     </span>
   )
@@ -48,11 +47,6 @@ export function StagePill({ stage }) {
     'PA Submitted': '#fb923c', 'PA In Review': '#fb923c', 'PA Approved': '#22c55e',
     'Active Client': '#22c55e', 'Reauth Needed': '#f59e0b', 'Discharged': '#64748b',
   }
-  const ICONS = {
-    'New Referral': '📥', 'Intake': '📋', 'Initial Assessment': '🧪',
-    'PA Submitted': '📤', 'PA In Review': '🔍', 'PA Approved': '✅',
-    'Active Client': '⭐', 'Reauth Needed': '🔄', 'Discharged': '🏁',
-  }
   if (!stage) return <span style={{ color: 'var(--dim)' }}>--</span>
   const c = COLORS[stage] || '#64748b'
   const unifiedStageFamily = ['New Referral', 'Intake', 'Initial Assessment', 'Active Client'].includes(stage)
@@ -62,14 +56,13 @@ export function StagePill({ stage }) {
         className="stage-badge action-btn"
         style={{ background: `${c}20`, color: c, borderColor: `${c}35` }}
       >
-        <span className="stage-badge-icon">{ICONS[stage] || ''}</span>
         <span>{stage}</span>
       </span>
     )
   }
   return (
     <span style={{ background: `${c}20`, color: c, border: `1px solid ${c}35`, borderRadius: 6, padding: '2px 9px', fontSize: '10.5px', fontWeight: 700, whiteSpace: 'nowrap' }}>
-      {ICONS[stage] || ''} {stage}
+      {stage}
     </span>
   )
 }
@@ -80,17 +73,11 @@ export function PaStatusBadge({ status }) {
     'Pending': '#f59e0b', 'In Review': '#6366f1', 'Reauthorization Needed': '#f59e0b',
     'Appeal Pending': '#fb923c', 'Denied': '#ef4444', 'Referred Out': '#64748b',
   }
-  const PA_ICONS = {
-    'Approved': '✓', 'Approved/Discharged': '🏁', 'No PA Needed': '✓',
-    'Pending': '◐', 'In Review': '🔍', 'Reauthorization Needed': '🔄',
-    'Appeal Pending': '⚠️', 'Denied': '✗', 'Referred Out': '🏁',
-  }
   const s = status || 'Pending'
   const c = PA_COLORS[s] || '#64748b'
-  const i = PA_ICONS[s] || '◐'
   return (
     <span className="bdg" style={{ background: `${c}20`, color: c, border: `1px solid ${c}35` }}>
-      {i} {s}
+      {s}
     </span>
   )
 }

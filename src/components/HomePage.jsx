@@ -39,7 +39,7 @@ export function HomePage({
             onClick={() => onEnterModule(m.id)}
           >
             <div className="module-arrow">{'\u2192'}</div>
-            <div className="module-icon">{m.icon}</div>
+            {m.icon ? <div className="module-icon">{m.icon}</div> : null}
             <div className="module-name">{m.name}</div>
             <div className="module-desc">{m.desc}</div>
           </div>
@@ -50,7 +50,6 @@ export function HomePage({
           style={{ '--card-color': 'var(--accent)' }}
         >
           <div className="module-arrow">{'\u2192'}</div>
-          <div className="module-icon">{'\u26A1'}</div>
           <div className="module-name">Quick Actions</div>
           <div className="module-desc">Jump straight into the most common intake tasks without leaving the home screen.</div>
           <div className="quick-actions">

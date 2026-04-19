@@ -16,13 +16,6 @@ export function sc(v) {
 
 // ── Badge icon ──
 export function badgeIcon(v) {
-  if (!v) return ''
-  const u = v.toUpperCase()
-  if (u.includes('NOT RECEIVED')) return '✗ '
-  if (['COMPLETED','SIGNED','YES','RECEIVED','VERIFIED','APPROVED','DONE','NO PA NEEDED'].some(x => u.includes(x))) return '✓ '
-  if (['DENIED','NON-RESPONSIVE','PLEASE','DECLINED','MISSING'].some(x => u.includes(x))) return '✗ '
-  if (u === 'NO') return '✗ '
-  if (['IN PROGRESS','IN-PROGRESS','SUBMITTED','IN REVIEW','NOW SCHEDULED','REAUTH','AWAITING','WAITING','REQUESTED','EMAILED','SENT','APPEAL PENDING'].some(x => u.includes(x))) return '◐ '
   return ''
 }
 
@@ -175,6 +168,16 @@ export function normalizeInsuranceVerifiedStatus(value) {
   if (normalized === 'YES') return 'YES'
   if (normalized === 'AWAITING') return 'AWAITING'
   if (normalized === 'NO') return 'NO'
+  return normalized
+}
+
+export function normalizeReferralFieldValue(field, value) {
+  const normalized = String(value || '').trim()
+  if (!normalized) return normalized
+
+  if (field === 'referral_form' && normalized === 'Completed') return 'Received'
+  if (field === 'iep_report' && normalized === 'Completed') return 'Received'
+
   return normalized
 }
 

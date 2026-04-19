@@ -19,7 +19,7 @@ export function Sidebar({ module, subpage, setSubpage, goHome, pendingCount, nrC
         </div>
         <div>
           <div className="sidebar-title">BSOM Portal</div>
-          <div className="sidebar-sub">{m?.icon} {m?.name}</div>
+          <div className="sidebar-sub">{m?.name}</div>
         </div>
       </div>
 
@@ -33,7 +33,7 @@ export function Sidebar({ module, subpage, setSubpage, goHome, pendingCount, nrC
               className={`nav-item ${subpage === n.id ? 'active' : ''}`}
               onClick={() => setSubpage(n.id)}
             >
-              <span className="nav-icon">{n.icon}</span>
+              {n.icon ? <span className="nav-icon">{n.icon}</span> : null}
               <span>{n.label}</span>
               {badge && <span className="nav-badge">{badge}</span>}
             </div>
@@ -49,7 +49,6 @@ export function Sidebar({ module, subpage, setSubpage, goHome, pendingCount, nrC
               window.dispatchEvent(new CustomEvent('enter-module', { detail: x.id }))
             }}
           >
-            <span className="nav-icon">{x.icon}</span>
             <span style={{ fontSize: 12 }}>{x.name}</span>
           </div>
         ))}

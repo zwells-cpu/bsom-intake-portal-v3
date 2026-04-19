@@ -89,7 +89,7 @@ export function PipelineOverviewPage({ refs, assessData = [], openModulePage }) 
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
         <div className="card card-pad">
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>📊 Stage Distribution</div>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Stage Distribution</div>
           {stageOrder.map(s => {
             const count = byStage[s] || 0
             if (!count) return null
@@ -107,7 +107,7 @@ export function PipelineOverviewPage({ refs, assessData = [], openModulePage }) 
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card card-pad">
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>👤 By Staff Member</div>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>By Staff Member</div>
             {Object.values(byStaff).sort((a, b) => b.count - a.count).map(({ label, count }) => (
               <div key={label} style={{ marginBottom: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -119,7 +119,7 @@ export function PipelineOverviewPage({ refs, assessData = [], openModulePage }) 
             ))}
           </div>
           <div className="card card-pad">
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>🛡️ Insurance Mix</div>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Insurance Mix</div>
             {Object.entries(byIns).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([ins, c]) => (
               <div key={ins} style={{ marginBottom: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
@@ -180,7 +180,6 @@ export function ReferralAgingPage({ refs, onSelectRef }) {
 
       {aged.length === 0 ? (
         <div className="card card-pad" style={{ textAlign: 'center', padding: 48, color: 'var(--dim)' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>📅</div>
           <div style={{ fontWeight: 700, marginBottom: 6 }}>No date data yet</div>
           <div style={{ fontSize: 13 }}>Add date_received to records to enable aging reports.</div>
         </div>
@@ -201,8 +200,8 @@ export function ReferralAgingPage({ refs, onSelectRef }) {
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>
                     <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--dim)' }}>{r.received || '--'}</td>
                     <td><AgeBadge days={r.daysTotal} warn={WARN} danger={DANGER} /></td>
-                    <td>{r.daysAwaitPW !== null ? <AgeBadge days={r.daysAwaitPW} warn={WARN} danger={DANGER} /> : <span style={{ color: '#22c55e', fontSize: 12 }}>✓ Done</span>}</td>
-                    <td>{r.daysAwaitIns !== null ? <AgeBadge days={r.daysAwaitIns} warn={WARN} danger={DANGER} /> : <span style={{ color: '#22c55e', fontSize: 12 }}>✓ Done</span>}</td>
+                    <td>{r.daysAwaitPW !== null ? <AgeBadge days={r.daysAwaitPW} warn={WARN} danger={DANGER} /> : <span style={{ color: '#22c55e', fontSize: 12 }}>Done</span>}</td>
+                    <td>{r.daysAwaitIns !== null ? <AgeBadge days={r.daysAwaitIns} warn={WARN} danger={DANGER} /> : <span style={{ color: '#22c55e', fontSize: 12 }}>Done</span>}</td>
                     <td>{r.daysToActive !== null ? <span style={{ color: '#22c55e', fontFamily: "'DM Mono',monospace", fontSize: 12 }}>{r.daysToActive}d</span> : <span style={{ color: 'var(--dim)', fontSize: 12 }}>--</span>}</td>
                   </tr>
                 ))}
@@ -289,7 +288,7 @@ export function ClinicVolumePage({ refs }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         <div className="card card-pad">
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>📊 Open Referrals by Clinic</div>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Open Referrals by Clinic</div>
           {stats.map(s => (
             <div key={s.office} style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -307,7 +306,7 @@ export function ClinicVolumePage({ refs }) {
         </div>
 
         <div className="card card-pad">
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>📅 Monthly Volume by Clinic</div>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Monthly Volume by Clinic</div>
           {monthKeys.length === 0 ? (
             <div style={{ color: 'var(--dim)', fontSize: 13, textAlign: 'center', padding: 20 }}>No date data yet.</div>
           ) : (
@@ -399,14 +398,14 @@ export function ConversionRatePage({ refs }) {
       {maxDrop > 0 && (
         <div style={{ background: '#ef444412', border: '1px solid #ef444430', borderRadius: 12, padding: '14px 20px', marginBottom: 20 }}>
           <span style={{ color: '#ef4444', fontWeight: 700, fontSize: 13 }}>
-            ⚠️ Biggest drop-off: {FUNNEL[maxDropIdx - 1].label} → {FUNNEL[maxDropIdx].label} ({maxDrop} referrals lost)
+            Biggest drop-off: {FUNNEL[maxDropIdx - 1].label} to {FUNNEL[maxDropIdx].label} ({maxDrop} referrals lost)
           </span>
         </div>
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         <div className="card card-pad">
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>📊 Intake Funnel</div>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Intake Funnel</div>
           {FUNNEL.map((step, i) => {
             const pct = total > 0 ? Math.round(step.count / total * 100) : 0
             return (
@@ -425,7 +424,7 @@ export function ConversionRatePage({ refs }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card card-pad">
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>📋 Drop-off Analysis</div>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Drop-off Analysis</div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead><tr>
                 <th style={{ textAlign: 'left', padding: '6px 0', color: 'var(--dim)', fontSize: 10, borderBottom: '1px solid var(--border)' }}>Stage</th>
@@ -452,7 +451,7 @@ export function ConversionRatePage({ refs }) {
           </div>
 
           <div className="card card-pad">
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>📋 Other Metrics</div>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Other Metrics</div>
             <div className="info-row"><span className="info-label">PA Approval Rate</span><span style={{ color: '#22c55e', fontWeight: 700 }}>{paRate}%</span></div>
             <div className="info-row"><span className="info-label">Non-Responsive Rate</span><span style={{ color: '#ef4444', fontWeight: 700 }}>{dropRate}%</span></div>
             <div className="info-row"><span className="info-label">Non-Responsive Count</span><span style={{ color: '#ef4444', fontWeight: 700 }}>{nr.length}</span></div>
@@ -512,7 +511,7 @@ export function IntakePerformancePage({ refs }) {
       </div>
 
       <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>👤 Staff Performance</div>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Staff Performance</div>
         <div className="card">
           <div className="table-wrap">
             <table>
@@ -528,7 +527,7 @@ export function IntakePerformancePage({ refs }) {
                       <td><MiniBar val={p.verified} max={p.total} color="#f59e0b" /></td>
                       <td><MiniBar val={p.dxRecvd}  max={p.total} color="#a5b4fc" /></td>
                       <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: '#22c55e' }}>{p.active}</td>
-                      <td>{p.pending > 0 ? <span className="bdg" style={{ background: '#f59e0b20', color: '#f59e0b', border: '1px solid #f59e0b30' }}>{p.pending}</span> : <span style={{ color: '#22c55e', fontSize: 12 }}>✓</span>}</td>
+                      <td>{p.pending > 0 ? <span className="bdg" style={{ background: '#f59e0b20', color: '#f59e0b', border: '1px solid #f59e0b30' }}>{p.pending}</span> : <span style={{ color: '#22c55e', fontSize: 12 }}>Clear</span>}</td>
                       <td><span style={{ fontSize: 14, fontWeight: 800, color: scoreColor, fontFamily: "'DM Mono',monospace" }}>{p.score}%</span></td>
                     </tr>
                   )
@@ -540,7 +539,7 @@ export function IntakePerformancePage({ refs }) {
       </div>
 
       <div className="card card-pad">
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>📅 Monthly Intake Trend</div>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Monthly Intake Trend</div>
         {monthKeys.length === 0 ? (
           <div style={{ color: 'var(--dim)', fontSize: 13, textAlign: 'center', padding: 20 }}>No date data available yet.</div>
         ) : (

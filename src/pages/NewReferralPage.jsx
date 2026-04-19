@@ -1,10 +1,9 @@
 import { useState } from 'react'
-import { OFFICES, INSURANCES, BOOL, STAT, STAFF, AUTISM_DIAGNOSIS_OPTIONS, emptyReferral } from '../lib/constants'
+import { OFFICES, INSURANCES, BOOL, STAT, STAFF, AUTISM_DIAGNOSIS_OPTIONS, REFERRAL_FORM_OPTIONS, IEP_REPORT_OPTIONS, emptyReferral } from '../lib/constants'
 import { normalizeAutismDx } from '../lib/utils'
 
 const STEPS = ['Client Info', 'Caregiver', 'Insurance', 'Documents', 'Review']
 const ATTEND_SCHOOL_OPTIONS = ['Yes', 'No']
-const IEP_REPORT_OPTIONS = ['Received', 'Not Received', 'Too Young']
 const INTAKE_PERSONNEL_OPTIONS = [...STAFF.slice(0, -1), 'Nicola', STAFF[STAFF.length - 1]]
 
 function StepDots({ step, setStep }) {
@@ -17,7 +16,7 @@ function StepDots({ step, setStep }) {
             onClick={() => index <= step && setStep(index)}
             style={{ cursor: index <= step ? 'pointer' : 'default' }}
           >
-            {index < step ? '✓' : index + 1}
+            {index + 1}
           </div>
           {index < STEPS.length - 1 && <div className={`step-line ${index < step ? 'done' : ''}`} />}
         </div>
@@ -82,7 +81,7 @@ export function NewReferralPage({ onSave, saving }) {
     </div>,
 
     <div className="form-grid">
-      <Field label="Referral Form" options={STAT} value={form.referral_form} onChange={f('referral_form')} />
+      <Field label="Referral Form" options={REFERRAL_FORM_OPTIONS} value={form.referral_form} onChange={f('referral_form')} />
       <Field label="Permission for Assessment" options={STAT} value={form.permission_assessment} onChange={f('permission_assessment')} />
       <Field label="Vineland" options={STAT} value={form.vineland} onChange={f('vineland')} />
       <Field label="SRS-2" options={STAT} value={form.srs2} onChange={f('srs2')} />
@@ -132,11 +131,11 @@ export function NewReferralPage({ onSave, saving }) {
 
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <button className="btn-ghost" onClick={() => setStep(current => Math.max(0, current - 1))} disabled={step === 0}>
-          ← Back
+          Back
         </button>
         {step < STEPS.length - 1 ? (
           <button className="btn-primary" onClick={() => setStep(current => current + 1)}>
-            Next →
+            Next
           </button>
         ) : (
           <button className="btn-save" onClick={handleSubmit} disabled={saving}>

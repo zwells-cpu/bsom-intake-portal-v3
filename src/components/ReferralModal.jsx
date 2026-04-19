@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Badge, OfficePill, ProgressRing } from './Badge'
 import { INSURANCES, BOOL, STAFF, OFFICES, CHECKLIST_FIELDS } from '../lib/constants'
-import { pct, formatInsurance, normalizeAutismDx } from '../lib/utils'
+import { pct, formatInsurance, normalizeAutismDx, normalizeReferralFieldValue } from '../lib/utils'
 
 const DOCUMENT_TYPE_OPTIONS = ['Referral Form', 'Insurance Card', 'Diagnosis Report', 'Assessment Report', 'IEP/School Records', 'Consent Form', 'Other']
 
@@ -14,7 +14,12 @@ function formatFileSize(size) {
 
 export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus, onToggleParentInterview, onUploadDocument }) {
   const [editMode, setEditMode] = useState(false)
-  const [form, setForm] = useState({ ...referral, autism_diagnosis: normalizeAutismDx(referral.autism_diagnosis) })
+  const [form, setForm] = useState({
+    ...referral,
+    autism_diagnosis: normalizeAutismDx(referral.autism_diagnosis),
+    referral_form: normalizeReferralFieldValue('referral_form', referral.referral_form),
+    iep_report: normalizeReferralFieldValue('iep_report', referral.iep_report),
+  })
   const [saving, setSaving] = useState(false)
   const [docType, setDocType] = useState('Referral Form')
   const [selectedFile, setSelectedFile] = useState(null)
@@ -98,12 +103,12 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
         <button className="btn-ghost" onClick={() => handleStatusChange('non-responsive')}
           disabled={saving}
           style={{ color: '#ef4444', borderColor: '#ef444440', fontSize: 12 }}>
-          🚫 Non-Responsive
+          Non-Responsive
         </button>
         <button className="btn-ghost" onClick={() => handleStatusChange('referred-out')}
           disabled={saving}
           style={{ color: '#8b5cf6', borderColor: '#8b5cf640', fontSize: 12 }}>
-          🏁 Referred Out
+          Referred Out
         </button>
         <button onClick={() => onToggleParentInterview(r.id, !r.ready_for_parent_interview)}
           style={{
@@ -113,7 +118,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
             color: r.ready_for_parent_interview ? '#22c55e' : 'var(--dim)',
             fontSize: 12, fontWeight: 600, cursor: 'pointer',
           }}>
-          {r.ready_for_parent_interview ? '✓ Ready for Interview' : '◐ Mark Ready for Interview'}
+          {r.ready_for_parent_interview ? 'Ready for Interview' : 'Mark Ready for Interview'}
         </button>
       </div>
     )
@@ -132,8 +137,13 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <ProgressRing value={pct(r)} />
             <button className={`btn-edit ${editMode ? 'editing' : ''}`}
-              onClick={() => { if (!editMode) { setForm({ ...r, autism_diagnosis: normalizeAutismDx(r.autism_diagnosis) }); setEditMode(true) } else setEditMode(false) }}>
-              ✏ {editMode ? 'Editing' : 'Edit Record'}
+              onClick={() => { if (!editMode) { setForm({
+                ...r,
+                autism_diagnosis: normalizeAutismDx(r.autism_diagnosis),
+                referral_form: normalizeReferralFieldValue('referral_form', r.referral_form),
+                iep_report: normalizeReferralFieldValue('iep_report', r.iep_report),
+              }); setEditMode(true) } else setEditMode(false) }}>
+              {editMode ? 'Editing' : 'Edit Record'}
             </button>
             <button className="close-btn" onClick={onClose}>×</button>
           </div>
@@ -224,7 +234,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
                   ? <select className="edit-select" value={e[key] || ''} onChange={ev => field(key)(ev.target.value)} style={{ width: 160 }}>
                     {opts.map(o => <option key={o}>{o}</option>)}
                     </select>
-                  : <Badge value={key === 'autism_diagnosis' ? normalizeAutismDx(r[key]) : r[key]} />}
+                  : <Badge value={key === 'autism_diagnosis' ? normalizeAutismDx(r[key]) : normalizeReferralFieldValue(key, r[key])} />}
               </div>
             ))}
 
@@ -318,7 +328,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
               <>
                 <button className="btn-ghost" onClick={() => setEditMode(false)}>Cancel</button>
                 <button className="btn-save" onClick={handleSave} disabled={saving}>
-                  {saving ? 'Saving...' : '💾 Save Changes'}
+                  {saving ? 'Saving...' : 'Save Changes'}
                 </button>
               </>
             ) : (
