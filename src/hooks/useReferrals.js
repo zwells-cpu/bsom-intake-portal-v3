@@ -49,7 +49,7 @@ export function useReferrals() {
       setRefs(prev => replaceRecordById(prev, data, getReferralId))
       setSaved(true)
       setTimeout(() => setSaved(false), 1800)
-      return { success: true }
+      return { success: true, data }
     } catch (e) {
       setError('Could not save: ' + e.message)
       return { success: false }

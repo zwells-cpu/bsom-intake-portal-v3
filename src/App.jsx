@@ -209,6 +209,95 @@ export default function App() {
   const displayName = profile?.full_name || session?.user?.email || 'Signed-in user'
   const displayRole = profile?.role || 'Role pending'
   const displayOffice = profile?.office || 'Office pending'
+  const formatReferralName = (record) => {
+    if (!record) return 'Referral'
+    const fullName = `${record.first_name || ''} ${record.last_name || ''}`.trim()
+    return fullName || 'Referral'
+  }
+  const formatAssessmentName = (record) => record?.client_name || 'Assessment'
+
+  const logActivity = async ({ actionType, entityType, entityId, entityName, details }) => {
+    if (!session?.user?.id) return
+
+    const payload = {
+      user_id: session.user.id,
+      user_name: displayName,
+      user_role: displayRole,
+      action_type: actionType,
+      entity_type: entityType,
+      entity_id: String(entityId ?? ''),
+      entity_name: entityName,
+      details: typeof details === 'string' ? details : JSON.stringify(details ?? {}),
+    }
+
+    const { error: activityError } = await supabase
+      .from('activity_logs')
+      .insert(payload)
+
+    if (activityError) {
+      console.error('Could not write activity log:', activityError.message)
+    }
+  }
+
+  const handleCreateReferral = async (form) => {
+    const res = await saveReferral(form)
+
+    if (res?.success && res?.data) {
+      await logActivity({
+        actionType: 'referral created',
+        entityType: 'referral',
+        entityId: res.data.id,
+        entityName: formatReferralName(res.data),
+        details: {
+          office: res.data.office || '',
+          insurance: res.data.insurance || '',
+          status: res.data.status || '',
+        },
+      })
+    }
+
+    return res
+  }
+
+  const handleUpdateReferral = async (id, patch) => {
+    const res = await updateReferral(id, patch)
+
+    if (res?.success && res?.data) {
+      await logActivity({
+        actionType: 'referral updated',
+        entityType: 'referral',
+        entityId: res.data.id || id,
+        entityName: formatReferralName(res.data),
+        details: {
+          updated_fields: Object.keys(patch || {}),
+          office: res.data.office || '',
+          status: res.data.status || '',
+        },
+      })
+    }
+
+    return res
+  }
+
+  const handleUpdateAssessment = async (id, patch) => {
+    const res = await saveAssessEdit(id, patch)
+
+    if (res?.success && res?.data) {
+      await logActivity({
+        actionType: 'assessment updated',
+        entityType: 'assessment',
+        entityId: getAssessmentRecordId(res.data) || id,
+        entityName: formatAssessmentName(res.data),
+        details: {
+          updated_fields: Object.keys(patch || {}),
+          clinic: res.data.clinic || res.data.office || '',
+          authorization_status: res.data.authorization_status || '',
+        },
+      })
+    }
+
+    return res
+  }
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -441,7 +530,7 @@ export default function App() {
     if (module === 'intake') {
       if (subpage === 'intakedash') return <IntakeDashboard refs={refs} onSelectRef={setSelId} openModulePage={openModulePage} />
       if (subpage === 'all') return <AllReferralsPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'new') return <NewReferralPage onSave={saveReferral} saving={saving} />
+      if (subpage === 'new') return <NewReferralPage onSave={handleCreateReferral} saving={saving} />
       if (subpage === 'pending') return <PendingDocsPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'insurance') return <InsuranceVerifPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'nr') return <NonResponsivePage refs={refs} onRestore={(id) => setStatus(id, 'active')} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
@@ -552,7 +641,7 @@ export default function App() {
         <ReferralModal
           referral={selectedRef}
           onClose={() => setSelId(null)}
-          onSave={updateReferral}
+          onSave={handleUpdateReferral}
           onDelete={(id) => deleteRecord('referral', id)}
           onSetStatus={(id, status) => { setStatus(id, status); setSelId(null) }}
           onToggleParentInterview={toggleParentInterview}
@@ -563,7 +652,7 @@ export default function App() {
         <AssessmentDetailModal
           assessment={selectedAssess}
           onClose={() => setSelAssessId(null)}
-          onSave={saveAssessEdit}
+          onSave={handleUpdateAssessment}
           onDelete={(id) => deleteRecord('assessment', id)}
         />
       )}
