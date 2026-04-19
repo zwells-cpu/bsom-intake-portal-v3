@@ -395,16 +395,22 @@ export default function App() {
   if (screen === 'home') {
     return (
       <>
-        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 30, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 16, background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 12, color: 'var(--muted)' }}>{profileLoading ? 'Loading profile...' : displayRole}</div>
-            <div style={{ fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{displayName}</div>
-          </div>
-          <button className="btn-sm" onClick={handleSignOut} disabled={signOutPending}>
-            {signOutPending ? 'Signing out...' : 'Sign Out'}
-          </button>
-        </div>
-        <HomePage onEnterModule={enterModule} theme={theme} setTheme={setTheme} />
+        <HomePage
+          onEnterModule={enterModule}
+          theme={theme}
+          setTheme={setTheme}
+          topRightContent={(
+            <div className="home-account-card">
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 12, color: 'var(--muted)' }}>{profileLoading ? 'Loading profile...' : displayRole}</div>
+                <div style={{ fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{displayName}</div>
+              </div>
+              <button className="btn-sm" onClick={handleSignOut} disabled={signOutPending}>
+                {signOutPending ? 'Signing out...' : 'Sign Out'}
+              </button>
+            </div>
+          )}
+        />
         {saved && <div className="toast">✅ Referral saved!</div>}
       </>
     )

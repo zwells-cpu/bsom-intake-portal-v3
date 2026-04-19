@@ -107,6 +107,29 @@ input::placeholder,textarea::placeholder{ color:var(--dim); }
     radial-gradient(ellipse at 80% 20%,#8b5cf608 0%,transparent 60%);
   position:relative;
 }
+.home-topbar{
+  position:absolute;
+  top:20px;
+  right:24px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:12px;
+  flex-wrap:wrap;
+  max-width:min(100% - 32px, 560px);
+  z-index:30;
+}
+.home-account-card{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+  padding:10px 14px;
+  border-radius:16px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  box-shadow:var(--shadow);
+}
 .home-logo{
   width:90px; height:90px; border-radius:20px; overflow:hidden;
   background:white; display:flex; align-items:center; justify-content:center;
@@ -130,6 +153,18 @@ input::placeholder,textarea::placeholder{ color:var(--dim); }
   border-color:var(--card-color,var(--accent));
   transform:translateY(-2px);
   box-shadow:0 8px 32px rgba(0,0,0,0.3);
+}
+@media (max-width: 640px){
+  .home-topbar{
+    left:16px;
+    right:16px;
+    top:16px;
+    gap:10px;
+  }
+  .home-account-card{
+    flex:1 1 260px;
+    justify-content:space-between;
+  }
 }
 .module-icon{ font-size:28px; margin-bottom:14px; }
 .module-name{ font-weight:800; font-size:15px; margin-bottom:5px; letter-spacing:-0.01em; }

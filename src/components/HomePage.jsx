@@ -1,11 +1,12 @@
 import { MODULES } from '../lib/constants'
 import { ThemeToggle } from './ThemeToggle'
 
-export function HomePage({ onEnterModule, theme, setTheme }) {
+export function HomePage({ onEnterModule, theme, setTheme, topRightContent = null }) {
   return (
     <div className="home-screen">
-      <div style={{ position: 'absolute', top: 20, right: 24 }}>
+      <div className="home-topbar">
         <ThemeToggle theme={theme} setTheme={setTheme} />
+        {topRightContent}
       </div>
 
       <div className="home-logo">
