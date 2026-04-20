@@ -53,7 +53,7 @@ export function AllReferralsPage({ refs, onSelectRef, statFilter, onClearStatFil
             <button key={o} className={`filter-btn ${office === o ? 'active' : ''}`} onClick={() => setOffice(o)}>{o} ({officeCounts[o] || 0})</button>
           ))}
         </div>
-        <div style={{ marginLeft: 'auto' }}>
+        <div className="filter-row-actions">
           <button className="btn-export" onClick={() => exportCSV(refs)}>Export CSV</button>
         </div>
       </div>

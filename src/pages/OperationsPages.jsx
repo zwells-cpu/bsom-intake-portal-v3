@@ -101,7 +101,7 @@ export function PipelineOverviewPage({ refs, assessData = [], openModulePage }) 
         <ClickableStatCard value={nr.length} label="Non-Responsive" color="#ef4444" icon={UserX} sublabel="or referred out" onClick={() => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'non-responsive-only', label: 'Non-Responsive' })} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+      <div className="responsive-two-col" style={{ marginBottom: 20 }}>
         <div className="card card-pad">
           <SectionHeader icon={BarChart3}>Stage Distribution</SectionHeader>
           {stageOrder.map(s => {
@@ -287,7 +287,7 @@ export function ClinicVolumePage({ refs }) {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${stats.length},1fr)`, gap: 14, marginBottom: 24 }}>
+      <div className="responsive-auto-grid" style={{ marginBottom: 24 }}>
         {stats.map((s, i) => (
           <div key={s.office} className="stat-box" style={{ borderTop: i === 0 ? `3px solid ${s.color}` : undefined }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
@@ -300,7 +300,7 @@ export function ClinicVolumePage({ refs }) {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <div className="responsive-two-col">
         <div className="card card-pad">
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Open Referrals by Clinic</div>
           {stats.map(s => (
@@ -417,7 +417,7 @@ export function ConversionRatePage({ refs }) {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <div className="responsive-two-col">
         <div className="card card-pad">
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Intake Funnel</div>
           {FUNNEL.map((step, i) => {

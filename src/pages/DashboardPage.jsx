@@ -1,11 +1,12 @@
 import { Badge, OfficePill, ProgressRing } from '../components/Badge'
 import { ClickableStatCard } from '../components/StatFilterControls'
-import { RecentActivityCard } from '../components/dashboard/RecentActivityCard'
+import { ActivityLogList, RecentActivityCard } from '../components/dashboard/RecentActivityCard'
 import { useActivityLogs } from '../hooks/useActivityLogs'
 import { isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, pct } from '../lib/utils'
 
 export function DashboardPage({ refs, setSelectedId, openModulePage, activityRefreshKey = 0 }) {
   const { logs, loading: activityLoading } = useActivityLogs(8, activityRefreshKey)
+  const recentLogs = logs.slice(0, 5)
   const active = refs.filter((r) => r.status === 'active')
   const nr = refs.filter((r) => r.status === 'non-responsive' || r.status === 'referred-out')
   const signed = active.filter((r) => (r.intake_paperwork || '').toLowerCase().includes('signed'))
@@ -64,7 +65,7 @@ export function DashboardPage({ refs, setSelectedId, openModulePage, activityRef
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 20, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 20, marginBottom: 20 }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Alerts</div>
           {alerts.length ? (
@@ -95,10 +96,10 @@ export function DashboardPage({ refs, setSelectedId, openModulePage, activityRef
           )}
         </div>
 
-        <RecentActivityCard logs={logs} loading={activityLoading} />
+        <RecentActivityCard logs={recentLogs} loading={activityLoading} onViewAll={() => openModulePage('dashboard', 'activity')} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px,340px) 1fr', gap: 20, alignItems: 'start' }}>
+      <div className="dashboard-progress-grid">
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Overall Progress</div>
           <div className="card card-pad" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -140,6 +141,21 @@ export function DashboardPage({ refs, setSelectedId, openModulePage, activityRef
           </div>
         </div>
       </div>
+    </>
+  )
+}
+
+export function ActivityLogPage({ activityRefreshKey = 0 }) {
+  const { logs, loading } = useActivityLogs(null, activityRefreshKey)
+
+  return (
+    <>
+      <div style={{ marginBottom: 22 }}>
+        <div style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.01em', marginBottom: 4 }}>Activity Log</div>
+        <div style={{ color: 'var(--muted)', fontSize: 13 }}>Full system activity history across referrals and assessments</div>
+      </div>
+
+      <ActivityLogList logs={logs} loading={loading} emptyText="No recent activity yet." />
     </>
   )
 }

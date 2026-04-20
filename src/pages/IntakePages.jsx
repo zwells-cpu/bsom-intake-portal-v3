@@ -43,7 +43,7 @@ export function IntakeDashboard({ refs, onSelectRef, openModulePage }) {
         <ClickableStatCard value={nr.length} label="Non-Responsive" color="#ef4444" onClick={() => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'all', label: 'Non-Responsive / Referred Out' })} />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+      <div className="responsive-two-col" style={{ marginBottom: 24 }}>
         <div className="card card-pad">
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Pipeline by Stage</div>
           {stageOrder.map(s => {
@@ -218,7 +218,7 @@ export function InsuranceVerifPage({ refs, onSelectRef, statFilter, onSetStatFil
         <ClickableStatCard value={active.length} label="Total Active" color="#6366f1" active={activeFilter?.key === 'total-active'} onClick={() => toggleFilter('total-active', 'Insurance Verification: Total Active')} />
       </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing insurance verification matches" />
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>
+      <div className="responsive-two-col">
         <div className="card">
           <div className="table-wrap">
             <table>

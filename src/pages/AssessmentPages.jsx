@@ -122,7 +122,7 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
       </div>
 
       <div className="filter-row" style={{ marginTop: -8, marginBottom: 16 }}>
-        <span style={{ fontSize: 11, color: 'var(--dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginRight: 6 }}>Prior Authorization:</span>
+        <span className="filter-label">Prior Authorization:</span>
         <div className="filter-btns">
           {ALL_PA.map(status => (
             <button key={status} className={`filter-btn ${paFilter === status ? 'active' : ''}`} onClick={() => setPaFilter(status)} style={{ fontSize: 11 }}>{status}</button>
@@ -403,7 +403,7 @@ export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess, 
         <div style={{ fontWeight: 800, fontSize: 18 }}>Treatment Plan Status</div>
         <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Track treatment plan drafting, completion, and finalization</div>
       </div>
-      <div className="stats-row" style={{ gridTemplateColumns: 'repeat(3,1fr)', marginBottom: 12 }}>
+      <div className="stats-row stats-3" style={{ marginBottom: 12 }}>
         {TX_STATUSES.map(status => (
           <ClickableStatCard
             key={status}

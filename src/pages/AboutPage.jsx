@@ -34,7 +34,7 @@ export function AboutPortalPage() {
         <div style={{ color: 'var(--muted)', fontSize: 13 }}>BSOM Intake Portal - internal operations tool</div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, alignItems: 'start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div className="card card-pad">
             <div className="section-hdr">Overview</div>

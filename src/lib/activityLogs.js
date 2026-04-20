@@ -55,11 +55,16 @@ export async function createActivityLog(entry) {
 }
 
 export async function fetchRecentActivityLogs(limit = 10) {
-  const { data, error } = await supabase
+  let query = supabase
     .from('activity_logs')
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(limit)
+
+  if (typeof limit === 'number') {
+    query = query.limit(limit)
+  }
+
+  const { data, error } = await query
 
   if (error) throw error
   return data || []

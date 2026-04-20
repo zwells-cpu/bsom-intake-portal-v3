@@ -28,8 +28,8 @@ export const INSURANCES = [
 export const BOOL = ['YES', 'NO', 'AWAITING']
 
 export const STAT = ['Completed', 'Emailed', 'Awaiting', 'Please Send', 'N/A']
-export const REFERRAL_FORM_OPTIONS = ['Received', 'Emailed', 'Awaiting', 'Please Send', 'N/A']
-export const IEP_REPORT_OPTIONS = ['Received', 'Not Received', 'Too Young']
+export const REFERRAL_FORM_OPTIONS = ['Received', 'Not Received', 'Provider Referral']
+export const IEP_REPORT_OPTIONS = ['Requested', 'Received', 'Not Received', 'Too Young']
 export const AUTISM_DIAGNOSIS_OPTIONS = ['Received', 'Not Received', 'Requested']
 
 export const STAFF = ['Zanteria', 'Aerianna', 'LaShannon', 'Keiara', 'Celia', 'Other']
@@ -47,6 +47,7 @@ export const MODULES = [
 export const MODULE_NAV = {
   dashboard: [
     { id: 'overview', icon: '', label: 'Overview' },
+    { id: 'activity', icon: Activity, label: 'Activity Log' },
   ],
   intake: [
     { id: 'intakedash', icon: LayoutDashboard, label: 'Intake Dashboard' },
@@ -128,7 +129,7 @@ export const STAGE_ICONS = {
 }
 
 export const CHECKLIST_FIELDS = [
-  ['Referral Form', 'referral_form', REFERRAL_FORM_OPTIONS],
+  ['Referral Form Received', 'referral_form', REFERRAL_FORM_OPTIONS],
   ['Permission Assessment', 'permission_assessment', STAT],
   ['Vineland', 'vineland', STAT],
   ['SRS-2', 'srs2', STAT],

@@ -126,7 +126,7 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
           <button className="close-btn" onClick={onClose}>x</button>
         </div>
 
-        <div className="modal-body" style={{ gridTemplateColumns: '1fr 1.2fr' }}>
+        <div className="modal-body assessment-modal-body">
           <div>
             <div className="section-hdr">Client Details</div>
             <DetailRow label="Client Name" value={form?.client_name} />
@@ -165,7 +165,7 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
 
           <div>
             <div className="section-hdr">Client Details</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="responsive-review-grid" style={{ gap: 12 }}>
               <TextField label="Client Name" value={form?.client_name} onChange={setField('client_name')} />
               <SelectField label="Clinic" value={form?.clinic || form?.office || ''} onChange={setField('clinic')} options={OFFICES} />
 
@@ -173,7 +173,7 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
             </div>
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Caregiver / Insurance</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="responsive-review-grid" style={{ gap: 12 }}>
               <TextField label="Caregiver" value={form?.caregiver} onChange={setField('caregiver')} />
               <TextField label="Caregiver Phone" value={form?.caregiver_phone} onChange={setField('caregiver_phone')} />
               <TextField label="Caregiver Email" value={form?.caregiver_email} onChange={setField('caregiver_email')} />
@@ -183,7 +183,7 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
             </div>
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Assessment Components</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="responsive-review-grid" style={{ gap: 12 }}>
               <SelectField label="Vineland" value={form?.vineland} onChange={setField('vineland')} options={STAT} />
               <SelectField label="SRS-2" value={form?.srs2} onChange={setField('srs2')} options={STAT} />
               <SelectField label="Parent Interview Status" value={form?.parent_interview_status} onChange={setField('parent_interview_status')} options={INTERVIEW_STATUSES} />
@@ -193,7 +193,7 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
             </div>
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Treatment Plan / Authorization</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="responsive-review-grid" style={{ gap: 12 }}>
               <SelectField label="Treatment Plan Status" value={normalizeTreatmentPlanStatus(form?.treatment_plan_status)} onChange={setField('treatment_plan_status')} options={TREATMENT_PLAN_STATUSES} />
               <DateField label="Treatment Plan Started" value={form?.treatment_plan_started_date} onChange={setField('treatment_plan_started_date')} />
               <DateField label="Treatment Plan Completed" value={form?.treatment_plan_completed_date} onChange={setField('treatment_plan_completed_date')} />
@@ -227,7 +227,7 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
           <div style={{ color: 'var(--dim)', fontSize: 12 }}>
             {recordId ? `Saving to assessment_id ${recordId}.` : 'This record cannot be saved yet.'}
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="modal-actions">
             <button
               className="btn-ghost"
               onClick={handleDelete}

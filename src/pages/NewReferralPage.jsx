@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { OFFICES, INSURANCES, BOOL, STAT, STAFF, AUTISM_DIAGNOSIS_OPTIONS, REFERRAL_FORM_OPTIONS, IEP_REPORT_OPTIONS, emptyReferral } from '../lib/constants'
-import { normalizeAutismDx } from '../lib/utils'
+import { formatPhoneNumber, normalizeAutismDx } from '../lib/utils'
 
 const STEPS = ['Client Info', 'Caregiver', 'Insurance', 'Documents', 'Review']
 const ATTEND_SCHOOL_OPTIONS = ['Yes', 'No']
 const INTAKE_PERSONNEL_OPTIONS = [...STAFF.slice(0, -1), 'Nicola', STAFF[STAFF.length - 1]]
+const PHONE_FIELDS = new Set(['caregiver_phone', 'referral_source_phone', 'referral_source_fax'])
 
 function StepDots({ step, setStep }) {
   return (
@@ -25,7 +26,7 @@ function StepDots({ step, setStep }) {
   )
 }
 
-function Field({ label, type = 'text', options, value, onChange }) {
+function Field({ label, type = 'text', options, value, onChange, inputMode, maxLength }) {
   return (
     <div>
       <label className="label">{label}</label>
@@ -35,7 +36,7 @@ function Field({ label, type = 'text', options, value, onChange }) {
           {options.map(option => <option key={option}>{option}</option>)}
         </select>
       ) : (
-        <input className="input-field" type={type} value={value || ''} onChange={onChange} />
+        <input className="input-field" type={type} value={value || ''} onChange={onChange} inputMode={inputMode} maxLength={maxLength} />
       )}
     </div>
   )
@@ -45,7 +46,14 @@ export function NewReferralPage({ onSave, saving }) {
   const [step, setStep] = useState(0)
   const [form, setForm] = useState(emptyReferral())
 
-  const f = (key) => (event) => setForm(prev => ({ ...prev, [key]: key === 'autism_diagnosis' ? normalizeAutismDx(event.target.value) : event.target.value }))
+  const f = (key) => (event) => {
+    let nextValue = event.target.value
+
+    if (PHONE_FIELDS.has(key)) nextValue = formatPhoneNumber(nextValue)
+    if (key === 'autism_diagnosis') nextValue = normalizeAutismDx(nextValue)
+
+    setForm(prev => ({ ...prev, [key]: nextValue }))
+  }
 
   const handleSubmit = async () => {
     const res = await onSave({ ...form, autism_diagnosis: normalizeAutismDx(form.autism_diagnosis, { emptyAsNotReceived: false }) })
@@ -63,11 +71,16 @@ export function NewReferralPage({ onSave, saving }) {
       <Field label="Date Received" type="date" value={form.date_received} onChange={f('date_received')} />
       <Field label="Office" options={OFFICES} value={form.office} onChange={f('office')} />
       <Field label="Reason for Referral" value={form.reason_for_referral} onChange={f('reason_for_referral')} />
+      <Field label="Referral Source" value={form.referral_source} onChange={f('referral_source')} />
+      <Field label="Referral Source Phone" value={form.referral_source_phone} onChange={f('referral_source_phone')} inputMode="numeric" maxLength={12} />
+      <Field label="Referral Source Fax" value={form.referral_source_fax} onChange={f('referral_source_fax')} inputMode="numeric" maxLength={12} />
+      <Field label="Point of Contact" value={form.point_of_contact} onChange={f('point_of_contact')} />
+      <Field label="Provider NPI" value={form.provider_npi} onChange={f('provider_npi')} />
     </div>,
 
     <div className="form-grid">
       <Field label="Caregiver Name" value={form.caregiver} onChange={f('caregiver')} />
-      <Field label="Phone" value={form.caregiver_phone} onChange={f('caregiver_phone')} />
+      <Field label="Phone" value={form.caregiver_phone} onChange={f('caregiver_phone')} inputMode="numeric" maxLength={12} />
       <Field label="Email" value={form.caregiver_email} onChange={f('caregiver_email')} />
       <Field label="1st Contact Date" type="date" value={form.contact1} onChange={f('contact1')} />
       <Field label="2nd Contact Date" type="date" value={form.contact2} onChange={f('contact2')} />
@@ -81,7 +94,7 @@ export function NewReferralPage({ onSave, saving }) {
     </div>,
 
     <div className="form-grid">
-      <Field label="Referral Form" options={REFERRAL_FORM_OPTIONS} value={form.referral_form} onChange={f('referral_form')} />
+      <Field label="Referral Form Received" options={REFERRAL_FORM_OPTIONS} value={form.referral_form} onChange={f('referral_form')} />
       <Field label="Permission for Assessment" options={STAT} value={form.permission_assessment} onChange={f('permission_assessment')} />
       <Field label="Vineland" options={STAT} value={form.vineland} onChange={f('vineland')} />
       <Field label="SRS-2" options={STAT} value={form.srs2} onChange={f('srs2')} />
@@ -95,7 +108,7 @@ export function NewReferralPage({ onSave, saving }) {
     <div>
       <div className="card card-pad" style={{ marginBottom: 16 }}>
         <div className="section-hdr">Client</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div className="responsive-review-grid">
           {[['Name', `${form.first_name} ${form.last_name}`], ['DOB', form.dob], ['Office', form.office], ['Date Received', form.date_received]].map(([label, value]) => (
             <div key={label}><div className="label">{label}</div><div style={{ color: 'var(--text)' }}>{value || '--'}</div></div>
           ))}
@@ -103,7 +116,7 @@ export function NewReferralPage({ onSave, saving }) {
       </div>
       <div className="card card-pad">
         <div className="section-hdr">Caregiver & Insurance</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div className="responsive-review-grid">
           {[['Caregiver', form.caregiver], ['Phone', form.caregiver_phone], ['Insurance', form.insurance], ['Verified', form.insurance_verified]].map(([label, value]) => (
             <div key={label}><div className="label">{label}</div><div style={{ color: 'var(--text)' }}>{value || '--'}</div></div>
           ))}
@@ -129,7 +142,7 @@ export function NewReferralPage({ onSave, saving }) {
         {steps[step]}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <div className="responsive-form-actions">
         <button className="btn-ghost" onClick={() => setStep(current => Math.max(0, current - 1))} disabled={step === 0}>
           Back
         </button>

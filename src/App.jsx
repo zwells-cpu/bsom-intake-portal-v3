@@ -12,7 +12,7 @@ import { ThemeToggle } from './components/ThemeToggle'
 import { ReferralModal } from './components/ReferralModal'
 import { AssessmentDetailModal } from './components/AssessmentDetailModal'
 
-import { DashboardPage } from './pages/DashboardPage'
+import { ActivityLogPage, DashboardPage } from './pages/DashboardPage'
 import { AllReferralsPage } from './pages/AllReferralsPage'
 import { NewReferralPage } from './pages/NewReferralPage'
 import { IntakeDashboard, PendingDocsPage, InsuranceVerifPage, NonResponsivePage } from './pages/IntakePages'
@@ -736,6 +736,10 @@ export default function App() {
     )
 
     if (module === 'dashboard') {
+      if (subpage === 'activity') {
+        return <ActivityLogPage activityRefreshKey={activityRefreshKey} />
+      }
+
       return (
         <DashboardPage
           refs={refs}
@@ -805,8 +809,8 @@ export default function App() {
               {m?.name}{currentNavLabel ? ` - ${currentNavLabel}` : ''}
             </div>
             <div className="topbar-right">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '5px 12px', borderRadius: 999, background: 'var(--surface2)', border: '1px solid var(--border2)', maxWidth: 260 }}>
-                <div style={{ minWidth: 0 }}>
+              <div className="topbar-profile">
+                <div className="topbar-profile-text">
                   <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>
                     {profileLoading ? 'Loading profile' : `${displayRole} - ${displayOffice}`}
                   </div>
@@ -847,7 +851,7 @@ export default function App() {
             </div>
           </div>
 
-          <footer style={{ borderTop: '1px solid var(--border)', padding: '14px 28px', textAlign: 'center', flexShrink: 0 }}>
+          <footer className="footer-shell">
             <span style={{ fontSize: 11, color: 'var(--dim)' }}>
               © 2026 Behavioral Solutions of Mississippi &nbsp;•&nbsp; Intake Operations Portal developed by Zanteria Wells
             </span>

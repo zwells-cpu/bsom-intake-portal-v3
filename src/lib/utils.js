@@ -4,10 +4,12 @@ import { STAGE_COLORS, STAGE_ICONS, PA_COLORS, PA_ICONS } from './constants'
 export function sc(v) {
   if (!v || v === 'N/A' || v === '--') return '#94a3b8'
   const u = v.toUpperCase()
+  if (u.includes('PROVIDER REFERRAL')) return '#3b82f6'
   if (u.includes('NOT RECEIVED')) return '#ef4444'
   if (u.includes('PLEASE')) return '#3b82f6'
   if (['COMPLETED','SIGNED','YES','RECEIVED'].some(x => u.includes(x))) return '#22c55e'
-  if (['EMAILED','REMINDER','TOO YOUNG'].some(x => u.includes(x))) return '#f59e0b'
+  if (u.includes('TOO YOUNG')) return '#fb923c'
+  if (['EMAILED','REMINDER'].some(x => u.includes(x))) return '#f59e0b'
   if (['AWAITING','REQUESTED'].some(x => u.includes(x))) return '#fb923c'
   if (u === 'NO') return '#ef4444'
   if (['DISCHARGED','REFERRED OUT','CLOSED','INACTIVE','APPROVED/DISCHARGED'].some(x => u.includes(x))) return '#64748b'
@@ -179,6 +181,14 @@ export function normalizeReferralFieldValue(field, value) {
   if (field === 'iep_report' && normalized === 'Completed') return 'Received'
 
   return normalized
+}
+
+export function formatPhoneNumber(value) {
+  const digits = String(value || '').replace(/\D/g, '').slice(0, 10)
+
+  if (digits.length <= 3) return digits
+  if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`
+  return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`
 }
 
 export function isInsuranceVerified(value) {

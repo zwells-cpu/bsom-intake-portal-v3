@@ -134,7 +134,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
               DOB: {r.dob || '--'} · Received: {r.date_received || '--'} · <OfficePill office={r.office} />
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="modal-actions">
             <ProgressRing value={pct(r)} />
             <button className={`btn-edit ${editMode ? 'editing' : ''}`}
               onClick={() => { if (!editMode) { setForm({
@@ -315,7 +315,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
 
         <div className="modal-foot">
           <FootLeft />
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="modal-actions">
             <button
               className="btn-ghost"
               onClick={handleDelete}
