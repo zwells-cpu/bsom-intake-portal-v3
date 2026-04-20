@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { PaStatusBadge } from '../components/Badge'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
-import { getAssessmentRecordId, getAssessmentWorkflowProgress, getAssessmentWorkflowStatus, getAuthorizationStatus, isAuthorizationApproved, normalizeTreatmentPlanStatus } from '../lib/utils'
+import { getAssessmentLifecycleStatus, getAssessmentRecordId, getAssessmentWorkflowProgress, getAssessmentWorkflowStatus, getAuthorizationStatus, isAuthorizationApproved, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 function assessVal(value) {
   if (!value) return <span style={{ color: 'var(--dim)', fontSize: 12 }}>--</span>
@@ -59,6 +59,17 @@ function txColor(status) {
   if (['Finalized', 'Done', 'Completed'].includes(status)) return '#22c55e'
   if (['In Progress'].includes(status)) return '#f59e0b'
   return '#ef4444'
+}
+
+function lifecycleBadge(status) {
+  const color = {
+    'In Assessment': '#f59e0b',
+    'Ready for Services': '#22c55e',
+    'Active Client': '#16a34a',
+    'Referred Out': '#8b5cf6',
+  }[status] || '#64748b'
+
+  return <span className="bdg" style={{ background: `${color}20`, color, border: `1px solid ${color}35` }}>{status}</span>
 }
 
 function getAssessmentPageFilter(statFilter, onSetStatFilter, target) {
@@ -133,10 +144,10 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
       <div className="card">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Client</th><th>Clinic</th><th>Insurance</th><th>Vineland</th><th>SRS-2</th><th>Parent Interview</th><th>Direct Obs.</th><th>In School</th><th>Other Services</th><th>PA Status</th></tr></thead>
+            <thead><tr><th>Client</th><th>Clinic</th><th>Insurance</th><th>Vineland</th><th>SRS-2</th><th>Parent Interview</th><th>Direct Obs.</th><th>In School</th><th>Other Services</th><th>Status</th><th>PA Status</th></tr></thead>
             <tbody>
               {filtered.length === 0
-                ? <tr><td colSpan={10} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No clients match your filters.</td></tr>
+                ? <tr><td colSpan={11} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No clients match your filters.</td></tr>
                 : filtered.map(record => (
                   <tr
                     key={record.assessment_id || record.client_name}
@@ -153,6 +164,7 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
                     <td>{assessVal(record.direct_obs)}</td>
                     <td>{assessVal(record.in_school)}</td>
                     <td style={{ fontSize: 11, color: record.other_services ? 'var(--muted)' : 'var(--dim)', maxWidth: 140 }}>{record.other_services || '--'}</td>
+                    <td>{lifecycleBadge(getAssessmentLifecycleStatus(record))}</td>
                     <td><PaStatusBadge status={record.authorization_status} /></td>
                   </tr>
                 ))}
@@ -451,17 +463,20 @@ export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess, 
 export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess, statFilter, onSetStatFilter, onClearStatFilter }) {
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
-  const ready = assessData.filter(record => record.ready_for_services === true)
+  const referredOut = assessData.filter(record => getAssessmentLifecycleStatus(record) === 'Referred Out')
+  const ready = assessData.filter(record => record.ready_for_services === true && getAssessmentLifecycleStatus(record) !== 'Referred Out')
   const almostAuth = assessData.filter(record =>
     getAssessmentWorkflowStatus(record) === 'Completed'
     && !isAuthorizationApproved(record)
     && !record.ready_for_services
+    && getAssessmentLifecycleStatus(record) !== 'Referred Out'
   )
-  const notReady = assessData.filter(record => !record.ready_for_services && !almostAuth.includes(record))
+  const notReady = assessData.filter(record => !record.ready_for_services && !almostAuth.includes(record) && getAssessmentLifecycleStatus(record) !== 'Referred Out')
   const { activeFilter, toggleFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'ready-for-services')
   const readyRows = ready.filter(record => matchesStatFilter(record, activeFilter))
   const almostAuthRows = almostAuth.filter(record => matchesStatFilter(record, activeFilter))
   const notReadyRows = notReady.filter(record => matchesStatFilter(record, activeFilter))
+  const referredOutRows = referredOut.filter(record => matchesStatFilter(record, activeFilter))
 
   return (
     <>
@@ -469,10 +484,11 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
         <div style={{ fontWeight: 800, fontSize: 18 }}>Ready for Services</div>
         <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Clients who have completed all pre-service requirements</div>
       </div>
-      <div className="stats-row stats-3" style={{ marginBottom: 22 }}>
+      <div className="stats-row stats-4" style={{ marginBottom: 22 }}>
         <ClickableStatCard value={ready.length} label="Ready for Services" color="#22c55e" active={activeFilter?.key === 'ready'} onClick={() => toggleFilter('ready', 'Ready for Services')} />
         <ClickableStatCard value={almostAuth.length} label="Awaiting Authorization" color="#f59e0b" active={activeFilter?.key === 'awaiting-authorization'} onClick={() => toggleFilter('awaiting-authorization', 'Ready for Services: Awaiting Authorization')} />
         <ClickableStatCard value={notReady.length} label="Not Ready" color="#ef4444" active={activeFilter?.key === 'not-ready'} onClick={() => toggleFilter('not-ready', 'Ready for Services: Not Ready')} />
+        <ClickableStatCard value={referredOut.length} label="Referred Out" color="#8b5cf6" active={activeFilter?.key === 'referred-out'} onClick={() => toggleFilter('referred-out', 'Ready for Services: Referred Out')} />
       </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered service-readiness records" />
 
@@ -541,7 +557,37 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
         </>
       )}
 
-      {activeFilter && readyRows.length === 0 && almostAuthRows.length === 0 && notReadyRows.length === 0 && (
+      {referredOutRows.length > 0 && (
+        <>
+          <div style={{ marginBottom: 14, fontSize: 13, fontWeight: 700, color: '#8b5cf6' }}>Referred Out ({referredOutRows.length})</div>
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>Client</th><th>BCBA</th><th>Lifecycle Status</th><th>Authorization</th><th>Notes</th><th /></tr></thead>
+                <tbody>
+                  {referredOutRows.map(record => (
+                    <tr
+                      key={record.assessment_id || record.client_name}
+                      className="row-hover"
+                      onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
+                      style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
+                    >
+                      <td>{renderClientCell(record, record.clinic)}</td>
+                      <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
+                      <td>{lifecycleBadge(getAssessmentLifecycleStatus(record))}</td>
+                      <td><PaStatusBadge status={getAuthorizationStatus(record) || 'Referred Out'} /></td>
+                      <td style={{ fontSize: 11, color: 'var(--dim)', maxWidth: 180 }}>{record.notes || '--'}</td>
+                      <td style={{ color: 'var(--accent)' }}>â†’</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeFilter && readyRows.length === 0 && almostAuthRows.length === 0 && notReadyRows.length === 0 && referredOutRows.length === 0 && (
         <div className="card card-pad" style={{ textAlign: 'center', color: 'var(--dim)' }}>
           No service-readiness records match the current filter.
         </div>

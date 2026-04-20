@@ -2,7 +2,7 @@ import { Badge, OfficePill, ProgressRing } from '../components/Badge'
 import { ClickableStatCard } from '../components/StatFilterControls'
 import { ActivityLogList, RecentActivityCard } from '../components/dashboard/RecentActivityCard'
 import { useActivityLogs } from '../hooks/useActivityLogs'
-import { isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, pct } from '../lib/utils'
+import { getReferralStage, isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, pct } from '../lib/utils'
 
 export function DashboardPage({ refs, setSelectedId, openModulePage, activityRefreshKey = 0 }) {
   const { logs, loading: activityLoading } = useActivityLogs(8, activityRefreshKey)
@@ -12,7 +12,7 @@ export function DashboardPage({ refs, setSelectedId, openModulePage, activityRef
   const signed = active.filter((r) => (r.intake_paperwork || '').toLowerCase().includes('signed'))
   const pending = active.filter((r) => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
   const noIns = active.filter((r) => needsInsuranceVerification(r.insurance_verified))
-  const readyForInterview = active.filter((r) => r.ready_for_parent_interview === true).length
+  const readyForInterview = active.filter((r) => getReferralStage(r) === 'Ready for Interview').length
   const aging14 = active.filter((r) => {
     const received = r.referral_received_date || r.date_received
     if (!received) return false

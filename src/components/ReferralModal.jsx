@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Badge, OfficePill, ProgressRing } from './Badge'
+import { Badge, OfficePill, ProgressRing, StagePill } from './Badge'
 import { INSURANCES, BOOL, STAFF, OFFICES, CHECKLIST_FIELDS } from '../lib/constants'
-import { pct, formatInsurance, normalizeAutismDx, normalizeReferralFieldValue } from '../lib/utils'
+import { getReferralStage, pct, formatInsurance, normalizeAutismDx, normalizeReferralFieldValue } from '../lib/utils'
 
 const DOCUMENT_TYPE_OPTIONS = ['Referral Form', 'Insurance Card', 'Diagnosis Report', 'Assessment Report', 'IEP/School Records', 'Consent Form', 'Other']
 
@@ -29,6 +29,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
 
   const r = referral
   const e = editMode ? form : referral
+  const intakeStage = getReferralStage(e)
 
   const field = (key) => (val) => setForm(f => ({ ...f, [key]: val }))
 
@@ -227,6 +228,10 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
           {/* Right column */}
           <div>
             <div className="section-hdr">Intake Checklist</div>
+            <div className="info-row">
+              <span className="info-label">Current Intake Stage</span>
+              <StagePill stage={intakeStage} />
+            </div>
             {CHECKLIST_FIELDS.map(([label, key, opts]) => (
               <div className="info-row" key={key}>
                 <span className="info-label">{label}</span>

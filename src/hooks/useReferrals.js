@@ -2,9 +2,19 @@ import { useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { emptyReferral } from '../lib/constants'
 import { removeRecordById, replaceRecordById } from '../lib/recordStore'
+import { getReferralStage } from '../lib/utils'
 
 function getReferralId(record) {
   return record?.id ?? null
+}
+
+function normalizeReferralRecord(record) {
+  if (!record) return record
+
+  return {
+    ...record,
+    current_stage: getReferralStage(record),
+  }
 }
 
 export function useReferrals() {
@@ -24,7 +34,7 @@ export function useReferrals() {
         .order('created_at', { ascending: false })
         .limit(200)
       if (err) throw err
-      setRefs(data || [])
+      setRefs((data || []).map(normalizeReferralRecord))
     } catch (e) {
       setError(e.message?.includes('fetch')
         ? 'Could not reach database. Open the portal from GitHub Pages, not a local file.'
@@ -40,16 +50,17 @@ export function useReferrals() {
       const formData = { ...form }
       delete formData.referral_id
       delete formData.user_id
+      formData.current_stage = getReferralStage(formData)
       const { data, error: err } = await supabase
         .from('referrals')
         .insert(formData)
         .select()
         .single()
       if (err) throw err
-      setRefs(prev => replaceRecordById(prev, data, getReferralId))
+      setRefs(prev => replaceRecordById(prev, normalizeReferralRecord(data), getReferralId))
       setSaved(true)
       setTimeout(() => setSaved(false), 1800)
-      return { success: true, data }
+      return { success: true, data: normalizeReferralRecord(data) }
     } catch (e) {
       setError('Could not save: ' + e.message)
       return { success: false }
@@ -60,20 +71,24 @@ export function useReferrals() {
 
   const updateReferral = useCallback(async (id, patch) => {
     try {
+      const currentRecord = refs.find(record => record.id === id) || {}
+      const mergedRecord = normalizeReferralRecord({ ...currentRecord, ...patch, id })
+      const nextPatch = { ...patch, current_stage: mergedRecord.current_stage }
       const { data, error: err } = await supabase
         .from('referrals')
-        .update(patch)
+        .update(nextPatch)
         .eq('id', id)
         .select()
         .single()
       if (err) throw err
-      setRefs(prev => replaceRecordById(prev, data || { id, ...patch }, getReferralId))
-      return { success: true, data: data || { id, ...patch } }
+      const normalizedRecord = normalizeReferralRecord(data || mergedRecord)
+      setRefs(prev => replaceRecordById(prev, normalizedRecord, getReferralId))
+      return { success: true, data: normalizedRecord }
     } catch (e) {
       setError('Could not update: ' + e.message)
       return { success: false }
     }
-  }, [])
+  }, [refs])
 
   const deleteReferral = useCallback(async (id) => {
     try {

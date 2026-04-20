@@ -1,7 +1,7 @@
 import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
-import { pct, displayStaffName, formatInsurance, normalizeAutismDx, normalizeOffice, normalizeStaffName } from '../lib/utils'
+import { getReferralStage, pct, displayStaffName, formatInsurance, normalizeAutismDx, normalizeOffice, normalizeStaffName } from '../lib/utils'
 
 // ══════════════════════════════════════
 // INTAKE DASHBOARD
@@ -13,11 +13,11 @@ export function IntakeDashboard({ refs, onSelectRef, openModulePage }) {
   const signed  = active.filter(r => (r.intake_paperwork || '').toLowerCase().includes('signed'))
   const noIns   = active.filter(r => !['yes'].includes((r.insurance_verified || '').toLowerCase()))
   const noDx    = active.filter(r => normalizeAutismDx(r.autism_diagnosis) !== 'Received')
-  const readyPI = active.filter(r => r.ready_for_parent_interview === true)
+  const readyPI = active.filter(r => getReferralStage(r) === 'Ready for Interview')
 
   const byStage = {}
-  active.forEach(r => { const s = r.current_stage || 'New Referral'; byStage[s] = (byStage[s] || 0) + 1 })
-  const stageOrder = ['New Referral', 'Intake', 'Initial Assessment', 'PA Submitted', 'PA In Review', 'PA Approved', 'Active Client', 'Reauth Needed', 'Discharged']
+  active.forEach(r => { const s = getReferralStage(r); byStage[s] = (byStage[s] || 0) + 1 })
+  const stageOrder = ['New Referral', 'Intake', 'Ready for Interview', 'Initial Assessment', 'PA Submitted', 'PA In Review', 'PA Approved', 'Active Client', 'Reauth Needed', 'Discharged']
 
   const staffCounts = {}
   active.forEach(r => {
@@ -50,7 +50,7 @@ export function IntakeDashboard({ refs, onSelectRef, openModulePage }) {
             const count = byStage[s] || 0
             if (!count) return null
             const max = Math.max(...Object.values(byStage), 1)
-            const STAGE_C = { 'New Referral': '#6366f1', 'Intake': '#8b5cf6', 'Initial Assessment': '#f59e0b', 'PA Submitted': '#fb923c', 'PA In Review': '#fb923c', 'PA Approved': '#22c55e', 'Active Client': '#22c55e', 'Reauth Needed': '#f59e0b', 'Discharged': '#64748b' }
+            const STAGE_C = { 'New Referral': '#6366f1', 'Intake': '#8b5cf6', 'Ready for Interview': '#22c55e', 'Initial Assessment': '#f59e0b', 'PA Submitted': '#fb923c', 'PA In Review': '#fb923c', 'PA Approved': '#22c55e', 'Active Client': '#22c55e', 'Reauth Needed': '#f59e0b', 'Discharged': '#64748b' }
             const c = STAGE_C[s] || '#64748b'
             return (
               <div key={s} style={{ marginBottom: 10 }}>
@@ -107,7 +107,7 @@ export function IntakeDashboard({ refs, onSelectRef, openModulePage }) {
                   <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}>
                     <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.date_received || ''}</div></td>
                     <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--dim)' }}>{r.referral_id || '--'}</td>
-                    <td>{r.current_stage ? <StagePill stage={r.current_stage} /> : '--'}</td>
+                    <td><StagePill stage={getReferralStage(r)} /></td>
                     <td><Badge value={r.intake_paperwork} /></td>
                     <td><Badge value={r.insurance_verified} /></td>
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>

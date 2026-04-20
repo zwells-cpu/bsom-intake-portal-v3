@@ -1,4 +1,4 @@
-import { getAssessmentWorkflowStatus, getAuthorizationStatus, isAuthorizationApproved, normalizeAutismDx, normalizeTreatmentPlanStatus } from './utils'
+import { getAssessmentLifecycleStatus, getAssessmentWorkflowStatus, getAuthorizationStatus, getReferralStage, isAuthorizationApproved, normalizeAutismDx, normalizeTreatmentPlanStatus } from './utils'
 
 export function isStatFilterTarget(filter, target) {
   return filter?.target === target ? filter : null
@@ -19,6 +19,7 @@ export function matchesStatFilter(record, filter) {
     const paperwork = (record.intake_paperwork || '').toLowerCase()
     if (key === 'paperwork-signed') return paperwork.includes('signed')
     if (key === 'paperwork-pending') return !['signed', 'completed'].includes(paperwork)
+    if (key === 'ready-for-interview') return getReferralStage(record) === 'Ready for Interview'
     if (key === 'non-responsive-only') return record.status === 'non-responsive'
     if (key === 'non-responsive-all') return record.status === 'non-responsive' || record.status === 'referred-out'
     return true
@@ -88,6 +89,7 @@ export function matchesStatFilter(record, filter) {
   if (target === 'ready-for-services') {
     if (key === 'active-clients') return Boolean(record.active_client_date)
     if (key === 'ready') return record.ready_for_services === true
+    if (key === 'referred-out') return getAssessmentLifecycleStatus(record) === 'Referred Out'
     if (key === 'awaiting-authorization') {
       return getAssessmentWorkflowStatus(record) === 'Completed'
         && !isAuthorizationApproved(record)

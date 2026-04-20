@@ -1,7 +1,7 @@
 import { Activity, BarChart3, Clock, FileText, PieChart, UserCheck, Users, UserX } from 'lucide-react'
 import { StagePill } from '../components/Badge'
 import { ClickableStatCard } from '../components/StatFilterControls'
-import { displayStaffName, getAuthorizationStatus, isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, normalizeOffice, normalizeStaffName, normalizeTreatmentPlanStatus } from '../lib/utils'
+import { displayStaffName, getAuthorizationStatus, getReferralStage, isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, normalizeOffice, normalizeStaffName, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 // ── Shared helpers ──
 function daysSince(dateStr) {
@@ -69,9 +69,9 @@ export function PipelineOverviewPage({ refs, assessData = [], openModulePage }) 
   const awaitingPA = assessData.filter(record => ['Pending', 'In Review'].includes(getAuthorizationStatus(record))).length
   const txInProgress = assessData.filter(record => normalizeTreatmentPlanStatus(record.treatment_plan_status) === 'In Progress').length
 
-  const stageOrder = ['New Referral','Intake','Initial Assessment','PA Submitted','PA In Review','PA Approved','Active Client','Reauth Needed','Discharged']
+  const stageOrder = ['New Referral','Intake','Ready for Interview','Initial Assessment','PA Submitted','PA In Review','PA Approved','Active Client','Reauth Needed','Discharged']
   const byStage = {}
-  active.forEach(r => { const s = r.current_stage || 'New Referral'; byStage[s] = (byStage[s] || 0) + 1 })
+  active.forEach(r => { const s = getReferralStage(r); byStage[s] = (byStage[s] || 0) + 1 })
   const maxVal = Math.max(...Object.values(byStage), 1)
 
   const byStaff = {}
@@ -210,7 +210,7 @@ export function ReferralAgingPage({ refs, onSelectRef }) {
                 {sorted.map(r => (
                   <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}>
                     <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.office || ''}</div></td>
-                    <td>{r.current_stage ? <StagePill stage={r.current_stage} /> : '--'}</td>
+                    <td><StagePill stage={getReferralStage(r)} /></td>
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>
                     <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--dim)' }}>{r.received || '--'}</td>
                     <td><AgeBadge days={r.daysTotal} warn={WARN} danger={DANGER} /></td>
@@ -382,7 +382,7 @@ export function ConversionRatePage({ refs }) {
     { label: 'Insurance Verified',         count: active.filter(r => isInsuranceVerified(r.insurance_verified)).length,                             color: '#f59e0b' },
     { label: 'Parent Interview Completed', count: active.filter(r => ['completed','yes','done'].some(v => (r.permission_assessment||'').toLowerCase().includes(v))).length, color: '#fb923c' },
     { label: 'Assessment Completed',       count: active.filter(r => normalizeAutismDx(r.autism_diagnosis) === 'Received').length,                    color: '#fb923c' },
-    { label: 'Active Client',              count: active.filter(r => r.current_stage === 'Active Client').length,                                            color: '#22c55e' },
+    { label: 'Active Client',              count: active.filter(r => Boolean(r.active_client_date)).length,                                                   color: '#22c55e' },
   ]
 
   let maxDrop = -1, maxDropIdx = 0
@@ -393,7 +393,7 @@ export function ConversionRatePage({ refs }) {
   })
 
   const convRate = total > 0 ? Math.round(FUNNEL[5].count / total * 100) : 0
-  const paRate   = total > 0 ? Math.round(active.filter(r => ['PA Approved','Active Client'].includes(r.current_stage)).length / total * 100) : 0
+  const paRate   = total > 0 ? Math.round(active.filter(r => ['PA Approved', 'Active Client'].includes(getReferralStage(r))).length / total * 100) : 0
   const dropRate = total > 0 ? Math.round(nr.length / total * 100) : 0
 
   return (
@@ -489,7 +489,7 @@ export function IntakePerformancePage({ refs }) {
     const signed   = mine.filter(r => (r.intake_paperwork || '').toLowerCase().includes('signed')).length
     const verified = mine.filter(r => isInsuranceVerified(r.insurance_verified)).length
     const dxRecvd  = mine.filter(r => normalizeAutismDx(r.autism_diagnosis) === 'Received').length
-    const activeC  = mine.filter(r => r.current_stage === 'Active Client').length
+    const activeC  = mine.filter(r => Boolean(r.active_client_date)).length
     const pending  = mine.filter(r => !['signed','completed'].includes((r.intake_paperwork || '').toLowerCase())).length
     const score    = mine.length > 0 ? Math.round(((signed + verified + dxRecvd) / ((mine.length * 3) || 1)) * 100) : 0
     return { staff: displayStaffName(staff), total: mine.length, signed, verified, dxRecvd, active: activeC, pending, score }

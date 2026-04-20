@@ -33,6 +33,63 @@ export function pct(r) {
   return Math.round(done.length / fs.length * 100)
 }
 
+function isReceivedOrCompleted(value) {
+  const normalized = String(value || '').trim().toUpperCase()
+  return ['YES', 'COMPLETED', 'SIGNED', 'RECEIVED', 'PROVIDER REFERRAL'].some(token => normalized.includes(token))
+}
+
+export function hasReferralIntakeProgress(record) {
+  if (!record) return false
+
+  const progressFields = [
+    record.referral_form,
+    record.permission_assessment,
+    record.vineland,
+    record.srs2,
+    record.insurance_verified,
+    record.autism_diagnosis,
+    record.intake_paperwork,
+    record.intake_personnel,
+    record.contact1,
+    record.contact2,
+    record.contact3,
+  ]
+
+  return progressFields.some(value => String(value || '').trim() !== '')
+}
+
+export function isReferralReadyForInterview(record) {
+  if (!record) return false
+
+  const normalizedAutismDx = normalizeAutismDx(record.autism_diagnosis, { emptyAsNotReceived: false })
+  const normalizedReferralForm = normalizeReferralFieldValue('referral_form', record.referral_form)
+
+  return [
+    isReceivedOrCompleted(normalizedReferralForm),
+    isReceivedOrCompleted(record.permission_assessment),
+    isReceivedOrCompleted(record.vineland),
+    isReceivedOrCompleted(record.srs2),
+    isInsuranceVerified(record.insurance_verified),
+    isReceivedOrCompleted(normalizedAutismDx),
+    isReceivedOrCompleted(record.intake_paperwork),
+  ].every(Boolean)
+}
+
+export function getReferralStage(record) {
+  if (!record) return 'New Referral'
+
+  const rawStage = String(record.current_stage || '').trim()
+
+  if (record.status === 'referred-out') return 'Referred Out'
+  if (record.active_client_date) return 'Active Client'
+  if (record.ready_for_parent_interview === true || rawStage === 'Ready for Interview' || rawStage === 'Active Client' || isReferralReadyForInterview(record)) {
+    return 'Ready for Interview'
+  }
+  if (rawStage && rawStage !== 'Active Client') return rawStage
+  if (hasReferralIntakeProgress(record)) return 'Intake'
+  return 'New Referral'
+}
+
 // ── Office normalization ──
 export function normalizeOffice(o) {
   if (o === 'JACKSON') return 'FLOWOOD'
@@ -157,6 +214,15 @@ export function getAssessmentRecordId(record) {
 
 export function getAuthorizationStatus(record) {
   return record?.authorization_status || record?.pa_status || ''
+}
+
+export function getAssessmentLifecycleStatus(record) {
+  const authorizationStatus = getAuthorizationStatus(record)
+
+  if (authorizationStatus === 'Referred Out') return 'Referred Out'
+  if (record?.active_client_date) return 'Active Client'
+  if (record?.ready_for_services === true || record?.ready_for_services === 'true') return 'Ready for Services'
+  return 'In Assessment'
 }
 
 export function isAuthorizationApproved(record) {

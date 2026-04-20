@@ -107,11 +107,13 @@ export const PA_ICONS = {
 export const STAGE_COLORS = {
   'New Referral': '#6366f1',
   Intake: '#8b5cf6',
+  'Ready for Interview': '#22c55e',
   'Initial Assessment': '#f59e0b',
   'PA Submitted': '#fb923c',
   'PA In Review': '#fb923c',
   'PA Approved': '#22c55e',
   'Active Client': '#22c55e',
+  'Referred Out': '#64748b',
   'Reauth Needed': '#f59e0b',
   Discharged: '#64748b',
 }
@@ -119,11 +121,13 @@ export const STAGE_COLORS = {
 export const STAGE_ICONS = {
   'New Referral': '',
   Intake: '',
+  'Ready for Interview': '',
   'Initial Assessment': '',
   'PA Submitted': '',
   'PA In Review': '',
   'PA Approved': '',
   'Active Client': '',
+  'Referred Out': '',
   'Reauth Needed': '',
   Discharged: '',
 }

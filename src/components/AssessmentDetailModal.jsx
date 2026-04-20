@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { OFFICES, STAT, BOOL } from '../lib/constants'
-import { normalizeTreatmentPlanStatus } from '../lib/utils'
+import { getAssessmentLifecycleStatus, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 const INTERVIEW_STATUSES = ['Awaiting Assignment', 'Scheduled', 'Completed', 'No Show']
 const TREATMENT_PLAN_STATUSES = ['Not Started', 'In Progress', 'Finalized']
@@ -69,6 +69,7 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
 
   const recordId = form?.assessment_id ?? form?.id ?? null
   const clinic = form?.clinic || form?.office || ''
+  const lifecycleStatus = getAssessmentLifecycleStatus(form)
 
   const setField = (key) => (value) => setForm(prev => ({ ...prev, [key]: value }))
 
@@ -115,6 +116,18 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
     setDeleting(false)
   }
 
+  const handleMarkReferredOut = async () => {
+    if (!recordId) return
+    setSaving(true)
+    const res = await onSave(recordId, {
+      authorization_status: 'Referred Out',
+      ready_for_services: false,
+      active_client_date: null,
+    })
+    if (res?.success) onClose()
+    setSaving(false)
+  }
+
   return (
     <div className="overlay" onClick={onClose}>
       <div className="modal" onClick={ev => ev.stopPropagation()} style={{ maxWidth: 1080 }}>
@@ -152,6 +165,7 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
             <div className="section-hdr" style={{ marginTop: 18 }}>Treatment Plan / Authorization</div>
             <DetailRow label="Treatment Plan" value={normalizeTreatmentPlanStatus(form?.treatment_plan_status)} />
             <DetailRow label="Authorization Status" value={form?.authorization_status} />
+            <DetailRow label="Lifecycle Status" value={lifecycleStatus} />
             <DetailRow label="Ready for Services" value={form?.ready_for_services === true ? 'Yes' : 'No'} />
             <DetailRow label="Active Client Date" value={form?.active_client_date} />
 
@@ -228,6 +242,16 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
             {recordId ? `Saving to assessment_id ${recordId}.` : 'This record cannot be saved yet.'}
           </div>
           <div className="modal-actions">
+            {lifecycleStatus !== 'Referred Out' ? (
+              <button
+                className="btn-ghost"
+                onClick={handleMarkReferredOut}
+                disabled={saving || deleting || !recordId}
+                style={{ color: '#8b5cf6', borderColor: '#8b5cf640' }}
+              >
+                Mark Referred Out
+              </button>
+            ) : null}
             <button
               className="btn-ghost"
               onClick={handleDelete}

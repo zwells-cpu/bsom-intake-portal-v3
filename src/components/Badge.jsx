@@ -43,13 +43,13 @@ function normalizeOfficeFn(o) {
 
 export function StagePill({ stage }) {
   const COLORS = {
-    'New Referral': '#6366f1', 'Intake': '#8b5cf6', 'Initial Assessment': '#f59e0b',
+    'New Referral': '#6366f1', 'Intake': '#8b5cf6', 'Ready for Interview': '#22c55e', 'Initial Assessment': '#f59e0b',
     'PA Submitted': '#fb923c', 'PA In Review': '#fb923c', 'PA Approved': '#22c55e',
-    'Active Client': '#22c55e', 'Reauth Needed': '#f59e0b', 'Discharged': '#64748b',
+    'Active Client': '#22c55e', 'Referred Out': '#64748b', 'Reauth Needed': '#f59e0b', 'Discharged': '#64748b',
   }
   if (!stage) return <span style={{ color: 'var(--dim)' }}>--</span>
   const c = COLORS[stage] || '#64748b'
-  const unifiedStageFamily = ['New Referral', 'Intake', 'Initial Assessment', 'Active Client'].includes(stage)
+  const unifiedStageFamily = ['New Referral', 'Intake', 'Ready for Interview', 'Initial Assessment', 'Active Client'].includes(stage)
   if (unifiedStageFamily) {
     return (
       <span
