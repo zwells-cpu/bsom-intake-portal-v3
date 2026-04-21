@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
 import { removeRecordById, replaceRecordById } from '../lib/recordStore'
+
+const API_URL = import.meta.env.VITE_API_URL
 
 const ASSESSMENT_DB_FIELDS = [
   'client_name',
@@ -92,12 +93,11 @@ export function useAssessments() {
     setAssessLoading(true)
     try {
       setAssessError(null)
-      const { data, error } = await supabase
-        .from('assessments')
-        .select('*')
-        .order('client_name', { ascending: true })
-      if (error) throw error
-      setAssessData((data || []).map(record => normalizeAssessmentRecord(record)))
+      const res = await fetch(`${API_URL}/assessments`)
+      if (!res.ok) throw new Error(await res.text())
+      const data = await res.json()
+      const sorted = (data || []).slice().sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''))
+      setAssessData(sorted.map(record => normalizeAssessmentRecord(record)))
     } catch (e) {
       setAssessError('Could not load assessments: ' + e.message)
     } finally {
@@ -110,23 +110,20 @@ export function useAssessments() {
       setAssessError(null)
       const normalizedPatch = sanitizeAssessmentPatch(patch)
 
-      const { data, error } = await supabase
-        .from('assessments')
-        .update(normalizedPatch)
-        .eq('assessment_id', id)
-        .select('*')
-        .maybeSingle()
-      if (error) throw error
+      const patchRes = await fetch(`${API_URL}/assessments/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(normalizedPatch),
+      })
+      if (!patchRes.ok) throw new Error(await patchRes.text())
+      const data = await patchRes.json()
 
       let nextRecord = data ? normalizeAssessmentRecord(data, id) : null
 
       if (!nextRecord) {
-        const { data: refreshed, error: refreshError } = await supabase
-          .from('assessments')
-          .select('*')
-          .eq('assessment_id', id)
-          .maybeSingle()
-        if (refreshError) throw refreshError
+        const refreshRes = await fetch(`${API_URL}/assessments/${id}`)
+        if (!refreshRes.ok) throw new Error(await refreshRes.text())
+        const refreshed = await refreshRes.json()
         nextRecord = normalizeAssessmentRecord(refreshed, id)
       }
 
@@ -145,11 +142,8 @@ export function useAssessments() {
   const deleteAssessment = useCallback(async (id) => {
     try {
       setAssessError(null)
-      const { error } = await supabase
-        .from('assessments')
-        .delete()
-        .eq('assessment_id', id)
-      if (error) throw error
+      const res = await fetch(`${API_URL}/assessments/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error(await res.text())
       setAssessData(prev => removeRecordById(prev, id, getAssessmentId))
       return { success: true, id }
     } catch (e) {

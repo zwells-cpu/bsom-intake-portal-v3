@@ -1,8 +1,9 @@
 import { useState, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
 import { emptyReferral } from '../lib/constants'
 import { removeRecordById, replaceRecordById } from '../lib/recordStore'
 import { getReferralStage } from '../lib/utils'
+
+const API_URL = import.meta.env.VITE_API_URL
 
 function getReferralId(record) {
   return record?.id ?? null
@@ -28,12 +29,9 @@ export function useReferrals() {
     setLoading(true)
     setError(null)
     try {
-      const { data, error: err } = await supabase
-        .from('referrals')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(200)
-      if (err) throw err
+      const res = await fetch(`${API_URL}/clients`)
+      if (!res.ok) throw new Error(await res.text())
+      const data = await res.json()
       setRefs((data || []).map(normalizeReferralRecord))
     } catch (e) {
       setError(e.message?.includes('fetch')
@@ -51,12 +49,13 @@ export function useReferrals() {
       delete formData.referral_id
       delete formData.user_id
       formData.current_stage = getReferralStage(formData)
-      const { data, error: err } = await supabase
-        .from('referrals')
-        .insert(formData)
-        .select()
-        .single()
-      if (err) throw err
+      const res = await fetch(`${API_URL}/clients`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      const data = await res.json()
       setRefs(prev => replaceRecordById(prev, normalizeReferralRecord(data), getReferralId))
       setSaved(true)
       setTimeout(() => setSaved(false), 1800)
@@ -74,13 +73,13 @@ export function useReferrals() {
       const currentRecord = refs.find(record => record.id === id) || {}
       const mergedRecord = normalizeReferralRecord({ ...currentRecord, ...patch, id })
       const nextPatch = { ...patch, current_stage: mergedRecord.current_stage }
-      const { data, error: err } = await supabase
-        .from('referrals')
-        .update(nextPatch)
-        .eq('id', id)
-        .select()
-        .single()
-      if (err) throw err
+      const res = await fetch(`${API_URL}/clients/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nextPatch),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      const data = await res.json()
       const normalizedRecord = normalizeReferralRecord(data || mergedRecord)
       setRefs(prev => replaceRecordById(prev, normalizedRecord, getReferralId))
       return { success: true, data: normalizedRecord }
@@ -92,11 +91,8 @@ export function useReferrals() {
 
   const deleteReferral = useCallback(async (id) => {
     try {
-      const { error: err } = await supabase
-        .from('referrals')
-        .delete()
-        .eq('id', id)
-      if (err) throw err
+      const res = await fetch(`${API_URL}/clients/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error(await res.text())
       setRefs(prev => removeRecordById(prev, id, getReferralId))
       return { success: true, id }
     } catch (e) {
