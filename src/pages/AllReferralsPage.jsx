@@ -5,7 +5,7 @@ import { OFFICES } from '../lib/constants'
 import { isStatFilterTarget, matchesStatFilter } from '../lib/statFilters'
 import { sortList, normalizeOffice, normalizeAutismDx, formatInsurance, exportCSV, pct } from '../lib/utils'
 
-export function AllReferralsPage({ refs, onSelectRef, statFilter, onClearStatFilter }) {
+export function AllReferralsPage({ refs, onSelectRef, onOpenProfile, statFilter, onClearStatFilter }) {
   const active = refs.filter(r => r.status === 'active')
   const [search, setSearch]   = useState('')
   const [office, setOffice]   = useState('ALL')
@@ -94,7 +94,15 @@ export function AllReferralsPage({ refs, onSelectRef, statFilter, onClearStatFil
                   <td><StagePill stage={r.current_stage} /></td>
                   <td><Badge value={r.intake_paperwork} /></td>
                   <td style={{ color: 'var(--dim)', fontSize: 12 }}>{r.intake_personnel || '--'}</td>
-                  <td style={{ color: 'var(--accent)' }}>→</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <button
+                      className="btn-sm"
+                      style={{ fontSize: 11, padding: '3px 10px' }}
+                      onClick={e => { e.stopPropagation(); onOpenProfile(r.id) }}
+                    >
+                      Profile
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -14,6 +14,7 @@ import {
   MessagesSquare,
   ShieldCheck,
   TrendingUp,
+  UserCheck,
   Users,
   UserX,
 } from 'lucide-react'
@@ -56,6 +57,7 @@ export const MODULE_NAV = {
     { id: 'pending', icon: FileClock, label: 'Pending Documents' },
     { id: 'insurance', icon: ShieldCheck, label: 'Insurance Verification' },
     { id: 'nr', icon: UserX, label: 'Non-Responsive' },
+    { id: 'profile', icon: UserCheck, label: 'Client Profile' },
   ],
   assessment: [
     { id: 'tracker', icon: ClipboardPenLine, label: 'Assessment Tracker' },

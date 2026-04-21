@@ -13,6 +13,7 @@ import { ReferralModal } from './components/ReferralModal'
 import { AssessmentDetailModal } from './components/AssessmentDetailModal'
 
 import { ActivityLogPage, DashboardPage } from './pages/DashboardPage'
+import { ClientProfilePage } from './pages/ClientProfilePage'
 import { AllReferralsPage } from './pages/AllReferralsPage'
 import { NewReferralPage } from './pages/NewReferralPage'
 import { IntakeDashboard, PendingDocsPage, InsuranceVerifPage, NonResponsivePage } from './pages/IntakePages'
@@ -48,6 +49,7 @@ export default function App() {
   const [selId, setSelId] = useState(null)
   const [selAssessId, setSelAssessId] = useState(null)
   const [routeFilter, setRouteFilter] = useState(null)
+  const [profileId, setProfileId] = useState(null)
 
   useEffect(() => {
     let mounted = true
@@ -752,7 +754,8 @@ export default function App() {
 
     if (module === 'intake') {
       if (subpage === 'intakedash') return <IntakeDashboard refs={refs} onSelectRef={setSelId} openModulePage={openModulePage} />
-      if (subpage === 'all') return <AllReferralsPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'all') return <AllReferralsPage refs={refs} onSelectRef={setSelId} onOpenProfile={(id) => { setProfileId(id); setSubpage('profile') }} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'profile') return <ClientProfilePage referralId={profileId} onBack={() => setSubpageAndClearFilter('all')} />
       if (subpage === 'new') return <NewReferralPage onSave={handleCreateReferral} saving={saving} />
       if (subpage === 'pending') return <PendingDocsPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'insurance') return <InsuranceVerifPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
