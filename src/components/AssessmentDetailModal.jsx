@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ConfirmationModal } from './ConfirmationModal'
 import { OFFICES, STAT, BOOL } from '../lib/constants'
 import { getAssessmentLifecycleStatus, normalizeTreatmentPlanStatus } from '../lib/utils'
 
@@ -62,6 +63,7 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
   const [form, setForm] = useState(assessment)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
   useEffect(() => {
     setForm(assessment)
@@ -107,13 +109,22 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
     setSaving(false)
   }
 
-  const handleDelete = async () => {
+  const performDelete = async () => {
     if (!recordId || !onDelete) return
-    if (!window.confirm('Delete this assessment record? This action cannot be undone.')) return
     setDeleting(true)
     const res = await onDelete(recordId)
     if (res?.success) onClose()
     setDeleting(false)
+  }
+
+  const handleDeleteRequest = () => {
+    if (!recordId || !onDelete) return
+    setDeleteConfirmOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    setDeleteConfirmOpen(false)
+    await performDelete()
   }
 
   const handleMarkReferredOut = async () => {
@@ -253,10 +264,9 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
               </button>
             ) : null}
             <button
-              className="btn-ghost"
-              onClick={handleDelete}
+              className="btn-danger"
+              onClick={handleDeleteRequest}
               disabled={saving || deleting || !recordId}
-              style={{ color: '#ef4444', borderColor: '#ef444430' }}
             >
               {deleting ? 'Deleting...' : 'Delete'}
             </button>
@@ -267,6 +277,16 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={deleteConfirmOpen}
+        title="Delete Assessment"
+        message="Deleting this assessment will remove all associated data."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteConfirmOpen(false)}
+      />
     </div>
   )
 }

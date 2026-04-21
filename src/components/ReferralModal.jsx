@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Badge, OfficePill, ProgressRing, StagePill } from './Badge'
+import { ConfirmationModal } from './ConfirmationModal'
 import { INSURANCES, BOOL, STAFF, OFFICES, CHECKLIST_FIELDS } from '../lib/constants'
 import { getReferralStage, pct, formatInsurance, normalizeAutismDx, normalizeReferralFieldValue } from '../lib/utils'
 
@@ -26,6 +27,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState(null)
   const [uploadSuccess, setUploadSuccess] = useState(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
   const r = referral
   const e = editMode ? form : referral
@@ -45,8 +47,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
     setSaving(false)
   }
 
-  const handleDelete = async () => {
-    if (!window.confirm('Delete this referral permanently? This cannot be undone.')) return
+  const performDelete = async () => {
     setSaving(true)
     const res = await onDelete(r.id)
     if (res?.success) {
@@ -54,6 +55,15 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
       onClose()
     }
     setSaving(false)
+  }
+
+  const handleDeleteRequest = () => {
+    setDeleteConfirmOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    setDeleteConfirmOpen(false)
+    await performDelete()
   }
 
   const handleDocumentUpload = async () => {
@@ -322,10 +332,9 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
           <FootLeft />
           <div className="modal-actions">
             <button
-              className="btn-ghost"
-              onClick={handleDelete}
+              className="btn-danger"
+              onClick={handleDeleteRequest}
               disabled={saving}
-              style={{ color: '#ef4444', borderColor: '#ef444440' }}
             >
               Delete
             </button>
@@ -342,6 +351,16 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={deleteConfirmOpen}
+        title="Delete Referral"
+        message="Are you sure you want to delete this referral? This cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteConfirmOpen(false)}
+      />
     </div>
   )
 }
