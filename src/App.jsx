@@ -823,10 +823,6 @@ export default function App() {
                   {pending.length} Pending Docs
                 </span>
               )}
-              <ThemeToggle theme={theme} setTheme={setTheme} />
-              <button className="btn-sm" onClick={handleSignOut} disabled={signOutPending}>
-                {signOutPending ? 'Signing out...' : 'Sign Out'}
-              </button>
               <button
                 className="btn-sm"
                 onClick={() => {
@@ -857,6 +853,13 @@ export default function App() {
             </span>
           </footer>
         </div>
+      </div>
+
+      <div className="floating-utility">
+        <ThemeToggle theme={theme} setTheme={setTheme} />
+        <button className="btn-sm" onClick={handleSignOut} disabled={signOutPending}>
+          {signOutPending ? 'Signing out...' : 'Sign Out'}
+        </button>
       </div>
 
       {selectedRef && (
