@@ -848,18 +848,21 @@ export default function App() {
           </div>
 
           <footer className="footer-shell">
+            <div className="footer-side">
+              <ThemeToggle theme={theme} setTheme={setTheme} />
+            </div>
+            <div className="footer-side footer-side-center">
             <span style={{ fontSize: 11, color: 'var(--dim)' }}>
               © 2026 Behavioral Solutions of Mississippi &nbsp;•&nbsp; Intake Operations Portal developed by Zanteria Wells
             </span>
+            </div>
+            <div className="footer-side footer-side-right">
+              <button className="btn-sm" onClick={handleSignOut} disabled={signOutPending}>
+                {signOutPending ? 'Signing out...' : 'Sign Out'}
+              </button>
+            </div>
           </footer>
         </div>
-      </div>
-
-      <div className="floating-utility">
-        <ThemeToggle theme={theme} setTheme={setTheme} />
-        <button className="btn-sm" onClick={handleSignOut} disabled={signOutPending}>
-          {signOutPending ? 'Signing out...' : 'Sign Out'}
-        </button>
       </div>
 
       {selectedRef && (

@@ -366,20 +366,30 @@ textarea{
 .topbar-profile-text{
   min-width:0;
 }
-.floating-utility{
-  position:fixed;
-  right:24px;
-  bottom:24px;
-  z-index:80;
+.footer-shell{
+  border-top:1px solid var(--border);
+  padding:14px 28px;
+  text-align:center;
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.footer-side{
   display:flex;
   align-items:center;
   gap:10px;
-  padding:10px 12px;
-  border-radius:16px;
-  background:color-mix(in srgb, var(--surface) 92%, transparent);
-  border:1px solid var(--border);
-  box-shadow:var(--shadow);
-  backdrop-filter:blur(10px);
+  flex:1 1 0;
+  min-width:0;
+}
+.footer-side-center{
+  justify-content:center;
+  text-align:center;
+}
+.footer-side-right{
+  justify-content:flex-end;
 }
 .badge-pill{
   background:#22c55e18; color:var(--green); border:1px solid #22c55e30;
@@ -398,13 +408,6 @@ textarea{
   min-width:0;
 }
 .page-inner-wide{ max-width:1600px; }
-.footer-shell{
-  border-top:1px solid var(--border);
-  padding:14px 28px;
-  text-align:center;
-  flex-shrink:0;
-}
-
 /* ── Common Components ── */
 .card{ background:var(--surface); border:1px solid var(--border); border-radius:14px; min-width:0; }
 .card-pad{ padding:22px; }
@@ -886,13 +889,13 @@ tr{ transition:background 0.15s ease, transform 0.08s ease; }
   }
   .footer-shell{
     padding:12px 14px;
+    justify-content:center;
   }
-  .floating-utility{
-    right:14px;
-    bottom:14px;
-    flex-direction:column;
-    align-items:stretch;
-    gap:8px;
-    padding:10px;
+  .footer-side{
+    flex:1 1 100%;
+    justify-content:center;
+  }
+  .footer-side-right{
+    justify-content:center;
   }
 }
