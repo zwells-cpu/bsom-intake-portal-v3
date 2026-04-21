@@ -29,7 +29,7 @@ export function useReferrals() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`${API_URL}/clients`)
+      const res = await fetch(`${API_URL}/referrals`)
       if (!res.ok) throw new Error(await res.text())
       const data = await res.json()
       setRefs((data || []).map(normalizeReferralRecord))
@@ -49,7 +49,7 @@ export function useReferrals() {
       delete formData.referral_id
       delete formData.user_id
       formData.current_stage = getReferralStage(formData)
-      const res = await fetch(`${API_URL}/clients`, {
+      const res = await fetch(`${API_URL}/referrals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -73,7 +73,7 @@ export function useReferrals() {
       const currentRecord = refs.find(record => record.id === id) || {}
       const mergedRecord = normalizeReferralRecord({ ...currentRecord, ...patch, id })
       const nextPatch = { ...patch, current_stage: mergedRecord.current_stage }
-      const res = await fetch(`${API_URL}/clients/${id}`, {
+      const res = await fetch(`${API_URL}/referrals/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(nextPatch),
@@ -91,7 +91,7 @@ export function useReferrals() {
 
   const deleteReferral = useCallback(async (id) => {
     try {
-      const res = await fetch(`${API_URL}/clients/${id}`, { method: 'DELETE' })
+      const res = await fetch(`${API_URL}/referrals/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error(await res.text())
       setRefs(prev => removeRecordById(prev, id, getReferralId))
       return { success: true, id }
