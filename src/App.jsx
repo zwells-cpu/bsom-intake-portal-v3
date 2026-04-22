@@ -334,6 +334,7 @@ export default function App() {
           status: res.data.status || '',
         },
       })
+      openModulePage('intake', 'all')
     }
 
     return res
