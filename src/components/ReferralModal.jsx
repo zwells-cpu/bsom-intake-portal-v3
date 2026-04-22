@@ -1,8 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Badge, OfficePill, ProgressRing, StagePill } from './Badge'
 import { ConfirmationModal } from './ConfirmationModal'
 import { INSURANCES, BOOL, STAFF, OFFICES, CHECKLIST_FIELDS } from '../lib/constants'
 import { getReferralStage, pct, formatInsurance, normalizeAutismDx, normalizeReferralFieldValue } from '../lib/utils'
+import { API_BASE } from '../lib/api'
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024
 
 const DOCUMENT_TYPE_OPTIONS = ['Referral Form', 'Insurance Card', 'Diagnosis Report', 'Assessment Report', 'IEP/School Records', 'Consent Form', 'Other']
 
@@ -28,6 +31,21 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
   const [uploadError, setUploadError] = useState(null)
   const [uploadSuccess, setUploadSuccess] = useState(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [docs, setDocs] = useState([])
+  const [docsLoading, setDocsLoading] = useState(false)
+  const [docsKey, setDocsKey] = useState(0)
+
+  useEffect(() => {
+    if (!referral?.id) return
+    let cancelled = false
+    setDocsLoading(true)
+    fetch(`${API_BASE}/referrals/${referral.id}/documents`)
+      .then(res => res.ok ? res.json() : [])
+      .then(data => { if (!cancelled) setDocs(Array.isArray(data) ? data : []) })
+      .catch(() => { if (!cancelled) setDocs([]) })
+      .finally(() => { if (!cancelled) setDocsLoading(false) })
+    return () => { cancelled = true }
+  }, [referral?.id, docsKey])
 
   const r = referral
   const e = editMode ? form : referral
@@ -66,8 +84,21 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
     await performDelete()
   }
 
+  const handleCancelEdit = () => {
+    setEditMode(false)
+    setSelectedFile(null)
+    setUploadError(null)
+    setUploadSuccess(null)
+    setDocType('Referral Form')
+  }
+
   const handleDocumentUpload = async () => {
     if (!selectedFile || !onUploadDocument) return
+
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      setUploadError('File must be under 10 MB.')
+      return
+    }
 
     setUploading(true)
     setUploadError(null)
@@ -83,6 +114,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
       setUploadSuccess(`Uploaded ${selectedFile.name}`)
       setSelectedFile(null)
       setDocType('Referral Form')
+      setDocsKey(k => k + 1)
     } else {
       setUploadError(res?.error || 'Could not upload document.')
     }
@@ -153,7 +185,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
                 autism_diagnosis: normalizeAutismDx(r.autism_diagnosis),
                 referral_form: normalizeReferralFieldValue('referral_form', r.referral_form),
                 iep_report: normalizeReferralFieldValue('iep_report', r.iep_report),
-              }); setEditMode(true) } else setEditMode(false) }}>
+              }); setEditMode(true) } else handleCancelEdit() }}>
               {editMode ? 'Editing' : 'Edit Record'}
             </button>
             <button className="close-btn" onClick={onClose}>×</button>
@@ -276,54 +308,87 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Client Documents</div>
             <div className="card card-pad" style={{ background: 'var(--bg)', border: '1px solid var(--border)', boxShadow: 'none' }}>
-              <div style={{ display: 'grid', gap: 12 }}>
-                <div>
-                  <div className="label">Document Type</div>
-                  <select className="edit-select" value={docType} onChange={ev => setDocType(ev.target.value)}>
-                    {DOCUMENT_TYPE_OPTIONS.map(option => <option key={option}>{option}</option>)}
-                  </select>
+
+              {/* Upload form — edit mode only */}
+              {editMode && (
+                <div style={{ display: 'grid', gap: 12, marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
+                  <div>
+                    <div className="label">Document Type</div>
+                    <select className="edit-select" value={docType} onChange={ev => setDocType(ev.target.value)}>
+                      {DOCUMENT_TYPE_OPTIONS.map(option => <option key={option}>{option}</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <div className="label">File</div>
+                    <input
+                      className="edit-input"
+                      type="file"
+                      accept=".pdf,image/*"
+                      onChange={ev => {
+                        const nextFile = ev.target.files?.[0] || null
+                        setSelectedFile(nextFile)
+                        setUploadError(null)
+                        setUploadSuccess(null)
+                      }}
+                    />
+                    <div style={{ marginTop: 6, fontSize: 11, color: 'var(--dim)' }}>
+                      PDF and image files only · max 10 MB.
+                    </div>
+                  </div>
+
+                  {selectedFile && (
+                    <div style={{ fontSize: 12, color: 'var(--muted)', padding: '10px 12px', borderRadius: 10, background: 'var(--surface2)', border: '1px solid var(--border2)' }}>
+                      {selectedFile.name} · {formatFileSize(selectedFile.size)}
+                    </div>
+                  )}
+
+                  {uploadError && (
+                    <div className="error-bar" style={{ margin: 0 }}>
+                      {uploadError}
+                    </div>
+                  )}
+
+                  {uploadSuccess && (
+                    <div style={{ borderRadius: 10, border: '1px solid #16a34a33', background: '#16a34a12', color: '#16a34a', padding: '10px 12px', fontSize: 12, fontWeight: 700 }}>
+                      {uploadSuccess}
+                    </div>
+                  )}
+
+                  <button className="btn-save" onClick={handleDocumentUpload} disabled={!selectedFile || uploading}>
+                    {uploading ? 'Uploading...' : 'Upload Document'}
+                  </button>
                 </div>
+              )}
 
-                <div>
-                  <div className="label">File</div>
-                  <input
-                    className="edit-input"
-                    type="file"
-                    accept=".pdf,image/*"
-                    onChange={ev => {
-                      const nextFile = ev.target.files?.[0] || null
-                      setSelectedFile(nextFile)
-                      setUploadError(null)
-                      setUploadSuccess(null)
-                    }}
-                  />
-                  <div style={{ marginTop: 6, fontSize: 11, color: 'var(--dim)' }}>
-                    PDF and image files only.
-                  </div>
+              {/* Document list — always visible */}
+              {docsLoading && (
+                <div style={{ fontSize: 12, color: 'var(--dim)' }}>Loading documents...</div>
+              )}
+
+              {!docsLoading && docs.length > 0 && (
+                <div style={{ display: 'grid', gap: 6 }}>
+                  {docs.map(doc => (
+                    <div key={doc.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)', fontSize: 12 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.file_name}</div>
+                        <div style={{ color: 'var(--dim)', marginTop: 2 }}>{doc.document_type} · {formatFileSize(doc.file_size)}</div>
+                      </div>
+                      {doc.created_at && (
+                        <div style={{ color: 'var(--dim)', whiteSpace: 'nowrap' }}>
+                          {new Date(doc.created_at).toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
+              )}
 
-                {selectedFile && (
-                  <div style={{ fontSize: 12, color: 'var(--muted)', padding: '10px 12px', borderRadius: 10, background: 'var(--surface2)', border: '1px solid var(--border2)' }}>
-                    {selectedFile.name} · {formatFileSize(selectedFile.size)}
-                  </div>
-                )}
-
-                {uploadError && (
-                  <div className="error-bar" style={{ margin: 0 }}>
-                    {uploadError}
-                  </div>
-                )}
-
-                {uploadSuccess && (
-                  <div style={{ borderRadius: 10, border: '1px solid #16a34a33', background: '#16a34a12', color: '#16a34a', padding: '10px 12px', fontSize: 12, fontWeight: 700 }}>
-                    {uploadSuccess}
-                  </div>
-                )}
-
-                <button className="btn-save" onClick={handleDocumentUpload} disabled={!selectedFile || uploading}>
-                  {uploading ? 'Uploading...' : 'Upload Document'}
-                </button>
-              </div>
+              {!docsLoading && docs.length === 0 && (
+                <div style={{ fontSize: 12, color: 'var(--dim)' }}>
+                  {editMode ? 'No documents yet. Use the uploader above to attach files.' : 'No documents attached.'}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -331,16 +396,13 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
         <div className="modal-foot">
           <FootLeft />
           <div className="modal-actions">
-            <button
-              className="btn-danger"
-              onClick={handleDeleteRequest}
-              disabled={saving}
-            >
-              Delete
-            </button>
             {editMode ? (
               <>
-                <button className="btn-ghost" onClick={() => setEditMode(false)}>Cancel</button>
+                <button className="btn-danger" onClick={handleDeleteRequest} disabled={saving}>
+                  Delete
+                </button>
+                <div style={{ width: 1, background: 'var(--border)', alignSelf: 'stretch', margin: '0 4px' }} />
+                <button className="btn-ghost" onClick={handleCancelEdit} disabled={saving}>Cancel</button>
                 <button className="btn-save" onClick={handleSave} disabled={saving}>
                   {saving ? 'Saving...' : 'Save Changes'}
                 </button>

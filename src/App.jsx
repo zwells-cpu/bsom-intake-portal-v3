@@ -22,6 +22,7 @@ import { AssessmentTracker, ParentInterviewsPage, BCBAAssignmentsPage, Assessmen
 import { PipelineOverviewPage, ReferralAgingPage, ClinicVolumePage, ConversionRatePage, IntakePerformancePage } from './pages/OperationsPages'
 import { createActivityLog } from './lib/activityLogs'
 import { getAssessmentRecordId, needsInsuranceVerification } from './lib/utils'
+import { API_BASE } from './lib/api'
 
 export default function App() {
   const { theme, setTheme } = useTheme()
@@ -289,76 +290,34 @@ export default function App() {
       created_at: new Date().toISOString(),
     })
   }
-  const sanitizeFileName = (name) => (name || 'document')
-    .replace(/[^a-zA-Z0-9._-]/g, '-')
-    .replace(/-+/g, '-')
-
   const handleUploadClientDocument = async ({ referral, documentType, file }) => {
-    if (!session?.user?.id) return { success: false, error: 'You must be signed in to upload documents.' }
     if (!file) return { success: false, error: 'Please select a file to upload.' }
 
-    const allowedMimeTypes = ['application/pdf']
-    const isImage = typeof file.type === 'string' && file.type.startsWith('image/')
-
-    if (!allowedMimeTypes.includes(file.type) && !isImage) {
-      return { success: false, error: 'Only PDF and image files are allowed.' }
-    }
-
     const referralId = referral?.id
-    const clientName = formatReferralName(referral)
-    const safeName = sanitizeFileName(file.name)
-    const uploadId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`
-    const filePath = `${referralId || 'unassigned'}/${uploadId}-${safeName}`
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('document_type', documentType)
+    formData.append('uploaded_by', session?.user?.id || '')
+    formData.append('uploaded_by_name', displayName)
+    formData.append('client_name', formatReferralName(referral))
 
-    const { error: uploadError } = await supabase
-      .storage
-      .from('client-documents')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-        contentType: file.type || 'application/octet-stream',
+    try {
+      const res = await fetch(`${API_BASE}/referrals/${referralId}/documents`, {
+        method: 'POST',
+        body: formData,
       })
-
-    if (uploadError) {
-      return { success: false, error: uploadError.message }
+      if (!res.ok) {
+        const text = await res.text()
+        let msg = text
+        try { msg = JSON.parse(text)?.error || text } catch {}
+        return { success: false, error: msg || 'Upload failed.' }
+      }
+      const data = await res.json()
+      setActivityRefreshKey(current => current + 1)
+      return { success: true, data }
+    } catch {
+      return { success: false, error: 'Could not reach the server. Check your connection.' }
     }
-
-    const documentRecord = {
-      uploaded_by: session.user.id,
-      uploaded_by_name: displayName,
-      client_name: clientName,
-      referral_id: referralId,
-      document_type: documentType,
-      file_name: file.name,
-      file_path: filePath,
-      file_size: file.size || 0,
-      mime_type: file.type || 'application/octet-stream',
-    }
-
-    const { data, error: insertError } = await supabase
-      .from('client_documents')
-      .insert(documentRecord)
-      .select()
-      .single()
-
-    if (insertError) {
-      await supabase.storage.from('client-documents').remove([filePath])
-      return { success: false, error: insertError.message }
-    }
-
-    await writeReferralActivity({
-      action: 'document_uploaded',
-      record: referral,
-      description: `${clientName} had a ${documentType} uploaded.`,
-      metadata: {
-        document_type: documentType,
-        file_name: file.name,
-        mime_type: file.type || 'application/octet-stream',
-        file_size: file.size || 0,
-      },
-    })
-
-    return { success: true, data }
   }
 
   const handleCreateReferral = async (form) => {
