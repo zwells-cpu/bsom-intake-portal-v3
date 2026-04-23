@@ -19,13 +19,68 @@ function formatRelativeTime(value) {
   return date.toLocaleDateString()
 }
 
+function formatFullTimestamp(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleString()
+}
+
 function formatActionLabel(action) {
   return (action || 'activity')
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
+function buildActorLine(log) {
+  // New schema: user_email + user_role
+  if (log.user_email) {
+    return log.user_role
+      ? `${log.user_email} (${log.user_role})`
+      : log.user_email
+  }
+  // Legacy schema fallback: actor string
+  return log.actor || 'Unknown staff member'
+}
+
+function buildSummary(log) {
+  // New schema: top-level description field
+  if (log.description) return log.description
+  // Legacy: description may be nested in details
+  if (log.details_json?.description) return log.details_json.description
+  return null
+}
+
+function buildChangeSummary(details_json) {
+  if (!details_json || typeof details_json !== 'object') return null
+
+  const parts = []
+
+  if (Array.isArray(details_json.changed_fields) && details_json.changed_fields.length) {
+    parts.push(`Changed: ${details_json.changed_fields.join(', ')}`)
+  }
+
+  if (details_json.before && details_json.after) {
+    const fields = Object.keys(details_json.before)
+    if (fields.length) {
+      const changes = fields
+        .map(f => `${f}: ${details_json.before[f] ?? '—'} → ${details_json.after[f] ?? '—'}`)
+        .join(' | ')
+      parts.push(changes)
+    }
+  }
+
+  return parts.length ? parts.join(' · ') : null
+}
+
 function ActivityLogItem({ log, index }) {
+  const entityName  = log.entity_label || log.client_name || null
+  const actorLine   = buildActorLine(log)
+  const summary     = buildSummary(log)
+  const changeLine  = buildChangeSummary(log.details_json)
+  const office      = log.details_json?.office || log.details_json?.clinic || log.office || null
+  const entityType  = log.entity_type || null
+
   return (
     <div
       key={`${log.created_at || 'log'}-${log.entity_id || index}-${index}`}
@@ -36,25 +91,51 @@ function ActivityLogItem({ log, index }) {
         padding: '14px 16px',
       }}
     >
+      {/* Top row: action label + badges + timestamp */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)' }}>
             {formatActionLabel(log.action)}
           </span>
-          {log.office && (
+          {entityType && (
             <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', border: '1px solid var(--border2)', background: 'var(--surface2)', borderRadius: 999, padding: '2px 8px' }}>
-              {log.office}
+              {entityType}
+            </span>
+          )}
+          {office && (
+            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', border: '1px solid var(--border2)', background: 'var(--surface2)', borderRadius: 999, padding: '2px 8px' }}>
+              {office}
             </span>
           )}
         </div>
-        <span style={{ fontSize: 11, color: 'var(--dim)', flexShrink: 0 }}>{formatRelativeTime(log.created_at)}</span>
+        <span
+          title={formatFullTimestamp(log.created_at)}
+          style={{ fontSize: 11, color: 'var(--dim)', flexShrink: 0, cursor: 'default' }}
+        >
+          {formatRelativeTime(log.created_at)}
+        </span>
       </div>
 
-      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{log.client_name || 'Client activity'}</div>
-      <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5 }}>{log.description || 'No description provided.'}</div>
+      {/* Entity name */}
+      {entityName && (
+        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{entityName}</div>
+      )}
 
-      <div style={{ marginTop: 10, fontSize: 11, color: 'var(--dim)' }}>
-        {log.actor || 'Unknown staff member'}
+      {/* Human summary */}
+      {summary && (
+        <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 4 }}>{summary}</div>
+      )}
+
+      {/* Change tracking line */}
+      {changeLine && (
+        <div style={{ fontSize: 11, color: 'var(--dim)', fontFamily: "'DM Mono', monospace", marginBottom: 4, lineHeight: 1.5 }}>
+          {changeLine}
+        </div>
+      )}
+
+      {/* Actor */}
+      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--dim)' }}>
+        {actorLine}
       </div>
     </div>
   )
@@ -96,7 +177,7 @@ export function RecentActivityCard({ logs, loading, onViewAll }) {
                 onClick={onViewAll}
                 style={{ alignSelf: 'flex-start', marginTop: 2, paddingInline: 0, border: 'none', background: 'transparent', color: 'var(--muted)' }}
               >
-                View All Activity {'\u2192'}
+                View All Activity {'→'}
               </button>
             ) : null}
           </>

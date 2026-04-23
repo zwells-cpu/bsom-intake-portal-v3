@@ -217,21 +217,14 @@ export default function App() {
           action: 'assessment_deleted',
           record,
           description: `${formatAssessmentName(record)} assessment was deleted.`,
-          metadata: {
-            deleted: true,
-            clinic: record.clinic || record.office || '',
-          },
+          details_json: { deleted: true },
         })
       } else if (type === 'referral' && record) {
         await writeReferralActivity({
           action: 'referral_deleted',
           record,
           description: `${formatReferralName(record)} referral was deleted.`,
-          metadata: {
-            deleted: true,
-            office: record.office || '',
-            status: record.status || '',
-          },
+          details_json: { deleted: true, status: record.status || '' },
         })
       }
     }
@@ -249,45 +242,40 @@ export default function App() {
   }
   const formatAssessmentName = (record) => record?.client_name || 'Assessment'
   const safeCreateActivityLog = async (entry) => {
-    try {
-      await createActivityLog(entry)
-      setActivityRefreshKey(current => current + 1)
-      return true
-    } catch (activityError) {
-      console.error('Could not write activity log:', activityError.message)
-      return false
-    }
+    const result = await createActivityLog(entry)
+    if (result !== null) setActivityRefreshKey(current => current + 1)
+    return result !== null
   }
 
-  const writeReferralActivity = async ({ action, record, description, metadata = {} }) => {
+  const writeReferralActivity = async ({ action, record, description, details_json = {} }) => {
     if (!session?.user?.id || !record) return
 
     await safeCreateActivityLog({
+      user_id:      session.user.id,
+      user_email:   session.user.email   || null,
+      user_role:    profile?.role        || null,
       action,
-      entity_type: 'referral',
-      entity_id: String(record.id ?? ''),
-      client_name: formatReferralName(record),
+      entity_type:  'referral',
+      entity_id:    String(record.id ?? ''),
+      entity_label: formatReferralName(record),
       description,
-      office: record.office || '',
-      actor: `${displayName}${displayRole ? ` (${displayRole})` : ''}`,
-      metadata,
-      created_at: new Date().toISOString(),
+      details_json: { office: record.office || '', ...details_json },
     })
   }
 
-  const writeAssessmentActivity = async ({ action, record, description, metadata = {} }) => {
+  const writeAssessmentActivity = async ({ action, record, description, details_json = {} }) => {
     if (!session?.user?.id || !record) return
 
     await safeCreateActivityLog({
+      user_id:      session.user.id,
+      user_email:   session.user.email || null,
+      user_role:    profile?.role      || null,
       action,
-      entity_type: 'assessment',
-      entity_id: String(getAssessmentRecordId(record) ?? ''),
-      client_name: formatAssessmentName(record),
+      entity_type:  'assessment',
+      entity_id:    String(getAssessmentRecordId(record) ?? ''),
+      entity_label: formatAssessmentName(record),
       description,
-      office: record.clinic || record.office || '',
-      actor: `${displayName}${displayRole ? ` (${displayRole})` : ''}`,
-      metadata,
-      created_at: new Date().toISOString(),
+      details_json: { clinic: record.clinic || record.office || '', ...details_json },
     })
   }
   const handleUploadClientDocument = async ({ referral, documentType, file }) => {
@@ -313,7 +301,12 @@ export default function App() {
         return { success: false, error: msg || 'Upload failed.' }
       }
       const data = await res.json()
-      setActivityRefreshKey(current => current + 1)
+      await writeReferralActivity({
+        action: 'document_uploaded',
+        record: referral,
+        description: `${formatReferralName(referral)} document uploaded: ${documentType}.`,
+        details_json: { document_type: documentType },
+      })
       return { success: true, data }
     } catch {
       return { success: false, error: 'Could not reach the server. Check your connection.' }
@@ -328,8 +321,7 @@ export default function App() {
         action: 'referral_created',
         record: res.data,
         description: `${formatReferralName(res.data)} was added to the intake pipeline.`,
-        metadata: {
-          office: res.data.office || '',
+        details_json: {
           insurance: res.data.insurance || '',
           status: res.data.status || '',
         },
@@ -341,27 +333,40 @@ export default function App() {
   }
 
   const handleUpdateReferral = async (id, patch) => {
+    const before = refs.find(r => r.id === id)
     const res = await updateReferral(id, patch)
 
     if (res?.success && res?.data) {
-      const updatedFields = Object.keys(patch || {})
+      const changedFields = Object.keys(patch || {})
 
-      if (updatedFields.length === 1 && updatedFields[0] === 'insurance_verified') {
+      if (changedFields.length === 1 && changedFields[0] === 'insurance_verified') {
         await writeReferralActivity({
           action: 'insurance_verified',
           record: res.data,
-          description: `${formatReferralName(res.data)} insurance was updated to ${res.data.insurance_verified || patch.insurance_verified}.`,
-          metadata: { insurance_verified: res.data.insurance_verified || patch.insurance_verified || '' },
+          description: `${formatReferralName(res.data)} insurance status updated.`,
+          details_json: {
+            changed_fields: ['insurance_verified'],
+            before: { insurance_verified: before?.insurance_verified ?? null },
+            after:  { insurance_verified: res.data.insurance_verified ?? null },
+          },
         })
       } else {
+        const criticalFields = ['status', 'intake_paperwork', 'office', 'insurance']
+        const beforeVals = {}
+        const afterVals  = {}
+        criticalFields.forEach(f => {
+          if (changedFields.includes(f)) {
+            beforeVals[f] = before?.[f] ?? null
+            afterVals[f]  = res.data[f]  ?? null
+          }
+        })
         await writeReferralActivity({
           action: 'referral_updated',
           record: res.data,
           description: `${formatReferralName(res.data)} was updated.`,
-          metadata: {
-            updated_fields: updatedFields,
-            office: res.data.office || '',
-            status: res.data.status || '',
+          details_json: {
+            changed_fields: changedFields,
+            ...(Object.keys(beforeVals).length ? { before: beforeVals, after: afterVals } : {}),
           },
         })
       }
@@ -371,17 +376,27 @@ export default function App() {
   }
 
   const handleUpdateAssessment = async (id, patch) => {
+    const before = assessData.find(r => String(getAssessmentRecordId(r) || '') === String(id))
     const res = await saveAssessEdit(id, patch)
 
     if (res?.success && res?.data) {
+      const changedFields = Object.keys(patch || {})
+      const criticalFields = ['authorization_status', 'assessment_status', 'treatment_plan_status', 'parent_interview_status', 'ready_for_services', 'assigned_bcba']
+      const beforeVals = {}
+      const afterVals  = {}
+      criticalFields.forEach(f => {
+        if (changedFields.includes(f)) {
+          beforeVals[f] = before?.[f] ?? null
+          afterVals[f]  = res.data[f] ?? null
+        }
+      })
       await writeAssessmentActivity({
         action: 'assessment_updated',
         record: res.data,
         description: `${formatAssessmentName(res.data)} assessment details were updated.`,
-        metadata: {
-          updated_fields: Object.keys(patch || {}),
-          clinic: res.data.clinic || res.data.office || '',
-          authorization_status: res.data.authorization_status || '',
+        details_json: {
+          changed_fields: changedFields,
+          ...(Object.keys(beforeVals).length ? { before: beforeVals, after: afterVals } : {}),
         },
       })
     }
@@ -390,6 +405,7 @@ export default function App() {
   }
 
   const handleSetReferralStatus = async (id, status) => {
+    const before = refs.find(r => r.id === id)
     const res = await setStatus(id, status)
 
     if (res?.success && res?.data) {
@@ -397,7 +413,11 @@ export default function App() {
         action: 'referral_status_changed',
         record: res.data,
         description: `${formatReferralName(res.data)} status changed to ${status}.`,
-        metadata: { status },
+        details_json: {
+          changed_fields: ['status'],
+          before: { status: before?.status ?? null },
+          after:  { status },
+        },
       })
     }
 
@@ -409,16 +429,30 @@ export default function App() {
 
     if (res?.success && res?.data) {
       await writeReferralActivity({
-        action: val ? 'parent_interview_ready' : 'parent_interview_unmarked',
+        action: val ? 'parent_interview_ready_enabled' : 'parent_interview_ready_disabled',
         record: res.data,
         description: val
           ? `${formatReferralName(res.data)} was marked ready for parent interview.`
-          : `${formatReferralName(res.data)} was removed from the ready for parent interview list.`,
-        metadata: { ready_for_parent_interview: val === true },
+          : `${formatReferralName(res.data)} was unmarked from ready for parent interview.`,
+        details_json: { ready_for_parent_interview: val === true },
       })
     }
 
     return res
+  }
+
+  const handleOpenProfile = async (id) => {
+    setProfileId(id)
+    setSubpageAndClearFilter('profile')
+    const record = refs.find(r => r.id === id)
+    if (record) {
+      await writeReferralActivity({
+        action: 'client_profile_viewed',
+        record,
+        description: `${formatReferralName(record)} client profile was viewed.`,
+        details_json: {},
+      })
+    }
   }
 
   const handleLogin = async (e) => {
@@ -427,13 +461,22 @@ export default function App() {
     setLoginError(null)
     setResetSuccess(null)
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { data: loginData, error: signInError } = await supabase.auth.signInWithPassword({
       email: loginEmail.trim(),
       password: loginPassword,
     })
 
     if (signInError) {
       setLoginError(signInError.message)
+    } else if (loginData?.user) {
+      await safeCreateActivityLog({
+        user_id:    loginData.user.id,
+        user_email: loginData.user.email || null,
+        user_role:  null,
+        action:     'user_signed_in',
+        description: 'User signed in.',
+        details_json: {},
+      })
     }
 
     setLoginPending(false)
@@ -480,9 +523,20 @@ export default function App() {
     setResetPending(false)
   }
 
-  const handleSignOut = async () => {
+  const handleSignOut = async (reason = 'manual') => {
     setSignOutPending(true)
     setLoginError(null)
+
+    if (session?.user?.id) {
+      await safeCreateActivityLog({
+        user_id:     session.user.id,
+        user_email:  session.user.email || null,
+        user_role:   profile?.role      || null,
+        action:      reason === 'idle' ? 'session_timeout' : 'user_signed_out',
+        description: reason === 'idle' ? 'Session ended due to inactivity.' : 'User signed out.',
+        details_json: { reason },
+      })
+    }
 
     const { error: signOutError } = await supabase.auth.signOut()
 
@@ -503,7 +557,7 @@ export default function App() {
   }
 
   const { isWarning, secondsLeft, resetTimer } = useIdleTimeout({
-    onTimeout: handleSignOut,
+    onTimeout: () => handleSignOut('idle'),
     enabled: !!session && !recoveryMode,
   })
 
@@ -714,7 +768,7 @@ export default function App() {
 
     if (module === 'intake') {
       if (subpage === 'intakedash') return <IntakeDashboard refs={refs} onSelectRef={setSelId} openModulePage={openModulePage} />
-      if (subpage === 'all') return <AllReferralsPage refs={refs} onSelectRef={setSelId} onOpenProfile={(id) => { setProfileId(id); setSubpage('profile') }} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'all') return <AllReferralsPage refs={refs} onSelectRef={setSelId} onOpenProfile={handleOpenProfile} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'profile') return <ClientProfilePage referralId={profileId} onBack={() => setSubpageAndClearFilter('all')} />
       if (subpage === 'new') return <NewReferralPage onSave={handleCreateReferral} saving={saving} />
       if (subpage === 'pending') return <PendingDocsPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
