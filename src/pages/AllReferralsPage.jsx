@@ -3,7 +3,7 @@ import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
 import { ActiveFilterBanner } from '../components/StatFilterControls'
 import { OFFICES } from '../lib/constants'
 import { isStatFilterTarget, matchesStatFilter } from '../lib/statFilters'
-import { sortList, normalizeOffice, normalizeAutismDx, formatInsurance, exportCSV, pct } from '../lib/utils'
+import { sortList, normalizeOffice, normalizeAutismDx, formatInsurance, exportCSV, formatDisplayDate, pct } from '../lib/utils'
 
 export function AllReferralsPage({ refs, onSelectRef, onOpenProfile, statFilter, onClearStatFilter }) {
   const active = refs.filter(r => r.status === 'active')
@@ -84,16 +84,16 @@ export function AllReferralsPage({ refs, onSelectRef, onOpenProfile, statFilter,
               ) : filtered.map(r => (
                 <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}>
                   <td><ProgressRing value={pct(r)} /></td>
-                  <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.date_received || ''}</div></td>
-                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: 'var(--muted)' }}>{r.dob || '--'}</td>
-                  <td><div style={{ color: '#cbd5e1' }}>{r.caregiver || ''}</div><div style={{ fontSize: 11, color: 'var(--dim)', fontFamily: "'DM Mono',monospace" }}>{r.caregiver_phone || ''}</div></td>
+                  <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--muted)' }}>{r.date_received ? formatDisplayDate(r.date_received) : ''}</div></td>
+                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: 'var(--text)' }}>{formatDisplayDate(r.dob)}</td>
+                  <td><div style={{ color: 'var(--text)' }}>{r.caregiver || ''}</div><div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: "'DM Mono',monospace" }}>{r.caregiver_phone || '--'}</div></td>
                   <td><OfficePill office={r.office} previousOffice={r.previous_office} /></td>
-                  <td style={{ color: 'var(--muted)', fontSize: 12 }}>{formatInsurance(r.insurance) || '--'}</td>
+                  <td style={{ color: 'var(--text)', fontSize: 12 }}>{formatInsurance(r.insurance) || '--'}</td>
                   <td><Badge value={r.insurance_verified} /></td>
                   <td><Badge value={normalizeAutismDx(r.autism_diagnosis)} /></td>
                   <td><StagePill stage={r.current_stage} /></td>
                   <td><Badge value={r.intake_paperwork} /></td>
-                  <td style={{ color: 'var(--dim)', fontSize: 12 }}>{r.intake_personnel || '--'}</td>
+                  <td style={{ color: 'var(--muted)', fontSize: 12 }}>{r.intake_personnel || '--'}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <button
                       className="btn-sm"

@@ -60,7 +60,7 @@ export const MODULE_NAV = {
     { id: 'profile', icon: UserCheck, label: 'Client Profile' },
   ],
   assessment: [
-    { id: 'tracker', icon: ClipboardPenLine, label: 'Assessment Tracker' },
+    { id: 'tracker', icon: ClipboardPenLine, label: 'Initial Assessment Board' },
     { id: 'interviews', icon: MessagesSquare, label: 'Parent Interviews' },
     { id: 'bcba', icon: Users, label: 'BCBA Assignments' },
     { id: 'progress', icon: TrendingUp, label: 'Assessment Progress' },

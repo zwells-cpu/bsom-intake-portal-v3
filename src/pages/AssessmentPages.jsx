@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { PaStatusBadge } from '../components/Badge'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
-import { getAssessmentLifecycleStatus, getAssessmentRecordId, getAssessmentWorkflowProgress, getAssessmentWorkflowStatus, getAuthorizationStatus, isAuthorizationApproved, normalizeTreatmentPlanStatus } from '../lib/utils'
+import { formatDisplayDate, getAssessmentLifecycleStatus, getAssessmentRecordId, getAssessmentWorkflowProgress, getAssessmentWorkflowStatus, getAuthorizationStatus, isAuthorizationApproved, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 function assessVal(value) {
   if (!value) return <span style={{ color: 'var(--dim)', fontSize: 12 }}>--</span>
@@ -137,6 +137,9 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
   const denied = filtered.filter(record => ['Denied', 'Appeal Pending'].includes(record.authorization_status)).length
   return (
     <>
+      <div style={{ marginBottom: 22 }}>
+        <div style={{ fontWeight: 800, fontSize: 18 }}>Initial Assessment Board</div>
+      </div>
       <div className="stats-row stats-4" style={{ marginBottom: 20 }}>
         <ClickableStatCard value={filtered.length} label="Total Clients" color="#6366f1" sublabel="showing" active={activeFilter?.key === 'all'} onClick={() => toggleFilter('all', 'Assessment Tracker: All Clients')} />
         <ClickableStatCard value={approved} label="PA Approved" color="#22c55e" sublabel="incl. no PA needed" active={activeFilter?.key === 'pa-approved'} onClick={() => toggleFilter('pa-approved', 'Assessment Tracker: PA Approved')} />
@@ -253,8 +256,8 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
                       <td><span className="office-pill">{record.clinic || record.office || '--'}</span></td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || <span style={{ color: 'var(--dim)', fontStyle: 'italic' }}>Unassigned</span>}</td>
                       <td>{sBdg(record.parent_interview_status || 'Awaiting Assignment')}</td>
-                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.parent_interview_scheduled_date ? '#a5b4fc' : 'var(--dim)' }}>{record.parent_interview_scheduled_date || '--'}</td>
-                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.parent_interview_completed_date ? '#22c55e' : 'var(--dim)' }}>{record.parent_interview_completed_date || '--'}</td>
+                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.parent_interview_scheduled_date ? '#a5b4fc' : 'var(--dim)' }}>{formatDisplayDate(record.parent_interview_scheduled_date)}</td>
+                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.parent_interview_completed_date ? '#22c55e' : 'var(--dim)' }}>{formatDisplayDate(record.parent_interview_completed_date)}</td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.insurance || '--'}</td>
                       <td style={{ color: 'var(--accent)' }}>{canOpen ? '→' : ''}</td>
                     </tr>
@@ -474,8 +477,8 @@ export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess, 
                   <td>{sBdg(getAssessmentWorkflowStatus(record))}</td>
                   <td>{sBdg(record.treatment_plan_status || 'Not Started')}</td>
                   <td>{sBdg(getAuthorizationStatus(record) || 'Not Submitted')}</td>
-                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--dim)' }}>{record.treatment_plan_started_date || '--'}</td>
-                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.treatment_plan_completed_date ? '#22c55e' : 'var(--dim)' }}>{record.treatment_plan_completed_date || '--'}</td>
+                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--muted)' }}>{formatDisplayDate(record.treatment_plan_started_date)}</td>
+                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.treatment_plan_completed_date ? '#22c55e' : 'var(--dim)' }}>{formatDisplayDate(record.treatment_plan_completed_date)}</td>
                   <td style={{ color: 'var(--accent)' }}>→</td>
                 </tr>
               ))}
@@ -525,7 +528,7 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
           <div className="card" style={{ marginBottom: 20 }}>
             <div className="table-wrap">
               <table>
-                <thead><tr><th>Client</th><th>BCBA</th><th>Authorization</th><th>Auth Approved</th><th>Active Date</th><th>Notes</th><th /></tr></thead>
+                <thead><tr><th>Client</th><th>BCBA</th><th>Authorization</th><th>Auth Approved</th><th>Active Date</th><th>Notes</th><th>Open</th></tr></thead>
                 <tbody>
                   {readyRows.map(record => (
                     <tr
@@ -540,10 +543,10 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
                       </td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
                       <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
-                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: '#a5b4fc' }}>{record.authorization_approved_date || record.pa_decision_date || '--'}</td>
-                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.active_client_date ? '#22c55e' : '#fb923c' }}>{record.active_client_date || 'Pending'}</td>
+                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: '#a5b4fc' }}>{formatDisplayDate(record.authorization_approved_date || record.pa_decision_date)}</td>
+                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.active_client_date ? '#22c55e' : '#fb923c' }}>{record.active_client_date ? formatDisplayDate(record.active_client_date) : 'Pending'}</td>
                       <td style={{ fontSize: 11, color: 'var(--dim)', maxWidth: 160 }}>{record.notes || '--'}</td>
-                      <td style={{ color: 'var(--accent)' }}>â†’</td>
+                      <td style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 12 }}>Open</td>
                     </tr>
                   ))}
                 </tbody>
@@ -573,7 +576,7 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
                       <td>{sBdg(getAssessmentWorkflowStatus(record))}</td>
                       <td>{sBdg(record.treatment_plan_status || 'Not Started')}</td>
                       <td><PaStatusBadge status={getAuthorizationStatus(record) || 'Not Submitted'} /></td>
-                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--dim)' }}>{record.authorization_submitted_date || '--'}</td>
+                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--muted)' }}>{formatDisplayDate(record.authorization_submitted_date)}</td>
                       <td style={{ color: 'var(--accent)' }}>→</td>
                     </tr>
                   ))}

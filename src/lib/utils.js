@@ -141,6 +141,21 @@ export function formatInsurance(name) {
   return map[key] || name
 }
 
+export function formatDisplayDate(value) {
+  if (!value) return '--'
+
+  const normalized = String(value).trim()
+  if (!normalized) return '--'
+
+  const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (match) {
+    const [, year, month, day] = match
+    return `${month}-${day}-${year}`
+  }
+
+  return normalized
+}
+
 export function normalizeAutismDx(value, { emptyAsNotReceived = true } = {}) {
   if (value === null || value === undefined) return emptyAsNotReceived ? 'Not Received' : ''
 

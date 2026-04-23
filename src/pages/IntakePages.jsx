@@ -1,7 +1,7 @@
 import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
-import { getReferralStage, pct, displayStaffName, formatInsurance, normalizeAutismDx, normalizeOffice, normalizeStaffName } from '../lib/utils'
+import { getReferralStage, pct, displayStaffName, formatDisplayDate, formatInsurance, normalizeAutismDx, normalizeOffice, normalizeStaffName } from '../lib/utils'
 
 // ══════════════════════════════════════
 // INTAKE DASHBOARD
@@ -105,8 +105,8 @@ export function IntakeDashboard({ refs, onSelectRef, openModulePage }) {
               <tbody>
                 {active.slice(0, 8).map(r => (
                   <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}>
-                    <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.date_received || ''}</div></td>
-                    <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--dim)' }}>{r.referral_id || '--'}</td>
+                    <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--muted)' }}>{r.date_received ? formatDisplayDate(r.date_received) : ''}</div></td>
+                    <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--muted)' }}>{r.referral_id || '--'}</td>
                     <td><StagePill stage={getReferralStage(r)} /></td>
                     <td><Badge value={r.intake_paperwork} /></td>
                     <td><Badge value={r.insurance_verified} /></td>
@@ -145,7 +145,7 @@ export function PendingDocsPage({ refs, onSelectRef, statFilter, onSetStatFilter
   const toggleFilter = (key, label) => onSetStatFilter(toggleStatFilter(activeFilter, { target: 'pending-docs', key, label }))
   const filteredRows = (activeFilter ? active : pending)
     .filter(r => matchesStatFilter(r, activeFilter))
-    .sort((a, b) => (a.date_received || '').localeCompare(b.date_received || ''))
+    .sort((a, b) => (a.formatDisplayDate(r.date_received).localeCompare(b.formatDisplayDate(r.date_received))
 
   return (
     <>
@@ -170,14 +170,14 @@ export function PendingDocsPage({ refs, onSelectRef, statFilter, onSetStatFilter
                 : filteredRows.map(r => (
                   <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}>
                     <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.caregiver || ''}</div></td>
-                    <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--dim)' }}>{r.referral_id || '--'}</td>
+                    <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--muted)' }}>{r.referral_id || '--'}</td>
                     <td><OfficePill office={r.office} previousOffice={r.previous_office} /></td>
                     <td><Badge value={r.intake_paperwork} /></td>
                     <td><Badge value={normalizeAutismDx(r.autism_diagnosis)} /></td>
                     <td><Badge value={r.vineland} /></td>
                     <td><Badge value={r.srs2} /></td>
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>
-                    <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--dim)' }}>{r.date_received || '--'}</td>
+                    <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--muted)' }}>{formatDisplayDate(r.date_received)}</td>
                     <td style={{ color: 'var(--accent)' }}>→</td>
                   </tr>
                 ))}
@@ -286,11 +286,11 @@ export function NonResponsivePage({ refs, onRestore, statFilter, onClearStatFilt
                 ? <tr><td colSpan={8} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No non-responsive clients.</td></tr>
                 : filteredRows.map(r => (
                   <tr key={r.id}>
-                    <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.date_received || ''}</div></td>
+                    <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--muted)' }}>{r.date_received ? formatDisplayDate(r.date_received) : ''}</div></td>
                     <td style={{ color: 'var(--muted)', fontSize: 13 }}>{r.caregiver || '--'}</td>
-                    <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: 'var(--dim)' }}>{r.caregiver_phone || '--'}</td>
+                    <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: 'var(--muted)' }}>{r.caregiver_phone || '--'}</td>
                     <td><OfficePill office={r.office} previousOffice={r.previous_office} /></td>
-                    <td style={{ fontSize: 12, color: 'var(--muted)' }}>{formatInsurance(r.insurance) || '--'}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text)' }}>{formatInsurance(r.insurance) || '--'}</td>
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>
                     <td><span className="bdg" style={{ background: r.status === 'referred-out' ? '#8b5cf620' : '#ef444420', color: r.status === 'referred-out' ? '#8b5cf6' : '#ef4444', border: `1px solid ${r.status === 'referred-out' ? '#8b5cf640' : '#ef444440'}` }}>{r.status}</span></td>
                     <td><button onClick={() => onRestore(r.id)} style={{ padding: '6px 12px', borderRadius: 7, border: '1px solid #22c55e40', background: '#22c55e15', color: '#22c55e', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>↩ Restore</button></td>
