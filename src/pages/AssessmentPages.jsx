@@ -212,6 +212,10 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
   const noShow = assessData.filter(record => record.parent_interview_status === 'No Show')
   const { activeFilter, toggleFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'parent-interviews')
   const filteredRows = assessData.filter(record => matchesStatFilter(record, activeFilter))
+  const openAssessment = (record) => {
+    if (!getAssessmentRecordId(record)) return
+    onSelectAssess(record)
+  }
 
   return (
     <>
@@ -230,7 +234,7 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
       <div className="card">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Client</th><th>Office</th><th>Assigned BCBA</th><th>Interview Status</th><th>Scheduled Date</th><th>Completed Date</th><th>Insurance</th><th /></tr></thead>
+            <thead><tr><th>Client</th><th>Office</th><th>Assigned BCBA</th><th>Interview Status</th><th>Scheduled Date</th><th>Completed Date</th><th>Insurance</th><th>Open</th></tr></thead>
             <tbody>
               {filteredRows.length === 0
                 ? <tr><td colSpan={8} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No assessment records found.</td></tr>
@@ -238,12 +242,20 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
                   const canOpen = Boolean(getAssessmentRecordId(record))
 
                   return (
-                    <tr key={record.assessment_id || record.client_name}>
+                    <tr
+                      key={record.assessment_id || record.client_name}
+                      className={canOpen ? 'row-hover' : ''}
+                      onClick={() => openAssessment(record)}
+                      style={{ cursor: canOpen ? 'pointer' : 'default' }}
+                    >
                       <td>
                         {canOpen ? (
                           <button
                             type="button"
-                            onClick={() => onSelectAssess(record)}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              openAssessment(record)
+                            }}
                             style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text)', cursor: 'pointer', textAlign: 'left' }}
                           >
                             <div style={{ fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3 }}>{record.client_name}</div>
@@ -259,7 +271,21 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
                       <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.parent_interview_scheduled_date ? '#a5b4fc' : 'var(--dim)' }}>{formatDisplayDate(record.parent_interview_scheduled_date)}</td>
                       <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.parent_interview_completed_date ? '#22c55e' : 'var(--dim)' }}>{formatDisplayDate(record.parent_interview_completed_date)}</td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.insurance || '--'}</td>
-                      <td style={{ color: 'var(--accent)' }}>{canOpen ? '→' : ''}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        {canOpen ? (
+                          <button
+                            type="button"
+                            className="btn-ghost"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              openAssessment(record)
+                            }}
+                            style={{ padding: '6px 10px', fontSize: 12, color: 'var(--accent)', borderColor: 'var(--border2)' }}
+                          >
+                            Open
+                          </button>
+                        ) : null}
+                      </td>
                     </tr>
                   )
                 })}
@@ -270,7 +296,6 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
     </>
   )
 }
-
 export function BCBAAssignmentsPage({ assessData, assessLoading, onSelectAssess, statFilter, onSetStatFilter, onClearStatFilter }) {
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
@@ -656,3 +681,4 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
     </>
   )
 }
+

@@ -114,6 +114,10 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
       srs2: form.srs2 || '',
       vbmapp: form.vbmapp || '',
       socially_savvy: form.socially_savvy || '',
+      parent_interview_status: form.parent_interview_status || '',
+      parent_interview_scheduled_date: form.parent_interview_scheduled_date || null,
+      parent_interview_completed_date: form.parent_interview_completed_date || null,
+      direct_obs: form.direct_obs || '',
       treatment_plan_status: normalizeTreatmentPlanStatus(form.treatment_plan_status || 'Not Started'),
       treatment_plan_started_date: form.treatment_plan_started_date || null,
       treatment_plan_completed_date: form.treatment_plan_completed_date || null,
@@ -191,6 +195,13 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
             <BadgeDetailRow label="VBMAPP" value={form?.vbmapp} />
             <BadgeDetailRow label="Socially Savvy" value={form?.socially_savvy} />
 
+            <div className="section-hdr" style={{ marginTop: 18 }}>Parent Interview Workflow</div>
+            <DetailRow label="Assigned BCBA" value={form?.assigned_bcba} />
+            <BadgeDetailRow label="Parent Interview Status" value={form?.parent_interview_status} />
+            <DetailRow label="Interview Scheduled" value={form?.parent_interview_scheduled_date} />
+            <DetailRow label="Interview Completed" value={form?.parent_interview_completed_date} />
+            <BadgeDetailRow label="Direct Observation" value={form?.direct_obs} />
+
             <div className="section-hdr" style={{ marginTop: 18 }}>Treatment Plan / Authorization</div>
             <DetailRow label="Treatment Plan" value={normalizeTreatmentPlanStatus(form?.treatment_plan_status)} />
             <DetailRow label="Authorization Status" value={form?.authorization_status} />
@@ -230,6 +241,15 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
               <SelectField label="SRS-2" value={form?.srs2} onChange={setField('srs2')} options={ASSESSMENT_STATUS_OPTIONS} />
               <SelectField label="VBMAPP" value={form?.vbmapp} onChange={setField('vbmapp')} options={ASSESSMENT_STATUS_OPTIONS} />
               <SelectField label="Socially Savvy" value={form?.socially_savvy} onChange={setField('socially_savvy')} options={ASSESSMENT_STATUS_OPTIONS} />
+            </div>
+
+            <div className="section-hdr" style={{ marginTop: 18 }}>Parent Interview Workflow</div>
+            <div className="responsive-review-grid" style={{ gap: 12 }}>
+              <TextField label="Assigned BCBA" value={form?.assigned_bcba} onChange={setField('assigned_bcba')} />
+              <SelectField label="Parent Interview Status" value={form?.parent_interview_status} onChange={setField('parent_interview_status')} options={INTERVIEW_STATUSES} />
+              <DateField label="Interview Scheduled" value={form?.parent_interview_scheduled_date} onChange={setField('parent_interview_scheduled_date')} />
+              <DateField label="Interview Completed" value={form?.parent_interview_completed_date} onChange={setField('parent_interview_completed_date')} />
+              <SelectField label="Direct Observation" value={form?.direct_obs} onChange={setField('direct_obs')} options={ASSESSMENT_STATUS_OPTIONS} />
             </div>
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Treatment Plan / Authorization</div>
