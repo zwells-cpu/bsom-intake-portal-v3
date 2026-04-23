@@ -1,7 +1,7 @@
 const portalModules = [
   ['Dashboard', 'High-level stats, alerts, and recent activity at a glance.', '#6366f1'],
   ['Intake', 'Manage referrals, add new clients, track pending documents and insurance verification.', '#22c55e'],
-  ['Initial Assessments', 'Track Vineland, SRS-2, parent interviews, BCBA assignments, and prior authorization status.', '#f59e0b'],
+  ['Initial Assessments', 'Manage the initial assessment board with Vineland, SRS-2, VBMAPP, Socially Savvy, BCBA assignments, and readiness or authorization workflows.', '#f59e0b'],
   ['Operational Insights', 'Aging reports, clinic volume, conversion rates, and staff performance metrics.', '#fb923c'],
 ]
 
@@ -39,14 +39,14 @@ export function AboutPortalPage() {
           <div className="card card-pad">
             <div className="section-hdr">Overview</div>
             <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.8, margin: 0 }}>
-              The BSOM Intake Portal is an internal operations tool built for Behavioral Solutions of Mississippi staff. It centralizes referral tracking, intake coordination, assessment management, and operational reporting across all clinic locations.
+              The BSOM Intake Portal is an internal operations platform for Behavioral Solutions of Mississippi that supports referral tracking, intake coordination, initial assessments, and operational reporting across clinic locations.
             </p>
           </div>
 
           <div className="card card-pad">
             <div className="section-hdr">Version</div>
             <div className="info-row"><span className="info-label">Version</span><span className="info-val">3.0.0 (React/Vite)</span></div>
-            <div className="info-row"><span className="info-label">Backend</span><span className="info-val">Supabase (PostgreSQL)</span></div>
+            <div className="info-row"><span className="info-label">Backend</span><span className="info-val">Supabase Auth + REST API service</span></div>
             <div className="info-row" style={{ border: 'none' }}><span className="info-label">Developed by</span><span style={{ color: '#a5b4fc', fontWeight: 700 }}>Zanteria Wells</span></div>
           </div>
         </div>
