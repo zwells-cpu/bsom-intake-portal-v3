@@ -13,6 +13,8 @@ const ASSESSMENT_DB_FIELDS = [
   'insurance',
   'vineland',
   'srs2',
+  'vbmapp',
+  'socially_savvy',
   'parent_interview_status',
   'parent_interview_scheduled_date',
   'parent_interview_completed_date',

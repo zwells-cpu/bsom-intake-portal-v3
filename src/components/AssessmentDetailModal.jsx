@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { ConfirmationModal } from './ConfirmationModal'
-import { OFFICES, STAT, BOOL } from '../lib/constants'
+import { OFFICES, BOOL } from '../lib/constants'
 import { getAssessmentLifecycleStatus, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 const INTERVIEW_STATUSES = ['Awaiting Assignment', 'Scheduled', 'Completed', 'No Show']
 const TREATMENT_PLAN_STATUSES = ['Not Started', 'In Progress', 'Finalized']
 const AUTHORIZATION_STATUSES = ['Not Submitted', 'Pending', 'In Review', 'Approved', 'Reauthorization Needed', 'Appeal Pending', 'Denied', 'No PA Needed', 'Approved/Discharged', 'Referred Out']
+const ASSESSMENT_STATUS_OPTIONS = ['Done', 'Completed', 'Finalized', 'In Progress', 'Awaiting', 'Not Started', 'Yes', 'No']
 
 function asBoolString(value) {
   return value === true || value === 'true' ? 'true' : 'false'
@@ -17,11 +18,34 @@ function displayValue(value) {
   return value || '--'
 }
 
+function assessVal(value) {
+  if (!value) return <span style={{ color: 'var(--dim)', fontSize: 12 }}>--</span>
+
+  const upper = value.toUpperCase()
+  let color = '#64748b'
+
+  if (['DONE', 'YES', 'COMPLETED', 'FINALIZED'].some(token => upper.includes(token))) color = '#22c55e'
+  else if (['IN-PROGRESS', 'IN PROGRESS'].some(token => upper.includes(token))) color = '#f59e0b'
+  else if (['WAITING', 'AWAITING', 'TBD'].some(token => upper.includes(token))) color = '#fb923c'
+  else if (['NO', 'DECLINED'].some(token => upper.includes(token))) color = '#ef4444'
+
+  return <span className="bdg" style={{ background: `${color}20`, color, border: `1px solid ${color}35` }}>{value}</span>
+}
+
 function DetailRow({ label, value }) {
   return (
     <div className="info-row">
       <span className="info-label">{label}</span>
       <span className="info-val">{displayValue(value)}</span>
+    </div>
+  )
+}
+
+function BadgeDetailRow({ label, value }) {
+  return (
+    <div className="info-row">
+      <span className="info-label">{label}</span>
+      <span className="info-val">{assessVal(value)}</span>
     </div>
   )
 }
@@ -88,6 +112,8 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
       insurance: form.insurance || '',
       vineland: form.vineland || '',
       srs2: form.srs2 || '',
+      vbmapp: form.vbmapp || '',
+      socially_savvy: form.socially_savvy || '',
       parent_interview_status: form.parent_interview_status || '',
       parent_interview_scheduled_date: form.parent_interview_scheduled_date || null,
       parent_interview_completed_date: form.parent_interview_completed_date || null,
@@ -166,12 +192,10 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
             <DetailRow label="Other Services" value={form?.other_services} />
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Assessment Components</div>
-            <DetailRow label="Parent Interview" value={form?.parent_interview_status} />
-            <DetailRow label="Interview Scheduled" value={form?.parent_interview_scheduled_date} />
-            <DetailRow label="Interview Completed" value={form?.parent_interview_completed_date} />
-            <DetailRow label="Vineland" value={form?.vineland} />
-            <DetailRow label="SRS-2" value={form?.srs2} />
-            <DetailRow label="Direct Observation" value={form?.direct_obs} />
+            <BadgeDetailRow label="Vineland" value={form?.vineland} />
+            <BadgeDetailRow label="SRS-2" value={form?.srs2} />
+            <BadgeDetailRow label="VBMAPP" value={form?.vbmapp} />
+            <BadgeDetailRow label="Socially Savvy" value={form?.socially_savvy} />
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Treatment Plan / Authorization</div>
             <DetailRow label="Treatment Plan" value={normalizeTreatmentPlanStatus(form?.treatment_plan_status)} />
@@ -209,12 +233,10 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Assessment Components</div>
             <div className="responsive-review-grid" style={{ gap: 12 }}>
-              <SelectField label="Vineland" value={form?.vineland} onChange={setField('vineland')} options={STAT} />
-              <SelectField label="SRS-2" value={form?.srs2} onChange={setField('srs2')} options={STAT} />
-              <SelectField label="Parent Interview Status" value={form?.parent_interview_status} onChange={setField('parent_interview_status')} options={INTERVIEW_STATUSES} />
-              <DateField label="Interview Scheduled" value={form?.parent_interview_scheduled_date} onChange={setField('parent_interview_scheduled_date')} />
-              <DateField label="Interview Completed" value={form?.parent_interview_completed_date} onChange={setField('parent_interview_completed_date')} />
-              <SelectField label="Direct Observation" value={form?.direct_obs} onChange={setField('direct_obs')} options={STAT} />
+              <SelectField label="Vineland" value={form?.vineland} onChange={setField('vineland')} options={ASSESSMENT_STATUS_OPTIONS} />
+              <SelectField label="SRS-2" value={form?.srs2} onChange={setField('srs2')} options={ASSESSMENT_STATUS_OPTIONS} />
+              <SelectField label="VBMAPP" value={form?.vbmapp} onChange={setField('vbmapp')} options={ASSESSMENT_STATUS_OPTIONS} />
+              <SelectField label="Socially Savvy" value={form?.socially_savvy} onChange={setField('socially_savvy')} options={ASSESSMENT_STATUS_OPTIONS} />
             </div>
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Treatment Plan / Authorization</div>

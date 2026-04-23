@@ -43,6 +43,30 @@ function sBdg(status) {
   return <span className="bdg" style={{ background: `${color}20`, color, border: `1px solid ${color}35` }}>{normalizedStatus || '--'}</span>
 }
 
+function paStatus(status) {
+  return <PaStatusBadge status={status} />
+}
+
+function isTrackedAssessmentComplete(value) {
+  const normalized = String(value || '').trim().toUpperCase()
+  return ['DONE', 'COMPLETED', 'YES', 'FINALIZED'].some(token => normalized.includes(token))
+}
+
+function getAssessmentProgressFields(record) {
+  return {
+    vineland: record?.vineland || '',
+    srs2: record?.srs2 || '',
+    vbmapp: record?.vbmapp || '',
+    sociallySavvy: record?.socially_savvy || '',
+  }
+}
+
+function getAssessmentProgressPercent(record) {
+  const trackedValues = Object.values(getAssessmentProgressFields(record))
+  const completedCount = trackedValues.filter(isTrackedAssessmentComplete).length
+  return `${completedCount * 25}%`
+}
+
 const ALL_PA = ['All', 'Approved', 'In Review', 'Pending', 'Reauthorization Needed', 'Appeal Pending', 'Denied', 'No PA Needed', 'Approved/Discharged', 'Referred Out']
 const TX_STATUSES = ['Not Started', 'In Progress', 'Finalized']
 
@@ -348,7 +372,7 @@ export function AssessmentProgressPage({ assessData, assessLoading, onSelectAsse
     <>
       <div style={{ marginBottom: 22 }}>
         <div style={{ fontWeight: 800, fontSize: 18 }}>Assessment Progress</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Track parent interviews, Vineland, SRS-2, and direct observations</div>
+        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Track Vineland, SRS-2, VBMAPP, and Socially Savvy assessments</div>
       </div>
       <div className="stats-row stats-3" style={{ marginBottom: 22 }}>
         <ClickableStatCard value={notStarted.length} label="Not Started" color="#ef4444" active={activeFilter?.key === 'not-started'} onClick={() => toggleFilter('not-started', 'Assessment Progress: Not Started')} />
@@ -359,29 +383,32 @@ export function AssessmentProgressPage({ assessData, assessLoading, onSelectAsse
       <div className="card">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Client</th><th>BCBA</th><th>Progress</th><th>Vineland</th><th>SRS-2</th><th>Parent Interview</th><th>Direct Obs.</th><th>Complete</th><th>PA Status</th><th /></tr></thead>
+            <thead><tr><th>Client</th><th>BCBA</th><th>Vineland</th><th>SRS-2</th><th>VBMAPP</th><th>Socially Savvy</th><th>Complete</th><th>Status</th></tr></thead>
             <tbody>
               {filteredRows.length === 0 ? (
-                <tr><td colSpan={10} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No assessment records match the current filter.</td></tr>
-              ) : filteredRows.map(record => (
-                <tr
-                  key={record.assessment_id || record.client_name}
-                  className="row-hover"
-                  onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
-                  style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
-                >
+                <tr><td colSpan={8} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No assessment records match the current filter.</td></tr>
+              ) : filteredRows.map(record => {
+                const progressFields = getAssessmentProgressFields(record)
+                const completionPercent = getAssessmentProgressPercent(record)
+
+                return (
+                  <tr
+                    key={record.assessment_id || record.client_name}
+                    className="row-hover"
+                    onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
+                    style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
+                  >
                   <td>{renderClientCell(record, record.clinic)}</td>
                   <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || <span style={{ color: '#ef4444', fontStyle: 'italic', fontSize: 11 }}>Unassigned</span>}</td>
-                  <td><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{sBdg(getAssessmentWorkflowStatus(record))}<span style={{ fontSize: 11, color: 'var(--dim)', fontFamily: "'DM Mono',monospace" }}>{getAssessmentWorkflowProgress(record).completed}/{getAssessmentWorkflowProgress(record).total}</span></div></td>
-                  <td>{assessVal(record.vineland)}</td>
-                  <td>{assessVal(record.srs2)}</td>
-                  <td>{sBdg(record.parent_interview_status || 'Awaiting Assignment')}</td>
-                  <td>{assessVal(record.direct_obs)}</td>
-                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: getAssessmentWorkflowProgress(record).completed === getAssessmentWorkflowProgress(record).total ? '#22c55e' : 'var(--dim)' }}>{getAssessmentWorkflowProgress(record).percent}%</td>
-                  <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
-                  <td style={{ color: 'var(--accent)' }}>→</td>
+                  <td>{assessVal(progressFields.vineland)}</td>
+                  <td>{assessVal(progressFields.srs2)}</td>
+                  <td>{assessVal(progressFields.vbmapp)}</td>
+                  <td>{assessVal(progressFields.sociallySavvy)}</td>
+                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: completionPercent === '100%' ? '#22c55e' : 'var(--dim)' }}>{completionPercent}</td>
+                  <td>{paStatus(record.pa_status || getAuthorizationStatus(record))}</td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -516,7 +543,7 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
                       <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: '#a5b4fc' }}>{record.authorization_approved_date || record.pa_decision_date || '--'}</td>
                       <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.active_client_date ? '#22c55e' : '#fb923c' }}>{record.active_client_date || 'Pending'}</td>
                       <td style={{ fontSize: 11, color: 'var(--dim)', maxWidth: 160 }}>{record.notes || '--'}</td>
-                      <td style={{ color: 'var(--accent)' }}>→</td>
+                      <td style={{ color: 'var(--accent)' }}>â†’</td>
                     </tr>
                   ))}
                 </tbody>
@@ -577,7 +604,7 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
                       <td>{lifecycleBadge(getAssessmentLifecycleStatus(record))}</td>
                       <td><PaStatusBadge status={getAuthorizationStatus(record) || 'Referred Out'} /></td>
                       <td style={{ fontSize: 11, color: 'var(--dim)', maxWidth: 180 }}>{record.notes || '--'}</td>
-                      <td style={{ color: 'var(--accent)' }}>â†’</td>
+                      <td style={{ color: 'var(--accent)' }}>→</td>
                     </tr>
                   ))}
                 </tbody>
