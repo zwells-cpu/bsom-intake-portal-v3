@@ -118,16 +118,14 @@ export function useAssessments() {
         body: JSON.stringify(normalizedPatch),
       })
       if (!patchRes.ok) throw new Error(await patchRes.text())
-      const data = await patchRes.json()
+      await patchRes.json().catch(() => null)
 
-      let nextRecord = data ? normalizeAssessmentRecord(data, id) : null
-
-      if (!nextRecord) {
-        const refreshRes = await fetch(`${API_URL}/assessments/${id}`)
-        if (!refreshRes.ok) throw new Error(await refreshRes.text())
-        const refreshed = await refreshRes.json()
-        nextRecord = normalizeAssessmentRecord(refreshed, id)
-      }
+      // Always re-read the saved record from the API so the client state matches
+      // the persisted backend row, even if the PATCH response is stale or partial.
+      const refreshRes = await fetch(`${API_URL}/assessments/${id}`)
+      if (!refreshRes.ok) throw new Error(await refreshRes.text())
+      const refreshed = await refreshRes.json()
+      let nextRecord = normalizeAssessmentRecord(refreshed, id)
 
       if (!nextRecord) {
         nextRecord = normalizeAssessmentRecord({ assessment_id: id, ...normalizedPatch }, id)
