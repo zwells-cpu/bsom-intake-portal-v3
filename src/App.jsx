@@ -115,11 +115,15 @@ export default function App() {
 
       setProfileLoading(true)
 
-      const { data, error: profileError } = await supabase
-        .from('profiles')
-        .select('full_name, role, office')
-        .eq('id', session.user.id)
-        .maybeSingle()
+      let data = null
+      let profileError = null
+      try {
+        const profileRes = await fetch(`${API_BASE}/profiles/${session.user.id}`)
+        if (!profileRes.ok) throw new Error(`HTTP ${profileRes.status}`)
+        data = await profileRes.json()
+      } catch (err) {
+        profileError = err
+      }
 
       if (cancelled) return
 

@@ -5,7 +5,11 @@
       "Read(//c/Users/zdom9/Desktop/**)",
       "Bash(node -e \"const c = require\\('crypto'\\); console.log\\(typeof c.randomUUID\\)\")",
       "Bash(npm install *)",
-      "Bash(node --check index.js)"
+      "Bash(node --check index.js)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "Read(//c/Users/zdom9/**)"
     ]
   }
 }
