@@ -1,5 +1,5 @@
 import { supabase } from './lib/supabase'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTheme } from './hooks/useTheme'
 import { useIdleTimeout } from './hooks/useIdleTimeout'
 import { useReferrals } from './hooks/useReferrals'
@@ -24,6 +24,19 @@ import { createActivityLog } from './lib/activityLogs'
 import { getAssessmentRecordId, needsInsuranceVerification } from './lib/utils'
 import { API_BASE } from './lib/api'
 
+const NAV_STATE_KEY = 'bsom-portal-nav'
+
+function readSavedNav() {
+  try {
+    const raw = sessionStorage.getItem(NAV_STATE_KEY)
+    if (!raw) return null
+    const saved = JSON.parse(raw)
+    return saved?.screen === 'module' && saved?.module ? saved : null
+  } catch {
+    return null
+  }
+}
+
 export default function App() {
   const { theme, setTheme } = useTheme()
   const { refs, loading, error, saving, saved, setError, load, saveReferral, updateReferral, deleteReferral, setStatus, toggleParentInterview } = useReferrals()
@@ -44,9 +57,9 @@ export default function App() {
   const [signOutPending, setSignOutPending] = useState(false)
   const [activityRefreshKey, setActivityRefreshKey] = useState(0)
 
-  const [screen, setScreen] = useState('home')
-  const [module, setModule] = useState(null)
-  const [subpage, setSubpage] = useState(null)
+  const [screen, setScreen] = useState(() => readSavedNav()?.screen ?? 'home')
+  const [module, setModule] = useState(() => readSavedNav()?.module ?? null)
+  const [subpage, setSubpage] = useState(() => readSavedNav()?.subpage ?? null)
   const [selId, setSelId] = useState(null)
   const [selAssessId, setSelAssessId] = useState(null)
   const [routeFilter, setRouteFilter] = useState(null)
@@ -149,6 +162,23 @@ export default function App() {
     window.addEventListener('enter-module', h)
     return () => window.removeEventListener('enter-module', h)
   }, [])
+
+  // Persist navigation across browser refreshes (session-scoped).
+  useEffect(() => {
+    if (screen === 'module' && module) {
+      sessionStorage.setItem(NAV_STATE_KEY, JSON.stringify({ screen, module, subpage }))
+    } else {
+      sessionStorage.removeItem(NAV_STATE_KEY)
+    }
+  }, [screen, module, subpage])
+
+  // When session resolves and nav was restored to assessment/operations, trigger data load.
+  const _restoredModule = useRef(readSavedNav()?.module ?? null)
+  useEffect(() => {
+    if (!session || recoveryMode) return
+    const m = _restoredModule.current
+    if (m === 'assessment' || m === 'operations') loadAssessments()
+  }, [session, recoveryMode, loadAssessments])
 
   const openModulePage = (nextModule, nextSubpage, filter = null) => {
     setModule(nextModule)

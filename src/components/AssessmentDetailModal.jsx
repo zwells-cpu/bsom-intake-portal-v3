@@ -114,10 +114,6 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
       srs2: form.srs2 || '',
       vbmapp: form.vbmapp || '',
       socially_savvy: form.socially_savvy || '',
-      parent_interview_status: form.parent_interview_status || '',
-      parent_interview_scheduled_date: form.parent_interview_scheduled_date || null,
-      parent_interview_completed_date: form.parent_interview_completed_date || null,
-      direct_obs: form.direct_obs || '',
       treatment_plan_status: normalizeTreatmentPlanStatus(form.treatment_plan_status || 'Not Started'),
       treatment_plan_started_date: form.treatment_plan_started_date || null,
       treatment_plan_completed_date: form.treatment_plan_completed_date || null,
@@ -126,7 +122,6 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
       authorization_approved_date: form.authorization_approved_date || null,
       ready_for_services: form.ready_for_services === true || form.ready_for_services === 'true',
       active_client_date: form.active_client_date || null,
-      in_school: form.in_school || '',
       other_services: form.other_services || '',
       notes: form.notes || '',
     }
@@ -188,7 +183,6 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Caregiver / Insurance</div>
             <DetailRow label="Insurance" value={form?.insurance} />
-            <DetailRow label="In School" value={form?.in_school} />
             <DetailRow label="Other Services" value={form?.other_services} />
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Assessment Components</div>
@@ -227,7 +221,6 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
               <TextField label="Caregiver Phone" value={form?.caregiver_phone} onChange={setField('caregiver_phone')} />
               <TextField label="Caregiver Email" value={form?.caregiver_email} onChange={setField('caregiver_email')} />
               <TextField label="Insurance" value={form?.insurance} onChange={setField('insurance')} />
-              <SelectField label="In School" value={form?.in_school} onChange={setField('in_school')} options={BOOL} />
               <TextField label="Other Services" value={form?.other_services} onChange={setField('other_services')} placeholder="ABA, OT, speech, etc." />
             </div>
 
@@ -271,9 +264,7 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
         </div>
 
         <div className="modal-foot">
-          <div style={{ color: 'var(--dim)', fontSize: 12 }}>
-            {recordId ? `Saving to assessment_id ${recordId}.` : 'This record cannot be saved yet.'}
-          </div>
+          <div />
           <div className="modal-actions">
             {lifecycleStatus !== 'Referred Out' ? (
               <button
