@@ -110,7 +110,7 @@ export function IntakeDashboard({ refs, onSelectRef, openModulePage }) {
                     <td><StagePill stage={getReferralStage(r)} /></td>
                     <td><Badge value={r.intake_paperwork} /></td>
                     <td><Badge value={r.insurance_verified} /></td>
-                    <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text)' }}>{r.intake_personnel || '--'}</td>
                     <td style={{ color: 'var(--accent)' }}>→</td>
                   </tr>
                 ))}
@@ -145,7 +145,7 @@ export function PendingDocsPage({ refs, onSelectRef, statFilter, onSetStatFilter
   const toggleFilter = (key, label) => onSetStatFilter(toggleStatFilter(activeFilter, { target: 'pending-docs', key, label }))
   const filteredRows = (activeFilter ? active : pending)
     .filter(r => matchesStatFilter(r, activeFilter))
-    .sort((a, b) => (a.formatDisplayDate(r.date_received).localeCompare(b.formatDisplayDate(r.date_received))
+    .sort((a, b) => (a.date_received || '').localeCompare(b.date_received || ''))
 
   return (
     <>
@@ -176,7 +176,7 @@ export function PendingDocsPage({ refs, onSelectRef, statFilter, onSetStatFilter
                     <td><Badge value={normalizeAutismDx(r.autism_diagnosis)} /></td>
                     <td><Badge value={r.vineland} /></td>
                     <td><Badge value={r.srs2} /></td>
-                    <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text)' }}>{r.intake_personnel || '--'}</td>
                     <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--muted)' }}>{formatDisplayDate(r.date_received)}</td>
                     <td style={{ color: 'var(--accent)' }}>→</td>
                   </tr>
@@ -229,9 +229,9 @@ export function InsuranceVerifPage({ refs, onSelectRef, statFilter, onSetStatFil
                   : filteredRows.map(r => (
                     <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}>
                       <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11 }}><OfficePill office={r.office} previousOffice={r.previous_office} /></div></td>
-                      <td style={{ fontSize: 12, color: 'var(--muted)' }}>{formatInsurance(r.insurance) || '--'}</td>
+                      <td style={{ fontSize: 12, color: 'var(--text)' }}>{formatInsurance(r.insurance) || '--'}</td>
                       <td><Badge value={r.insurance_verified} /></td>
-                      <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>
+                      <td style={{ fontSize: 12, color: 'var(--text)' }}>{r.intake_personnel || '--'}</td>
                       <td style={{ color: 'var(--accent)' }}>→</td>
                     </tr>
                   ))}
@@ -287,11 +287,11 @@ export function NonResponsivePage({ refs, onRestore, statFilter, onClearStatFilt
                 : filteredRows.map(r => (
                   <tr key={r.id}>
                     <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--muted)' }}>{r.date_received ? formatDisplayDate(r.date_received) : ''}</div></td>
-                    <td style={{ color: 'var(--muted)', fontSize: 13 }}>{r.caregiver || '--'}</td>
+                    <td style={{ color: 'var(--text)', fontSize: 13 }}>{r.caregiver || '--'}</td>
                     <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: 'var(--muted)' }}>{r.caregiver_phone || '--'}</td>
                     <td><OfficePill office={r.office} previousOffice={r.previous_office} /></td>
                     <td style={{ fontSize: 12, color: 'var(--text)' }}>{formatInsurance(r.insurance) || '--'}</td>
-                    <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text)' }}>{r.intake_personnel || '--'}</td>
                     <td><span className="bdg" style={{ background: r.status === 'referred-out' ? '#8b5cf620' : '#ef444420', color: r.status === 'referred-out' ? '#8b5cf6' : '#ef4444', border: `1px solid ${r.status === 'referred-out' ? '#8b5cf640' : '#ef444440'}` }}>{r.status}</span></td>
                     <td><button onClick={() => onRestore(r.id)} style={{ padding: '6px 12px', borderRadius: 7, border: '1px solid #22c55e40', background: '#22c55e15', color: '#22c55e', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>↩ Restore</button></td>
                   </tr>

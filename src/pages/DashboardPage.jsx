@@ -2,7 +2,7 @@ import { Badge, OfficePill, ProgressRing } from '../components/Badge'
 import { ClickableStatCard } from '../components/StatFilterControls'
 import { ActivityLogList, RecentActivityCard } from '../components/dashboard/RecentActivityCard'
 import { useActivityLogs } from '../hooks/useActivityLogs'
-import { getReferralStage, isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, pct } from '../lib/utils'
+import { formatDisplayDate, getReferralStage, isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, pct } from '../lib/utils'
 
 export function DashboardPage({ refs, setSelectedId, openModulePage, activityRefreshKey = 0 }) {
   const { logs, loading: activityLoading } = useActivityLogs(8, activityRefreshKey)
@@ -14,7 +14,7 @@ export function DashboardPage({ refs, setSelectedId, openModulePage, activityRef
   const noIns = active.filter((r) => needsInsuranceVerification(r.insurance_verified))
   const readyForInterview = active.filter((r) => getReferralStage(r) === 'Ready for Interview').length
   const aging14 = active.filter((r) => {
-    const received = {formatDisplayDate(r.date_received)}
+    const received = r.referral_received_date || r.date_received
     if (!received) return false
     const ageInDays = Math.floor((Date.now() - new Date(received).getTime()) / 86400000)
     return Number.isFinite(ageInDays) && ageInDays >= 14
@@ -127,9 +127,9 @@ export function DashboardPage({ refs, setSelectedId, openModulePage, activityRef
                 <tbody>
                   {recent.map((r) => (
                     <tr key={r.id} className="row-hover" onClick={() => { setSelectedId(r.id); openModulePage('intake', 'all') }}>
-                      <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{formatDisplayDate(r.date_received)}</div></td>
+                      <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.date_received ? formatDisplayDate(r.date_received) : ''}</div></td>
                       <td><OfficePill office={r.office} previousOffice={r.previous_office} /></td>
-                      <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>
+                      <td style={{ fontSize: 12, color: 'var(--text)' }}>{r.intake_personnel || '--'}</td>
                       <td><Badge value={r.intake_paperwork} /></td>
                       <td><ProgressRing value={pct(r)} /></td>
                       <td style={{ color: 'var(--accent)' }}>{'\u2192'}</td>

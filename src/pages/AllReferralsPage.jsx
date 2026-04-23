@@ -93,7 +93,7 @@ export function AllReferralsPage({ refs, onSelectRef, onOpenProfile, statFilter,
                   <td><Badge value={normalizeAutismDx(r.autism_diagnosis)} /></td>
                   <td><StagePill stage={r.current_stage} /></td>
                   <td><Badge value={r.intake_paperwork} /></td>
-                  <td style={{ color: 'var(--muted)', fontSize: 12 }}>{r.intake_personnel || '--'}</td>
+                  <td style={{ color: 'var(--text)', fontSize: 12 }}>{r.intake_personnel || '--'}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <button
                       className="btn-sm"

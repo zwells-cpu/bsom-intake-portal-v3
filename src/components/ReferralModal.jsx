@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Badge, OfficePill, ProgressRing, StagePill } from './Badge'
 import { ConfirmationModal } from './ConfirmationModal'
 import { INSURANCES, BOOL, STAFF, OFFICES, CHECKLIST_FIELDS } from '../lib/constants'
-import { getReferralStage, pct, formatInsurance, normalizeAutismDx, normalizeReferralFieldValue } from '../lib/utils'
+import { formatDisplayDate, getReferralStage, pct, formatInsurance, normalizeAutismDx, normalizeReferralFieldValue } from '../lib/utils'
 import { API_BASE } from '../lib/api'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
@@ -137,7 +137,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
         <button onClick={() => handleStatusChange('active')}
           disabled={saving}
           style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #22c55e40', background: '#22c55e15', color: '#22c55e', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-          ↩ Restore Active
+          Restore Active
         </button>
       )
     }
@@ -174,7 +174,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
           <div>
             <div className="modal-title">{r.first_name} {r.last_name}</div>
             <div className="modal-sub">
-              DOB: {r.dob || '--'} · Received: {r.date_received || '--'} · <OfficePill office={r.office} />
+              DOB: {formatDisplayDate(r.dob)} | Received: {formatDisplayDate(r.date_received)} | <OfficePill office={r.office} />
             </div>
           </div>
           <div className="modal-actions">
@@ -188,7 +188,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
               }); setEditMode(true) } else handleCancelEdit() }}>
               {editMode ? 'Editing' : 'Edit Record'}
             </button>
-            <button className="close-btn" onClick={onClose}>×</button>
+            <button className="close-btn" onClick={onClose}>x</button>
           </div>
         </div>
 
@@ -209,7 +209,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
               [['Name', r.caregiver], ['Phone', r.caregiver_phone], ['Email', r.caregiver_email]].map(([l, v]) => (
                 <div key={l} style={{ marginBottom: 12 }}>
                   <div className="label">{l}</div>
-                  <div style={{ color: '#cbd5e1', fontSize: 14 }}>{v || '--'}</div>
+                  <div style={{ color: 'var(--text)', fontSize: 14 }}>{v || '--'}</div>
                 </div>
               ))
             )}
@@ -247,7 +247,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
                 <span className="info-label">{i + 1}{['st', 'nd', 'rd'][i]} Contact</span>
                 {editMode
                   ? <input className="edit-input" type="date" value={e[k] || ''} onChange={ev => field(k)(ev.target.value)} style={{ width: 160 }} />
-                  : <span className={r[k] ? 'contact-val' : 'info-val'}>{r[k] || '--'}</span>}
+                  : <span className={r[k] ? 'contact-val' : 'info-val'}>{r[k] ? formatDisplayDate(r[k]) : '--'}</span>}
               </div>
             ))}
 
@@ -291,7 +291,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
                 ? <select className="edit-select" value={e.intake_personnel || ''} onChange={ev => field('intake_personnel')(ev.target.value)}>
                     {STAFF.map(s => <option key={s}>{s}</option>)}
                   </select>
-                : <div style={{ color: '#a5b4fc', fontWeight: 700, fontSize: 15, marginTop: 4 }}>{r.intake_personnel || '--'}</div>}
+                : <div style={{ color: 'var(--text)', fontWeight: 700, fontSize: 15, marginTop: 4 }}>{r.intake_personnel || '--'}</div>}
             </div>
 
             {editMode ? (
@@ -302,14 +302,14 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
             ) : r.notes ? (
               <div style={{ marginTop: 12, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: 14 }}>
                 <div className="label" style={{ marginBottom: 6 }}>Notes</div>
-                <div style={{ color: 'var(--muted)', fontSize: 13 }}>{r.notes}</div>
+                <div style={{ color: 'var(--text)', fontSize: 13 }}>{r.notes}</div>
               </div>
             ) : null}
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Client Documents</div>
             <div className="card card-pad" style={{ background: 'var(--bg)', border: '1px solid var(--border)', boxShadow: 'none' }}>
 
-              {/* Upload form — edit mode only */}
+              {/* Upload form - edit mode only */}
               {editMode && (
                 <div style={{ display: 'grid', gap: 12, marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
                   <div>
@@ -333,13 +333,13 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
                       }}
                     />
                     <div style={{ marginTop: 6, fontSize: 11, color: 'var(--dim)' }}>
-                      PDF and image files only · max 10 MB.
+                      PDF and image files only | max 10 MB.
                     </div>
                   </div>
 
                   {selectedFile && (
-                    <div style={{ fontSize: 12, color: 'var(--muted)', padding: '10px 12px', borderRadius: 10, background: 'var(--surface2)', border: '1px solid var(--border2)' }}>
-                      {selectedFile.name} · {formatFileSize(selectedFile.size)}
+                    <div style={{ fontSize: 12, color: 'var(--text)', padding: '10px 12px', borderRadius: 10, background: 'var(--surface2)', border: '1px solid var(--border2)' }}>
+                      {selectedFile.name} | {formatFileSize(selectedFile.size)}
                     </div>
                   )}
 
@@ -361,7 +361,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
                 </div>
               )}
 
-              {/* Document list — always visible */}
+              {/* Document list - always visible */}
               {docsLoading && (
                 <div style={{ fontSize: 12, color: 'var(--dim)' }}>Loading documents...</div>
               )}
@@ -372,7 +372,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
                     <div key={doc.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)', fontSize: 12 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.file_name}</div>
-                        <div style={{ color: 'var(--dim)', marginTop: 2 }}>{doc.document_type} · {formatFileSize(doc.file_size)}</div>
+                        <div style={{ color: 'var(--muted)', marginTop: 2 }}>{doc.document_type} | {formatFileSize(doc.file_size)}</div>
                       </div>
                       {doc.created_at && (
                         <div style={{ color: 'var(--dim)', whiteSpace: 'nowrap' }}>

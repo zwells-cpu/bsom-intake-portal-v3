@@ -87,6 +87,7 @@
 [data-theme="light"] .nav-icon,
 [data-theme="light"] .back-btn,
 [data-theme="light"] .stat-sub{ color:var(--dim); }
+[data-theme="light"] .info-val{ color:var(--text); }
 [data-theme="light"] .topbar-profile{ background:#eef3f9; }
 
 body{
