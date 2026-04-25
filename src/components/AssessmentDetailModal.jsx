@@ -117,7 +117,9 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
       parent_interview_status: form.parent_interview_status || '',
       parent_interview_scheduled_date: form.parent_interview_scheduled_date || null,
       parent_interview_completed_date: form.parent_interview_completed_date || null,
-      direct_obs: form.direct_obs || '',
+      direct_obs_status: form.direct_obs_status || form.direct_obs || '',
+      direct_obs_scheduled_date: form.direct_obs_scheduled_date || null,
+      direct_obs_completed_date: form.direct_obs_completed_date || null,
       treatment_plan_status: normalizeTreatmentPlanStatus(form.treatment_plan_status || 'Not Started'),
       treatment_plan_started_date: form.treatment_plan_started_date || null,
       treatment_plan_completed_date: form.treatment_plan_completed_date || null,
@@ -200,7 +202,9 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
             <BadgeDetailRow label="Parent Interview Status" value={form?.parent_interview_status} />
             <DetailRow label="Interview Scheduled" value={form?.parent_interview_scheduled_date} />
             <DetailRow label="Interview Completed" value={form?.parent_interview_completed_date} />
-            <BadgeDetailRow label="Direct Observation" value={form?.direct_obs} />
+            <BadgeDetailRow label="Direct Observation Status" value={form?.direct_obs_status || form?.direct_obs} />
+            <DetailRow label="Direct Observation Scheduled" value={form?.direct_obs_scheduled_date} />
+            <DetailRow label="Direct Observation Completed" value={form?.direct_obs_completed_date} />
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Treatment Plan / Authorization</div>
             <DetailRow label="Treatment Plan" value={normalizeTreatmentPlanStatus(form?.treatment_plan_status)} />
@@ -249,7 +253,9 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
               <SelectField label="Parent Interview Status" value={form?.parent_interview_status} onChange={setField('parent_interview_status')} options={INTERVIEW_STATUSES} />
               <DateField label="Interview Scheduled" value={form?.parent_interview_scheduled_date} onChange={setField('parent_interview_scheduled_date')} />
               <DateField label="Interview Completed" value={form?.parent_interview_completed_date} onChange={setField('parent_interview_completed_date')} />
-              <SelectField label="Direct Observation" value={form?.direct_obs} onChange={setField('direct_obs')} options={ASSESSMENT_STATUS_OPTIONS} />
+              <SelectField label="Direct Observation Status" value={form?.direct_obs_status || form?.direct_obs || ''} onChange={setField('direct_obs_status')} options={ASSESSMENT_STATUS_OPTIONS} />
+              <DateField label="Direct Observation Scheduled" value={form?.direct_obs_scheduled_date} onChange={setField('direct_obs_scheduled_date')} />
+              <DateField label="Direct Observation Completed" value={form?.direct_obs_completed_date} onChange={setField('direct_obs_completed_date')} />
             </div>
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Treatment Plan / Authorization</div>

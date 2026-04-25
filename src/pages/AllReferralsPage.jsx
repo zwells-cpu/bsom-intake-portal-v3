@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
 import { ActiveFilterBanner } from '../components/StatFilterControls'
+import { NotifyModal } from '../components/NotifyModal'
 import { OFFICES } from '../lib/constants'
 import { isStatFilterTarget, matchesStatFilter } from '../lib/statFilters'
 import { sortList, normalizeOffice, normalizeAutismDx, formatInsurance, exportCSV, formatDisplayDate, pct } from '../lib/utils'
 
 export function AllReferralsPage({ refs, onSelectRef, onOpenProfile, statFilter, onClearStatFilter }) {
   const active = refs.filter(r => r.status === 'active')
-  const [search, setSearch]   = useState('')
-  const [office, setOffice]   = useState('ALL')
-  const [sortCol, setSortCol] = useState(null)
-  const [sortDir, setSortDir] = useState('asc')
+  const [search, setSearch]       = useState('')
+  const [office, setOffice]       = useState('ALL')
+  const [sortCol, setSortCol]     = useState(null)
+  const [sortDir, setSortDir]     = useState('asc')
+  const [notifyReferral, setNotifyReferral] = useState(null)
   const activeFilter = isStatFilterTarget(statFilter, 'all-referrals')
 
   const visibleBeforeOfficeFilter = active.filter(r => {
@@ -94,13 +96,20 @@ export function AllReferralsPage({ refs, onSelectRef, onOpenProfile, statFilter,
                   <td><StagePill stage={r.current_stage} /></td>
                   <td><Badge value={r.intake_paperwork} /></td>
                   <td style={{ color: 'var(--text)', fontSize: 12 }}>{r.intake_personnel || '--'}</td>
-                  <td style={{ whiteSpace: 'nowrap' }}>
+                  <td style={{ whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'center' }}>
                     <button
                       className="btn-sm"
                       style={{ fontSize: 11, padding: '3px 10px' }}
                       onClick={e => { e.stopPropagation(); onOpenProfile(r.id) }}
                     >
                       Profile
+                    </button>
+                    <button
+                      className="btn-sm"
+                      style={{ fontSize: 11, padding: '3px 10px' }}
+                      onClick={e => { e.stopPropagation(); setNotifyReferral(r) }}
+                    >
+                      Notify
                     </button>
                   </td>
                 </tr>
@@ -109,6 +118,10 @@ export function AllReferralsPage({ refs, onSelectRef, onOpenProfile, statFilter,
           </table>
         </div>
       </div>
+
+      {notifyReferral && (
+        <NotifyModal referral={notifyReferral} onClose={() => setNotifyReferral(null)} />
+      )}
     </>
   )
 }

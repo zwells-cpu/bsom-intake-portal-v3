@@ -234,12 +234,14 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
       <div className="card">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Client</th><th>Office</th><th>Assigned BCBA</th><th>Interview Status</th><th>Scheduled Date</th><th>Completed Date</th><th>Insurance</th><th>Open</th></tr></thead>
+            <thead><tr><th>Client</th><th>Office</th><th>Assigned BCBA</th><th>Interview Status</th><th>Scheduled Date</th><th>Completed Date</th><th>Direct Obs.</th><th>Direct Obs. Date</th><th>Insurance</th><th>Open</th></tr></thead>
             <tbody>
               {filteredRows.length === 0
-                ? <tr><td colSpan={8} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No assessment records found.</td></tr>
+                ? <tr><td colSpan={10} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No assessment records found.</td></tr>
                 : filteredRows.map(record => {
                   const canOpen = Boolean(getAssessmentRecordId(record))
+                  const directObsStatus = record.direct_obs_status || record.direct_obs || ''
+                  const directObsDate = record.direct_obs_completed_date || record.direct_obs_scheduled_date
 
                   return (
                     <tr
@@ -270,6 +272,8 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
                       <td>{sBdg(record.parent_interview_status || 'Awaiting Assignment')}</td>
                       <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.parent_interview_scheduled_date ? '#a5b4fc' : 'var(--dim)' }}>{formatDisplayDate(record.parent_interview_scheduled_date)}</td>
                       <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.parent_interview_completed_date ? '#22c55e' : 'var(--dim)' }}>{formatDisplayDate(record.parent_interview_completed_date)}</td>
+                      <td>{assessVal(directObsStatus)}</td>
+                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.direct_obs_completed_date ? '#22c55e' : record.direct_obs_scheduled_date ? '#a5b4fc' : 'var(--dim)' }}>{formatDisplayDate(directObsDate)}</td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.insurance || '--'}</td>
                       <td style={{ textAlign: 'right' }}>
                         {canOpen ? (

@@ -21,6 +21,9 @@ const ASSESSMENT_DB_FIELDS = [
   'assessment_status',
   'assessment_started_date',
   'assessment_completed_date',
+  'direct_obs_status',
+  'direct_obs_scheduled_date',
+  'direct_obs_completed_date',
   'direct_obs',
   'treatment_plan_status',
   'treatment_plan_started_date',
@@ -64,6 +67,10 @@ function normalizeAssessmentRecord(record, fallbackId = null) {
     office: clinic,
     authorization_status: authorizationStatus,
     pa_status: authorizationStatus,
+    direct_obs_status: record.direct_obs_status ?? record.direct_obs ?? '',
+    direct_obs: record.direct_obs_status ?? record.direct_obs ?? '',
+    direct_obs_scheduled_date: record.direct_obs_scheduled_date ?? null,
+    direct_obs_completed_date: record.direct_obs_completed_date ?? null,
     ready_for_services: normalizeBoolean(record.ready_for_services) === true,
   }
 }
