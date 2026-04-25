@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PaStatusBadge } from '../components/Badge'
+import { NotifyModal } from '../components/NotifyModal'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
 import { formatDisplayDate, getAssessmentLifecycleStatus, getAssessmentRecordId, getAssessmentWorkflowProgress, getAssessmentWorkflowStatus, getAuthorizationStatus, isAuthorizationApproved, normalizeTreatmentPlanStatus } from '../lib/utils'
@@ -392,6 +393,8 @@ export function BCBAAssignmentsPage({ assessData, assessLoading, onSelectAssess,
 }
 
 export function AssessmentProgressPage({ assessData, assessLoading, onSelectAssess, statFilter, onSetStatFilter, onClearStatFilter }) {
+  const [notifyRecord, setNotifyRecord] = useState(null)
+
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
   const notStarted = assessData.filter(record => getAssessmentWorkflowStatus(record) === 'Not Started')
@@ -415,10 +418,10 @@ export function AssessmentProgressPage({ assessData, assessLoading, onSelectAsse
       <div className="card">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Client</th><th>BCBA</th><th>Vineland</th><th>SRS-2</th><th>VBMAPP</th><th>Socially Savvy</th><th>Complete</th><th>Status</th></tr></thead>
+            <thead><tr><th>Client</th><th>BCBA</th><th>Vineland</th><th>SRS-2</th><th>VBMAPP</th><th>Socially Savvy</th><th>Complete</th><th>Status</th><th /></tr></thead>
             <tbody>
               {filteredRows.length === 0 ? (
-                <tr><td colSpan={8} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No assessment records match the current filter.</td></tr>
+                <tr><td colSpan={9} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No assessment records match the current filter.</td></tr>
               ) : filteredRows.map(record => {
                 const progressFields = getAssessmentProgressFields(record)
                 const completionPercent = getAssessmentProgressPercent(record)
@@ -438,6 +441,16 @@ export function AssessmentProgressPage({ assessData, assessLoading, onSelectAsse
                   <td>{assessVal(progressFields.sociallySavvy)}</td>
                   <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: completionPercent === '100%' ? '#22c55e' : 'var(--dim)' }}>{completionPercent}</td>
                   <td>{paStatus(record.pa_status || getAuthorizationStatus(record))}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      onClick={(e) => { e.stopPropagation(); setNotifyRecord(record) }}
+                      style={{ padding: '5px 10px', fontSize: 11 }}
+                    >
+                      Notify
+                    </button>
+                  </td>
                 </tr>
                 )
               })}
@@ -445,6 +458,7 @@ export function AssessmentProgressPage({ assessData, assessLoading, onSelectAsse
           </table>
         </div>
       </div>
+      {notifyRecord && <NotifyModal referral={notifyRecord} onClose={() => setNotifyRecord(null)} />}
     </>
   )
 }
