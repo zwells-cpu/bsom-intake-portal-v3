@@ -9,7 +9,10 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:api.github.com)",
-      "Read(//c/Users/zdom9/**)"
+      "Read(//c/Users/zdom9/**)",
+      "Bash(xargs grep *)",
+      "Bash(grep -E \"\\\\.\\(sql|ts|js\\)$\")",
+      "Bash(xargs cat *)"
     ]
   }
 }

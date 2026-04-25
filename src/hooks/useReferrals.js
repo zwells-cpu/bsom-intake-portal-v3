@@ -46,8 +46,13 @@ export function useReferrals() {
     setSaving(true)
     try {
       const formData = { ...form }
-      delete formData.referral_id
       delete formData.user_id
+      if (!formData.referral_id) {
+        const date = new Date()
+        const ymd = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`
+        const suffix = Math.random().toString(36).slice(2, 6).toUpperCase()
+        formData.referral_id = `REF-${ymd}-${suffix}`
+      }
       formData.current_stage = getReferralStage(formData)
       const res = await fetch(`${API_URL}/referrals`, {
         method: 'POST',

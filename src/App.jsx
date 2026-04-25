@@ -26,6 +26,74 @@ import { API_BASE } from './lib/api'
 
 const NAV_STATE_KEY = 'bsom-portal-nav'
 
+const REFERRAL_DOCUMENT_FIELDS = new Set(['referral_form', 'permission_assessment', 'vineland', 'srs2', 'autism_diagnosis', 'intake_paperwork', 'iep_report', 'attends_school'])
+const REFERRAL_CONTACT_FIELDS  = new Set(['caregiver', 'caregiver_phone', 'caregiver_email', 'referral_source', 'referral_source_phone', 'referral_source_fax', 'provider_npi', 'point_of_contact'])
+const REFERRAL_INSURANCE_FIELDS = new Set(['insurance', 'secondary_insurance'])
+
+function describeReferralUpdate(name, changedFields, afterData) {
+  const fields = changedFields.filter(f => f !== 'current_stage')
+  if (!fields.length) return `${name}'s referral record was updated.`
+  if (fields.every(f => REFERRAL_DOCUMENT_FIELDS.has(f)))  return `${name}'s document checklist was updated.`
+  if (fields.every(f => REFERRAL_CONTACT_FIELDS.has(f)))   return `${name}'s contact information was updated.`
+  if (fields.every(f => REFERRAL_INSURANCE_FIELDS.has(f))) return `${name}'s insurance information was updated.`
+  if (fields.includes('office') && fields.length === 1) {
+    const office = afterData?.office
+    return office ? `${name} was transferred to ${office}.` : `${name}'s office was updated.`
+  }
+  if (fields.includes('intake_personnel') && fields.length === 1) {
+    const staff = afterData?.intake_personnel
+    return staff ? `${name} was assigned to ${staff}.` : `${name} was assigned to a staff member.`
+  }
+  if (fields.length === 1 && fields[0] === 'notes') return `Notes were updated for ${name}.`
+  if (fields.length === 1 && fields[0] === 'reason_for_referral') return `Reason for referral was updated for ${name}.`
+  return `${name}'s referral record was updated.`
+}
+
+function getReferralUpdateAction(changedFields) {
+  const fields = changedFields.filter(f => f !== 'current_stage')
+  if (fields.every(f => REFERRAL_DOCUMENT_FIELDS.has(f)))   return 'documents_updated'
+  if (fields.every(f => REFERRAL_CONTACT_FIELDS.has(f)))    return 'contact_info_updated'
+  if (fields.every(f => REFERRAL_INSURANCE_FIELDS.has(f)))  return 'insurance_updated'
+  if (fields.includes('office') && fields.length === 1)     return 'office_transferred'
+  if (fields.includes('intake_personnel') && fields.length === 1) return 'staff_assigned'
+  if (fields.length === 1 && fields[0] === 'notes')         return 'notes_updated'
+  return 'referral_updated'
+}
+
+function describeAssessmentUpdate(name, changedFields, afterData) {
+  if (changedFields.includes('authorization_status')) {
+    const val = afterData?.authorization_status
+    return val ? `${name} authorization status updated to "${val}".` : `${name}'s authorization status was updated.`
+  }
+  if (changedFields.includes('treatment_plan_status')) {
+    const val = afterData?.treatment_plan_status
+    return val ? `${name} treatment plan status updated to "${val}".` : `${name}'s treatment plan was updated.`
+  }
+  if (changedFields.includes('parent_interview_status')) {
+    const val = afterData?.parent_interview_status
+    return val ? `${name} parent interview status updated to "${val}".` : `${name}'s parent interview status was updated.`
+  }
+  if (changedFields.includes('assigned_bcba')) {
+    const bcba = afterData?.assigned_bcba
+    return bcba ? `${name} was assigned to ${bcba}.` : `${name}'s BCBA assignment was removed.`
+  }
+  if (changedFields.includes('ready_for_services')) {
+    return afterData?.ready_for_services
+      ? `${name} was marked ready for services.`
+      : `${name} was removed from ready-for-services.`
+  }
+  return `${name}'s assessment details were updated.`
+}
+
+function getAssessmentUpdateAction(changedFields) {
+  if (changedFields.includes('authorization_status'))   return 'authorization_status_updated'
+  if (changedFields.includes('treatment_plan_status'))  return 'treatment_plan_updated'
+  if (changedFields.includes('parent_interview_status')) return 'parent_interview_updated'
+  if (changedFields.includes('assigned_bcba'))          return 'bcba_assigned'
+  if (changedFields.includes('ready_for_services'))     return 'ready_for_services_updated'
+  return 'assessment_updated'
+}
+
 function readSavedNav() {
   try {
     const raw = sessionStorage.getItem(NAV_STATE_KEY)
@@ -385,7 +453,7 @@ export default function App() {
           },
         })
       } else {
-        const criticalFields = ['status', 'intake_paperwork', 'office', 'insurance']
+        const criticalFields = ['status', 'intake_paperwork', 'office', 'insurance', 'assigned_bcba', 'authorization_status']
         const beforeVals = {}
         const afterVals  = {}
         criticalFields.forEach(f => {
@@ -394,10 +462,11 @@ export default function App() {
             afterVals[f]  = res.data[f]  ?? null
           }
         })
+        const name = formatReferralName(res.data)
         await writeReferralActivity({
-          action: 'referral_updated',
+          action: getReferralUpdateAction(changedFields),
           record: res.data,
-          description: `${formatReferralName(res.data)} was updated.`,
+          description: describeReferralUpdate(name, changedFields, res.data),
           details_json: {
             changed_fields: changedFields,
             ...(Object.keys(beforeVals).length ? { before: beforeVals, after: afterVals } : {}),
@@ -424,10 +493,11 @@ export default function App() {
           afterVals[f]  = res.data[f] ?? null
         }
       })
+      const assessName = formatAssessmentName(res.data)
       await writeAssessmentActivity({
-        action: 'assessment_updated',
+        action: getAssessmentUpdateAction(changedFields),
         record: res.data,
-        description: `${formatAssessmentName(res.data)} assessment details were updated.`,
+        description: describeAssessmentUpdate(assessName, changedFields, res.data),
         details_json: {
           changed_fields: changedFields,
           ...(Object.keys(beforeVals).length ? { before: beforeVals, after: afterVals } : {}),

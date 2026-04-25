@@ -26,10 +26,34 @@ function formatFullTimestamp(value) {
   return date.toLocaleString()
 }
 
+const ACTION_LABELS = {
+  referral_created:                  'Referral Added',
+  referral_updated:                  'Referral Updated',
+  referral_deleted:                  'Referral Removed',
+  referral_status_changed:           'Status Changed',
+  documents_updated:                 'Documents Updated',
+  document_uploaded:                 'Document Uploaded',
+  contact_info_updated:              'Contact Info Updated',
+  insurance_updated:                 'Insurance Updated',
+  insurance_verified:                'Insurance Verified',
+  staff_assigned:                    'Staff Assigned',
+  office_transferred:                'Office Transferred',
+  notes_updated:                     'Notes Updated',
+  parent_interview_ready_enabled:    'Ready for Interview',
+  parent_interview_ready_disabled:   'Interview Put On Hold',
+  client_profile_viewed:             'Profile Viewed',
+  assessment_updated:                'Assessment Updated',
+  assessment_deleted:                'Assessment Removed',
+  authorization_status_updated:      'Authorization Updated',
+  treatment_plan_updated:            'Treatment Plan Updated',
+  parent_interview_updated:          'Parent Interview Updated',
+  bcba_assigned:                     'BCBA Assigned',
+  ready_for_services_updated:        'Services Readiness Updated',
+}
+
 function formatActionLabel(action) {
-  return (action || 'activity')
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (char) => char.toUpperCase())
+  if (!action) return 'Activity'
+  return ACTION_LABELS[action] || action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
 function buildActorLine(log) {
