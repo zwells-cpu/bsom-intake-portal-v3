@@ -726,91 +726,153 @@ export default function App() {
 
   if (!session || recoveryMode) {
     return (
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '32px', background: 'var(--bg)' }}>
-        <div style={{ width: '100%', maxWidth: 420, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 24, boxShadow: 'var(--shadow)', padding: 28 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 20 }}>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--accent)' }}>Secure Access</div>
-              <h1 style={{ margin: '8px 0 0', fontSize: 28, lineHeight: 1.1 }}>{recoveryMode ? 'Reset password' : 'Sign in'}</h1>
+      <div style={{
+        minHeight: '100vh',
+        display: 'grid',
+        placeItems: 'center',
+        padding: '32px',
+        background: 'var(--bg)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+
+        {/* Subtle branded background glow — works in both light + dark */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'radial-gradient(ellipse 70% 55% at 50% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, position: 'relative', zIndex: 1 }}>
+          {/* Logo + portal name above the card */}
+          <div style={{ marginBottom: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 72, height: 72, borderRadius: 18,
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              overflow: 'hidden',
+            }}>
+              <img src="/bsom-logo.jpg" alt="BSOM" style={{ width: 60, height: 60, objectFit: 'contain' }} />
             </div>
-            <ThemeToggle theme={theme} setTheme={setTheme} />
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 4 }}>
+                Behavioral Solutions of Mississippi
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+                Intake Operations Portal
+              </div>
+            </div>
           </div>
 
-          <form onSubmit={recoveryMode ? handlePasswordReset : handleLogin} style={{ display: 'grid', gap: 14 }}>
-            {recoveryMode ? (
-              <>
-                <label style={{ display: 'grid', gap: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>New Password</span>
-                  <input
-                    type="password"
-                    value={resetPassword}
-                    onChange={(e) => setResetPassword(e.target.value)}
-                    autoComplete="new-password"
-                    required
-                    style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
-                  />
-                </label>
-
-                <label style={{ display: 'grid', gap: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>Confirm Password</span>
-                  <input
-                    type="password"
-                    value={resetConfirmPassword}
-                    onChange={(e) => setResetConfirmPassword(e.target.value)}
-                    autoComplete="new-password"
-                    required
-                    style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
-                  />
-                </label>
-              </>
-            ) : (
-              <>
-                <label style={{ display: 'grid', gap: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>Email</span>
-                  <input
-                    type="email"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    autoComplete="email"
-                    required
-                    style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
-                  />
-                </label>
-
-                <label style={{ display: 'grid', gap: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>Password</span>
-                  <input
-                    type="password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    autoComplete="current-password"
-                    required
-                    style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
-                  />
-                </label>
-              </>
-            )}
-
-            {loginError && (
-              <div className="error-bar" style={{ margin: 0 }}>
-                {loginError}
+          {/* Card */}
+          <div style={{
+            width: '100%', maxWidth: 420,
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 24,
+            boxShadow: '0 4px 40px rgba(0,0,0,0.15)',
+            padding: 28,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--accent)' }}>
+                  Secure Access
+                </div>
+                <h1 style={{ margin: '8px 0 0', fontSize: 26, lineHeight: 1.1 }}>
+                  {recoveryMode ? 'Reset password' : 'Staff Sign In'}
+                </h1>
               </div>
-            )}
+              <ThemeToggle theme={theme} setTheme={setTheme} />
+            </div>
 
-            {resetSuccess && (
-              <div style={{ margin: 0, borderRadius: 12, border: '1px solid #16a34a33', background: '#16a34a12', color: '#16a34a', padding: '12px 14px', fontSize: 13, fontWeight: 600 }}>
-                {resetSuccess}
-              </div>
-            )}
+            <form onSubmit={recoveryMode ? handlePasswordReset : handleLogin} style={{ display: 'grid', gap: 14 }}>
+              {recoveryMode ? (
+                <>
+                  <label style={{ display: 'grid', gap: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>New Password</span>
+                    <input
+                      type="password"
+                      value={resetPassword}
+                      onChange={(e) => setResetPassword(e.target.value)}
+                      autoComplete="new-password"
+                      required
+                      style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
+                    />
+                  </label>
+                  <label style={{ display: 'grid', gap: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>Confirm Password</span>
+                    <input
+                      type="password"
+                      value={resetConfirmPassword}
+                      onChange={(e) => setResetConfirmPassword(e.target.value)}
+                      autoComplete="new-password"
+                      required
+                      style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
+                    />
+                  </label>
+                </>
+              ) : (
+                <>
+                  <label style={{ display: 'grid', gap: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>Email</span>
+                    <input
+                      type="email"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      autoComplete="email"
+                      required
+                      style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
+                    />
+                  </label>
+                  <label style={{ display: 'grid', gap: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>Password</span>
+                    <input
+                      type="password"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      autoComplete="current-password"
+                      required
+                      style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
+                    />
+                  </label>
+                </>
+              )}
 
-            <button
-              type="submit"
-              disabled={recoveryMode ? resetPending : loginPending}
-              style={{ border: 'none', borderRadius: 12, padding: '13px 16px', background: 'var(--accent)', color: '#fff', fontWeight: 800, fontSize: 14, cursor: (recoveryMode ? resetPending : loginPending) ? 'wait' : 'pointer', opacity: (recoveryMode ? resetPending : loginPending) ? 0.75 : 1 }}
-            >
-              {recoveryMode ? (resetPending ? 'Updating password...' : 'Reset Password') : (loginPending ? 'Signing in...' : 'Sign In')}
-            </button>
-          </form>
+              {loginError && (
+                <div className="error-bar" style={{ margin: 0 }}>{loginError}</div>
+              )}
+
+              {resetSuccess && (
+                <div style={{ margin: 0, borderRadius: 12, border: '1px solid #16a34a33', background: '#16a34a12', color: '#16a34a', padding: '12px 14px', fontSize: 13, fontWeight: 600 }}>
+                  {resetSuccess}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={recoveryMode ? resetPending : loginPending}
+                style={{
+                  border: 'none', borderRadius: 12, padding: '13px 16px',
+                  background: 'var(--accent)', color: '#fff', fontWeight: 800,
+                  fontSize: 14, cursor: (recoveryMode ? resetPending : loginPending) ? 'wait' : 'pointer',
+                  opacity: (recoveryMode ? resetPending : loginPending) ? 0.75 : 1,
+                  marginTop: 2,
+                }}
+              >
+                {recoveryMode
+                  ? (resetPending ? 'Updating password...' : 'Reset Password')
+                  : (loginPending ? 'Signing in...' : 'Sign In')}
+              </button>
+            </form>
+          </div>
+
+          {/* Footer tagline below card */}
+          <div style={{ marginTop: 20, fontSize: 11, color: 'var(--dim)', textAlign: 'center' }}>
+            Internal staff portal &nbsp;·&nbsp; Authorized access only
+          </div>
         </div>
       </div>
     )
@@ -825,6 +887,7 @@ export default function App() {
           onScheduleParentInterview={() => openModulePage('assessment', 'interviews')}
           theme={theme}
           setTheme={setTheme}
+          displayName={displayName}
           topRightContent={(
             <div className="home-account-card">
               <div style={{ minWidth: 0 }}>

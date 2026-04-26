@@ -1,6 +1,14 @@
 import { MODULES } from '../lib/constants'
 import { ThemeToggle } from './ThemeToggle'
 
+function getGreeting(name) {
+  const hour = new Date().getHours()
+  const firstName = name?.split(' ')[0] || 'there'
+  if (hour < 12) return `Good morning, ${firstName} 👋`
+  if (hour < 17) return `Good afternoon, ${firstName} 👋`
+  return `Good evening, ${firstName} 👋`
+}
+
 function HomeIcon({ kind }) {
   const shared = {
     width: 18,
@@ -105,6 +113,7 @@ export function HomePage({
   theme,
   setTheme,
   topRightContent = null,
+  displayName = '',
 }) {
   return (
     <div className="home-screen">
@@ -124,6 +133,11 @@ export function HomePage({
       <div className="home-hero">
         <div className="home-eyebrow">Behavioral Solutions of Mississippi</div>
         <div className="home-title">Intake Operations Portal</div>
+        {displayName && (
+          <div className="home-greeting">
+            {getGreeting(displayName)}
+          </div>
+        )}
       </div>
 
       <div className="module-grid">
@@ -134,7 +148,7 @@ export function HomePage({
             style={{ '--card-color': m.color }}
             onClick={() => onEnterModule(m.id)}
           >
-            <div className="module-arrow">{'\u2192'}</div>
+            <div className="module-arrow">{'→'}</div>
             <div className="module-icon" aria-hidden="true">
               <HomeIcon kind={MODULE_ICON_KIND[m.id]} />
             </div>
@@ -147,7 +161,7 @@ export function HomePage({
           className="module-card module-card-actions"
           style={{ '--card-color': 'var(--accent)' }}
         >
-          <div className="module-arrow">{'\u2192'}</div>
+          <div className="module-arrow">{'→'}</div>
           <div className="module-icon" aria-hidden="true">
             <HomeIcon kind="dashboard" />
           </div>
