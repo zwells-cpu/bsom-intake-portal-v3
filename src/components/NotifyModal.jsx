@@ -110,14 +110,16 @@ export function NotifyModal({ referral, onClose }) {
               {status === 'sending' ? 'Sending...' : 'Quick Email'}
             </button>
 
-            <button
-              className="btn-sm"
-              disabled={!hasPhone || smsStatus === 'sending' || smsStatus === 'success'}
-              onClick={handleQuickText}
-              style={{ flex: 1, padding: '10px 16px', fontSize: 13 }}
-            >
-              {smsStatus === 'sending' ? 'Sending...' : 'Quick Text'}
-            </button>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <button
+                className="btn-sm"
+                disabled
+                style={{ width: '100%', padding: '10px 16px', fontSize: 13, opacity: 0.45, cursor: 'not-allowed' }}
+              >
+                Quick Text
+              </button>
+              <span style={{ fontSize: 11, color: '#6b7280', fontWeight: 500 }}>SMS coming soon</span>
+            </div>
           </div>
         </div>
 
