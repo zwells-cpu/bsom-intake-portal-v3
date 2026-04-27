@@ -4,7 +4,7 @@ import { useTheme } from './hooks/useTheme'
 import { useIdleTimeout } from './hooks/useIdleTimeout'
 import { useReferrals } from './hooks/useReferrals'
 import { useAssessments } from './hooks/useAssessments'
-import { useBcbaStaff } from './hooks/useBcbaStaff'
+import { useLookups } from './hooks/useLookups'
 import { MODULES, MODULE_NAV } from './lib/constants'
 
 import { HomePage } from './components/HomePage'
@@ -110,7 +110,7 @@ export default function App() {
   const { theme, setTheme } = useTheme()
   const { refs, loading, error, saving, saved, setError, load, saveReferral, updateReferral, deleteReferral, setStatus, toggleParentInterview } = useReferrals()
   const { assessData, assessLoading, loadAssessments, saveAssessEdit, deleteAssessment } = useAssessments()
-  const { bcbaStaff, activeBcbaStaff, bcbaStaffLoading, bcbaStaffError, setBcbaStaffError, createBcbaStaff, updateBcbaStaff, deactivateBcbaStaff, loadBcbaStaff } = useBcbaStaff()
+  const { bcbaOptions, officeOptions, insuranceOptions, referralSourceOptions } = useLookups()
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
@@ -185,11 +185,6 @@ export default function App() {
     if (!session || recoveryMode) return
     load()
   }, [load, recoveryMode, session])
-
-  useEffect(() => {
-    if (!session || recoveryMode) return
-    loadBcbaStaff({ includeInactive: true })
-  }, [loadBcbaStaff, recoveryMode, session])
 
   useEffect(() => {
     let cancelled = false
@@ -951,7 +946,7 @@ export default function App() {
       if (subpage === 'intakedash') return <IntakeDashboard refs={refs} onSelectRef={setSelId} openModulePage={openModulePage} />
       if (subpage === 'all') return <AllReferralsPage refs={refs} onSelectRef={setSelId} onOpenProfile={handleOpenProfile} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'profile') return <ClientProfilePage referralId={profileId} onBack={() => setSubpageAndClearFilter('all')} />
-      if (subpage === 'new') return <NewReferralPage onSave={handleCreateReferral} saving={saving} />
+      if (subpage === 'new') return <NewReferralPage onSave={handleCreateReferral} saving={saving} officeOptions={officeOptions} insuranceOptions={insuranceOptions} referralSourceOptions={referralSourceOptions} />
       if (subpage === 'pending') return <PendingDocsPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'insurance') return <InsuranceVerifPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'nr') return <NonResponsivePage refs={refs} onRestore={(id) => handleSetReferralStatus(id, 'active')} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
@@ -965,7 +960,7 @@ export default function App() {
     if (module === 'assessment') {
       if (subpage === 'tracker') return <AssessmentTracker assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'interviews') return <ParentInterviewsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'bcba') return <BCBAAssignmentsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} bcbaStaff={bcbaStaff} bcbaStaffLoading={bcbaStaffLoading} bcbaStaffError={bcbaStaffError} setBcbaStaffError={setBcbaStaffError} createBcbaStaff={createBcbaStaff} updateBcbaStaff={updateBcbaStaff} deactivateBcbaStaff={deactivateBcbaStaff} userRole={profile?.role} />
+      if (subpage === 'bcba') return <BCBAAssignmentsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} bcbaOptions={bcbaOptions} />
       if (subpage === 'progress') return <AssessmentProgressPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'txplan') return <TreatmentPlansPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'readysvc') return <ReadyForServicesPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
@@ -1025,10 +1020,7 @@ export default function App() {
                 className="btn-sm"
                 onClick={() => {
                   load()
-                  if (module === 'assessment' || module === 'operations') {
-                    loadAssessments()
-                    loadBcbaStaff({ includeInactive: true })
-                  }
+                  if (module === 'assessment' || module === 'operations') loadAssessments()
                 }}
               >
                 Refresh
@@ -1072,6 +1064,9 @@ export default function App() {
           onClose={() => setSelId(null)}
           onSave={handleUpdateReferral}
           onUploadDocument={handleUploadClientDocument}
+          officeOptions={officeOptions}
+          insuranceOptions={insuranceOptions}
+          referralSourceOptions={referralSourceOptions}
           onDelete={(id) => deleteRecord('referral', id)}
           onSetStatus={async (id, status) => {
             const res = await handleSetReferralStatus(id, status)
@@ -1088,7 +1083,8 @@ export default function App() {
           onClose={() => setSelAssessId(null)}
           onSave={handleUpdateAssessment}
           onDelete={(id) => deleteRecord('assessment', id)}
-          bcbaStaff={activeBcbaStaff}
+          bcbaOptions={bcbaOptions}
+          officeOptions={officeOptions}
         />
       )}
 

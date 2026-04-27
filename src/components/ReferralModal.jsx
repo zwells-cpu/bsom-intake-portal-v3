@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Badge, OfficePill, ProgressRing, StagePill } from './Badge'
 import { ConfirmationModal } from './ConfirmationModal'
-import { INSURANCES, BOOL, STAFF, OFFICES, CHECKLIST_FIELDS } from '../lib/constants'
+import { INSURANCE_PAYERS, REFERRAL_SOURCES, BOOL, STAFF, OFFICES, CHECKLIST_FIELDS } from '../lib/constants'
+import { includeCurrentOption, normalizeOptions, optionValues } from '../lib/lookups'
 import { formatDisplayDate, getReferralStage, pct, formatInsurance, normalizeAutismDx, normalizeReferralFieldValue } from '../lib/utils'
 import { API_BASE } from '../lib/api'
 
@@ -16,7 +17,7 @@ function formatFileSize(size) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus, onToggleParentInterview, onUploadDocument }) {
+export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus, onToggleParentInterview, onUploadDocument, officeOptions: liveOfficeOptions = [], insuranceOptions: liveInsuranceOptions = [], referralSourceOptions: liveReferralSourceOptions = [] }) {
   const [editMode, setEditMode] = useState(false)
   const [form, setForm] = useState({
     ...referral,
@@ -50,6 +51,10 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
   const r = referral
   const e = editMode ? form : referral
   const intakeStage = getReferralStage(e)
+  const officeOptions = includeCurrentOption(optionValues(liveOfficeOptions.length ? liveOfficeOptions : normalizeOptions(OFFICES)), e.office)
+  const insuranceOptions = includeCurrentOption(optionValues(liveInsuranceOptions.length ? liveInsuranceOptions : normalizeOptions(INSURANCE_PAYERS)), e.insurance)
+  const secondaryInsuranceOptions = includeCurrentOption(['None', ...insuranceOptions], e.secondary_insurance)
+  const referralSourceOptions = includeCurrentOption(optionValues(liveReferralSourceOptions.length ? liveReferralSourceOptions : normalizeOptions(REFERRAL_SOURCES)), e.referral_source)
 
   const field = (key) => (val) => setForm(f => ({ ...f, [key]: val }))
 
@@ -219,12 +224,12 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 4 }}>
                 <div className="info-row"><span className="info-label">Primary</span>
                   <select className="edit-select" value={e.insurance || ''} onChange={ev => field('insurance')(ev.target.value)}>
-                    {INSURANCES.map(i => <option key={i}>{i}</option>)}
+                    {insuranceOptions.map(i => <option key={i}>{i}</option>)}
                   </select>
                 </div>
                 <div className="info-row"><span className="info-label">Secondary</span>
                   <select className="edit-select" value={e.secondary_insurance || ''} onChange={ev => field('secondary_insurance')(ev.target.value)}>
-                    {['None', ...INSURANCES].map(i => <option key={i}>{i}</option>)}
+                    {secondaryInsuranceOptions.map(i => <option key={i}>{i}</option>)}
                   </select>
                 </div>
                 <div className="info-row"><span className="info-label">Verified</span>
@@ -260,7 +265,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
                 <div style={{ marginTop: 10 }}>
                   <div className="label">Office</div>
                   <select className="edit-select" value={e.office || ''} onChange={ev => field('office')(ev.target.value)}>
-                    {OFFICES.map(o => <option key={o}>{o}</option>)}
+                    {officeOptions.map(o => <option key={o}>{o}</option>)}
                   </select>
                 </div>
               </>
@@ -284,6 +289,16 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
                   : <Badge value={key === 'autism_diagnosis' ? normalizeAutismDx(r[key]) : normalizeReferralFieldValue(key, r[key])} />}
               </div>
             ))}
+
+            <div style={{ marginTop: 14 }}>
+              <div className="label">Referral Source</div>
+              {editMode
+                ? <select className="edit-select" value={e.referral_source || ''} onChange={ev => field('referral_source')(ev.target.value)}>
+                    <option value="">-- Select --</option>
+                    {referralSourceOptions.map(option => <option key={option}>{option}</option>)}
+                  </select>
+                : <div style={{ color: 'var(--text)', fontWeight: 700, fontSize: 15, marginTop: 4 }}>{r.referral_source || '--'}</div>}
+            </div>
 
             <div style={{ marginTop: 14 }}>
               <div className="label">Intake Personnel</div>

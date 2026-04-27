@@ -26,6 +26,10 @@ export const INSURANCES = [
   'BCBSMS', 'Aetna', 'Tricare', 'Cigna', 'TruCare', 'Other',
 ]
 
+export const INSURANCE_PAYERS = INSURANCES
+
+export const REFERRAL_SOURCES = ['Provider Referral', 'Parent/Caregiver', 'School', 'Physician', 'Other']
+
 export const BOOL = ['YES', 'NO', 'AWAITING']
 
 export const STAT = ['Completed', 'Emailed', 'Awaiting', 'Please Send', 'N/A']

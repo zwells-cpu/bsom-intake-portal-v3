@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ConfirmationModal } from './ConfirmationModal'
 import { OFFICES, BOOL } from '../lib/constants'
-import { cleanBcbaName } from '../lib/bcbaStaff'
+import { cleanLookupValue, includeCurrentOption, normalizeOptions, optionValues } from '../lib/lookups'
 import { getAssessmentLifecycleStatus, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 const INTERVIEW_STATUSES = ['Awaiting Assignment', 'Scheduled', 'Completed', 'No Show']
@@ -84,7 +84,7 @@ function DateField({ label, value, onChange }) {
   )
 }
 
-export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, bcbaStaff = [] }) {
+export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, bcbaOptions = [], officeOptions: liveOfficeOptions = [] }) {
   const [form, setForm] = useState(assessment)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -97,17 +97,17 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, b
   const recordId = form?.assessment_id ?? form?.id ?? null
   const clinic = form?.clinic || form?.office || ''
   const lifecycleStatus = getAssessmentLifecycleStatus(form)
-  const currentBcba = cleanBcbaName(form?.assigned_bcba)
-  const bcbaOptions = bcbaStaff
-    .filter(record => record?.is_active !== false)
-    .map(record => cleanBcbaName(record.full_name))
+  const officeOptions = includeCurrentOption(optionValues(liveOfficeOptions.length ? liveOfficeOptions : normalizeOptions(OFFICES)), clinic)
+  const currentBcba = cleanLookupValue(form?.assigned_bcba)
+  const bcbaValues = (bcbaOptions.length ? bcbaOptions : normalizeOptions([]))
+    .map(option => cleanLookupValue(option.value ?? option.label ?? option))
     .filter(Boolean)
     .sort((a, b) => a.localeCompare(b))
-  const matchingBcbaOption = bcbaOptions.find(option => option.toLowerCase() === currentBcba.toLowerCase())
+  const matchingBcbaOption = bcbaValues.find(option => option.toLowerCase() === currentBcba.toLowerCase())
   const selectedBcbaValue = matchingBcbaOption || currentBcba
   const assignedBcbaOptions = currentBcba && !matchingBcbaOption
-    ? [currentBcba, ...bcbaOptions]
-    : bcbaOptions
+    ? [currentBcba, ...bcbaValues]
+    : bcbaValues
 
   const setField = (key) => (value) => setForm(prev => ({ ...prev, [key]: value }))
 
@@ -237,7 +237,7 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, b
             <div className="section-hdr">Client Details</div>
             <div className="responsive-review-grid" style={{ gap: 12 }}>
               <TextField label="Client Name" value={form?.client_name} onChange={setField('client_name')} />
-              <SelectField label="Clinic" value={form?.clinic || form?.office || ''} onChange={setField('clinic')} options={OFFICES} />
+              <SelectField label="Clinic" value={form?.clinic || form?.office || ''} onChange={setField('clinic')} options={officeOptions} />
 
               <SelectField label="Assigned BCBA" value={selectedBcbaValue} onChange={setField('assigned_bcba')} options={assignedBcbaOptions} placeholder="Select BCBA" />
             </div>

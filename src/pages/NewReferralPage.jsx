@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { OFFICES, INSURANCES, BOOL, STAT, STAFF, AUTISM_DIAGNOSIS_OPTIONS, REFERRAL_FORM_OPTIONS, IEP_REPORT_OPTIONS, emptyReferral } from '../lib/constants'
+import { OFFICES, INSURANCE_PAYERS, REFERRAL_SOURCES, BOOL, STAT, STAFF, AUTISM_DIAGNOSIS_OPTIONS, REFERRAL_FORM_OPTIONS, IEP_REPORT_OPTIONS, emptyReferral } from '../lib/constants'
+import { normalizeOptions, optionValues } from '../lib/lookups'
 import { formatPhoneNumber, normalizeAutismDx } from '../lib/utils'
 
 const STEPS = ['Client Info', 'Caregiver', 'Insurance', 'Documents', 'Review']
@@ -42,9 +43,12 @@ function Field({ label, type = 'text', options, value, onChange, inputMode, maxL
   )
 }
 
-export function NewReferralPage({ onSave, saving }) {
+export function NewReferralPage({ onSave, saving, officeOptions: liveOfficeOptions = [], insuranceOptions: liveInsuranceOptions = [], referralSourceOptions: liveReferralSourceOptions = [] }) {
   const [step, setStep] = useState(0)
   const [form, setForm] = useState(emptyReferral())
+  const officeOptions = optionValues(liveOfficeOptions.length ? liveOfficeOptions : normalizeOptions(OFFICES))
+  const insuranceOptions = optionValues(liveInsuranceOptions.length ? liveInsuranceOptions : normalizeOptions(INSURANCE_PAYERS))
+  const referralSourceOptions = optionValues(liveReferralSourceOptions.length ? liveReferralSourceOptions : normalizeOptions(REFERRAL_SOURCES))
 
   const f = (key) => (event) => {
     let nextValue = event.target.value
@@ -69,9 +73,9 @@ export function NewReferralPage({ onSave, saving }) {
       <Field label="Last Name" value={form.last_name} onChange={f('last_name')} />
       <Field label="Date of Birth" type="date" value={form.dob} onChange={f('dob')} />
       <Field label="Date Received" type="date" value={form.date_received} onChange={f('date_received')} />
-      <Field label="Office" options={OFFICES} value={form.office} onChange={f('office')} />
+      <Field label="Office" options={officeOptions} value={form.office} onChange={f('office')} />
       <Field label="Reason for Referral" value={form.reason_for_referral} onChange={f('reason_for_referral')} />
-      <Field label="Referral Source" value={form.referral_source} onChange={f('referral_source')} />
+      <Field label="Referral Source" options={referralSourceOptions} value={form.referral_source} onChange={f('referral_source')} />
       <Field label="Referral Source Phone" value={form.referral_source_phone} onChange={f('referral_source_phone')} inputMode="numeric" maxLength={12} />
       <Field label="Referral Source Fax" value={form.referral_source_fax} onChange={f('referral_source_fax')} inputMode="numeric" maxLength={12} />
       <Field label="Point of Contact" value={form.point_of_contact} onChange={f('point_of_contact')} />
@@ -88,8 +92,8 @@ export function NewReferralPage({ onSave, saving }) {
     </div>,
 
     <div className="form-grid">
-      <Field label="Primary Insurance" options={INSURANCES} value={form.insurance} onChange={f('insurance')} />
-      <Field label="Secondary Insurance" options={['None', ...INSURANCES]} value={form.secondary_insurance} onChange={f('secondary_insurance')} />
+      <Field label="Primary Insurance" options={insuranceOptions} value={form.insurance} onChange={f('insurance')} />
+      <Field label="Secondary Insurance" options={['None', ...insuranceOptions]} value={form.secondary_insurance} onChange={f('secondary_insurance')} />
       <Field label="Insurance Verified" options={BOOL} value={form.insurance_verified} onChange={f('insurance_verified')} />
     </div>,
 

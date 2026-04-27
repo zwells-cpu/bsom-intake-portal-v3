@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { PaStatusBadge } from '../components/Badge'
 import { NotifyModal } from '../components/NotifyModal'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
-import { OFFICES } from '../lib/constants'
-import { cleanBcbaName, normalizeBcbaName } from '../lib/bcbaStaff'
+import { cleanLookupValue, normalizeLookupValue } from '../lib/lookups'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
 import { formatDisplayDate, getAssessmentLifecycleStatus, getAssessmentRecordId, getAssessmentWorkflowProgress, getAssessmentWorkflowStatus, getAuthorizationStatus, isAuthorizationApproved, normalizeTreatmentPlanStatus } from '../lib/utils'
 
@@ -305,18 +304,14 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
 }
 
 function getBcbaDisplayName(value) {
-  return cleanBcbaName(value)
-}
-
-function isAdminRole(role) {
-  return String(role || '').toLowerCase().includes('admin')
+  return cleanLookupValue(value)
 }
 
 function getDuplicateBcbaGroups(records) {
   const groups = {}
   records.forEach(record => {
     const raw = record.assigned_bcba
-    const key = normalizeBcbaName(raw)
+    const key = normalizeLookupValue(raw)
     if (!key) return
     const clean = String(raw || '').trim()
     if (!groups[key]) groups[key] = new Set()
@@ -328,129 +323,6 @@ function getDuplicateBcbaGroups(records) {
     .filter(group => group.names.length > 1)
 }
 
-function ManageBcbasSection({
-  bcbaStaff,
-  bcbaStaffLoading,
-  bcbaStaffError,
-  setBcbaStaffError,
-  createBcbaStaff,
-  updateBcbaStaff,
-  deactivateBcbaStaff,
-  userRole,
-}) {
-  const [form, setForm] = useState({ full_name: '', email: '', office: '' })
-  const [editingId, setEditingId] = useState(null)
-  const [busyId, setBusyId] = useState(null)
-  const [saving, setSaving] = useState(false)
-  const canManage = isAdminRole(userRole)
-
-  if (!canManage) return null
-
-  const sortedStaff = (bcbaStaff || []).slice().sort((a, b) => cleanBcbaName(a.full_name).localeCompare(cleanBcbaName(b.full_name)))
-  const editing = sortedStaff.find(record => String(record.id) === String(editingId))
-
-  const resetForm = () => {
-    setForm({ full_name: '', email: '', office: '' })
-    setEditingId(null)
-  }
-
-  const startEdit = (record) => {
-    setEditingId(record.id)
-    setForm({
-      full_name: cleanBcbaName(record.full_name),
-      email: record.email || '',
-      office: record.office || '',
-    })
-    setBcbaStaffError?.(null)
-  }
-
-  const handleSubmit = async (event) => {
-    event.preventDefault()
-    setSaving(true)
-    const res = editing
-      ? await updateBcbaStaff(editing.id, form)
-      : await createBcbaStaff(form)
-    if (res?.success) resetForm()
-    setSaving(false)
-  }
-
-  const handleDeactivate = async (record) => {
-    setBusyId(record.id)
-    await deactivateBcbaStaff(record.id)
-    setBusyId(null)
-  }
-
-  return (
-    <div className="card card-pad" style={{ marginBottom: 22 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap' }}>
-        <div>
-          <div className="section-hdr" style={{ margin: 0 }}>Manage BCBAs</div>
-          <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 4 }}>Add and maintain dropdown options without changing assessment records.</div>
-        </div>
-        {editing ? <button type="button" className="btn-ghost" onClick={resetForm}>Cancel Edit</button> : null}
-      </div>
-
-      {bcbaStaffError ? (
-        <div className="error-bar" style={{ marginBottom: 14 }}>
-          {bcbaStaffError}
-          <button className="x-btn" onClick={() => setBcbaStaffError?.(null)}>Close</button>
-        </div>
-      ) : null}
-
-      <form onSubmit={handleSubmit} className="responsive-review-grid" style={{ gap: 12, marginBottom: 16 }}>
-        <div>
-          <div className="label">BCBA Name</div>
-          <input className="edit-input" value={form.full_name} onChange={event => setForm(prev => ({ ...prev, full_name: event.target.value }))} placeholder="Full name" />
-        </div>
-        <div>
-          <div className="label">Email</div>
-          <input className="edit-input" type="email" value={form.email} onChange={event => setForm(prev => ({ ...prev, email: event.target.value }))} placeholder="Optional" />
-        </div>
-        <div>
-          <div className="label">Office</div>
-          <select className="edit-select" value={form.office} onChange={event => setForm(prev => ({ ...prev, office: event.target.value }))}>
-            <option value="">Optional</option>
-            {OFFICES.map(office => <option key={office} value={office}>{office}</option>)}
-          </select>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-          <button className="btn-save" type="submit" disabled={saving || !cleanBcbaName(form.full_name)} style={{ width: '100%' }}>
-            {saving ? 'Saving...' : editing ? 'Save BCBA' : 'Add BCBA'}
-          </button>
-        </div>
-      </form>
-
-      <div className="table-wrap">
-        <table>
-          <thead><tr><th>Name</th><th>Email</th><th>Office</th><th>Status</th><th /></tr></thead>
-          <tbody>
-            {bcbaStaffLoading ? (
-              <tr><td colSpan={5} style={{ padding: 28, textAlign: 'center', color: 'var(--dim)' }}>Loading BCBAs...</td></tr>
-            ) : sortedStaff.length === 0 ? (
-              <tr><td colSpan={5} style={{ padding: 28, textAlign: 'center', color: 'var(--dim)' }}>No BCBA staff records yet.</td></tr>
-            ) : sortedStaff.map(record => (
-              <tr key={record.id}>
-                <td style={{ fontWeight: 800 }}>{cleanBcbaName(record.full_name)}</td>
-                <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.email || '--'}</td>
-                <td><span className="office-pill">{record.office || '--'}</span></td>
-                <td>{record.is_active === false ? <span className="bdg" style={{ background: '#64748b20', color: '#94a3b8', border: '1px solid #64748b35' }}>Inactive</span> : <span className="bdg" style={{ background: '#22c55e20', color: '#22c55e', border: '1px solid #22c55e35' }}>Active</span>}</td>
-                <td style={{ textAlign: 'right' }}>
-                  <button type="button" className="btn-ghost" onClick={() => startEdit(record)} style={{ padding: '6px 10px', fontSize: 12, marginRight: 8 }}>Edit</button>
-                  {record.is_active !== false ? (
-                    <button type="button" className="btn-danger" onClick={() => handleDeactivate(record)} disabled={busyId === record.id} style={{ padding: '6px 10px', fontSize: 12 }}>
-                      {busyId === record.id ? 'Deactivating...' : 'Deactivate'}
-                    </button>
-                  ) : null}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
 export function BCBAAssignmentsPage({
   assessData,
   assessLoading,
@@ -458,24 +330,18 @@ export function BCBAAssignmentsPage({
   statFilter,
   onSetStatFilter,
   onClearStatFilter,
-  bcbaStaff = [],
-  bcbaStaffLoading = false,
-  bcbaStaffError = null,
-  setBcbaStaffError,
-  createBcbaStaff,
-  updateBcbaStaff,
-  deactivateBcbaStaff,
-  userRole,
+  bcbaOptions = [],
 }) {
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
-  const unassigned = assessData.filter(record => !normalizeBcbaName(record.assigned_bcba))
-  const assigned = assessData.filter(record => normalizeBcbaName(record.assigned_bcba))
+  const unassigned = assessData.filter(record => !normalizeLookupValue(record.assigned_bcba))
+  const assigned = assessData.filter(record => normalizeLookupValue(record.assigned_bcba))
   const byBCBA = {}
   const staffNamesByKey = {}
-  bcbaStaff.forEach(record => {
-    const key = normalizeBcbaName(record.full_name)
-    if (key) staffNamesByKey[key] = cleanBcbaName(record.full_name)
+  bcbaOptions.forEach(option => {
+    const name = option.value ?? option.label
+    const key = normalizeLookupValue(name)
+    if (key) staffNamesByKey[key] = cleanLookupValue(name)
   })
   const duplicateGroups = getDuplicateBcbaGroups(assessData)
   const { activeFilter, toggleFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'bcba-assignments')
@@ -483,7 +349,7 @@ export function BCBAAssignmentsPage({
 
   assigned.forEach(record => {
     const workflowStatus = getAssessmentWorkflowStatus(record)
-    const key = normalizeBcbaName(record.assigned_bcba)
+    const key = normalizeLookupValue(record.assigned_bcba)
     const displayName = staffNamesByKey[key] || getBcbaDisplayName(record.assigned_bcba)
     if (!byBCBA[key]) byBCBA[key] = { name: displayName, total: 0, completed: 0, inProgress: 0, notStarted: 0 }
     byBCBA[key].total += 1
@@ -505,17 +371,6 @@ export function BCBAAssignmentsPage({
       </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered BCBA assignments" />
 
-      <ManageBcbasSection
-        bcbaStaff={bcbaStaff}
-        bcbaStaffLoading={bcbaStaffLoading}
-        bcbaStaffError={bcbaStaffError}
-        setBcbaStaffError={setBcbaStaffError}
-        createBcbaStaff={createBcbaStaff}
-        updateBcbaStaff={updateBcbaStaff}
-        deactivateBcbaStaff={deactivateBcbaStaff}
-        userRole={userRole}
-      />
-
       {duplicateGroups.length > 0 ? (
         <div className="card card-pad" style={{ marginBottom: 22, borderColor: '#f59e0b55' }}>
           <div className="section-hdr" style={{ marginTop: 0 }}>Suspected Duplicate BCBA Names</div>
@@ -524,7 +379,7 @@ export function BCBAAssignmentsPage({
             {duplicateGroups.map(group => (
               <div key={group.key} className="info-row" style={{ alignItems: 'flex-start' }}>
                 <span className="info-label">Canonical</span>
-                <span className="info-val">{cleanBcbaName(group.names[0])} <span style={{ color: 'var(--dim)' }}>({group.names.join(', ')})</span></span>
+                <span className="info-val">{cleanLookupValue(group.names[0])} <span style={{ color: 'var(--dim)' }}>({group.names.join(', ')})</span></span>
               </div>
             ))}
           </div>
