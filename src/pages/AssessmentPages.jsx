@@ -307,6 +307,16 @@ function getBcbaDisplayName(value) {
   return cleanLookupValue(value)
 }
 
+const UNASSIGNED_BCBA_KEY = '__unassigned__'
+
+function getBcbaAssignmentKey(value) {
+  return normalizeLookupValue(value) || UNASSIGNED_BCBA_KEY
+}
+
+function getPossessiveName(name) {
+  return name.endsWith('s') ? `${name}'` : `${name}'s`
+}
+
 function getDuplicateBcbaGroups(records) {
   const groups = {}
   records.forEach(record => {
@@ -516,10 +526,12 @@ export function BCBAAssignmentsPage({
   officeOptions = [],
   onRefreshLookups,
 }) {
+  const [selectedBcbaKey, setSelectedBcbaKey] = useState(null)
+
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
-  const unassigned = assessData.filter(record => !normalizeLookupValue(record.assigned_bcba))
-  const assigned = assessData.filter(record => normalizeLookupValue(record.assigned_bcba))
+  const unassigned = assessData.filter(record => getBcbaAssignmentKey(record.assigned_bcba) === UNASSIGNED_BCBA_KEY)
+  const assigned = assessData.filter(record => getBcbaAssignmentKey(record.assigned_bcba) !== UNASSIGNED_BCBA_KEY)
   const byBCBA = {}
   const staffNamesByKey = {}
   bcbaOptions.forEach(option => {
@@ -533,7 +545,7 @@ export function BCBAAssignmentsPage({
 
   assigned.forEach(record => {
     const workflowStatus = getAssessmentWorkflowStatus(record)
-    const key = normalizeLookupValue(record.assigned_bcba)
+    const key = getBcbaAssignmentKey(record.assigned_bcba)
     const displayName = staffNamesByKey[key] || getBcbaDisplayName(record.assigned_bcba)
     if (!byBCBA[key]) byBCBA[key] = { name: displayName, total: 0, completed: 0, inProgress: 0, notStarted: 0 }
     byBCBA[key].total += 1
@@ -542,6 +554,48 @@ export function BCBAAssignmentsPage({
     else byBCBA[key].notStarted += 1
   })
 
+  const unassignedStats = unassigned.reduce((stats, record) => {
+    const workflowStatus = getAssessmentWorkflowStatus(record)
+    stats.total += 1
+    if (workflowStatus === 'Completed') stats.completed += 1
+    else if (workflowStatus === 'In Progress') stats.inProgress += 1
+    else stats.notStarted += 1
+    return stats
+  }, { name: 'Unassigned', total: 0, completed: 0, inProgress: 0, notStarted: 0 })
+
+  const bcbaCards = [
+    ...Object.entries(byBCBA).map(([key, stats]) => [key, stats]),
+    ...(unassignedStats.total > 0 ? [[UNASSIGNED_BCBA_KEY, unassignedStats]] : []),
+  ]
+
+  const handleCardFilter = (bcbaKey) => {
+    setSelectedBcbaKey(current => current === bcbaKey ? null : bcbaKey)
+  }
+
+  const handleCardKeyDown = (event, bcbaKey) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    event.preventDefault()
+    handleCardFilter(bcbaKey)
+  }
+
+  const tableRows = selectedBcbaKey
+    ? filteredRows.filter(record => getBcbaAssignmentKey(record.assigned_bcba) === selectedBcbaKey)
+    : filteredRows
+  const selectedBcbaName = selectedBcbaKey === UNASSIGNED_BCBA_KEY
+    ? 'Unassigned'
+    : selectedBcbaKey
+      ? byBCBA[selectedBcbaKey]?.name || 'Selected BCBA'
+      : null
+  const tableHeading = selectedBcbaKey === UNASSIGNED_BCBA_KEY
+    ? `Unassigned Clients (${tableRows.length})`
+    : selectedBcbaName
+      ? `${getPossessiveName(selectedBcbaName)} Clients (${tableRows.length})`
+      : activeFilter?.key === 'unassigned'
+        ? `Unassigned Clients (${tableRows.length})`
+        : activeFilter?.key === 'assigned'
+          ? `Assigned Clients (${tableRows.length})`
+          : `All Clients (${tableRows.length})`
+
   return (
     <>
       <div className="pg-hdr">
@@ -549,9 +603,9 @@ export function BCBAAssignmentsPage({
         <div className="pg-hdr-sub">Caseload distribution and assignment tracking across BCBAs</div>
       </div>
       <div className="stats-row stats-3" style={{ marginBottom: 22 }}>
-        <ClickableStatCard value={assessData.length} label="Total Clients" color="#6366f1" active={activeFilter?.key === 'all'} onClick={() => toggleFilter('all', 'BCBA Assignments: All Clients')} />
-        <ClickableStatCard value={unassigned.length} label="Unassigned" color="#ef4444" active={activeFilter?.key === 'unassigned'} onClick={() => toggleFilter('unassigned', 'BCBA Assignments: Unassigned')} />
-        <ClickableStatCard value={Object.keys(byBCBA).length} label="Active BCBAs" color="#22c55e" active={activeFilter?.key === 'assigned'} onClick={() => toggleFilter('assigned', 'BCBA Assignments: Assigned to BCBA')} />
+        <ClickableStatCard value={assessData.length} label="Total Clients" color="#6366f1" active={activeFilter?.key === 'all'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('all', 'BCBA Assignments: All Clients') }} />
+        <ClickableStatCard value={unassigned.length} label="Unassigned" color="#ef4444" active={activeFilter?.key === 'unassigned'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('unassigned', 'BCBA Assignments: Unassigned') }} />
+        <ClickableStatCard value={Object.keys(byBCBA).length} label="Active BCBAs" color="#22c55e" active={activeFilter?.key === 'assigned'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('assigned', 'BCBA Assignments: Assigned to BCBA') }} />
       </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered BCBA assignments" />
 
@@ -572,10 +626,27 @@ export function BCBAAssignmentsPage({
         </div>
       ) : null}
 
-      {Object.keys(byBCBA).length > 0 && (
+      {bcbaCards.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 16, marginBottom: 22 }}>
-          {Object.entries(byBCBA).map(([bcbaKey, stats]) => (
-            <div key={bcbaKey} className="card card-pad">
+          {bcbaCards.map(([bcbaKey, stats]) => {
+            const isSelected = selectedBcbaKey === bcbaKey
+            return (
+            <div
+              key={bcbaKey}
+              className="card card-pad"
+              role="button"
+              tabIndex={0}
+              aria-pressed={isSelected}
+              onClick={() => handleCardFilter(bcbaKey)}
+              onKeyDown={event => handleCardKeyDown(event, bcbaKey)}
+              style={{
+                cursor: 'pointer',
+                borderColor: isSelected ? '#6366f1' : 'var(--border)',
+                background: isSelected ? 'color-mix(in srgb, var(--accent) 9%, var(--surface))' : 'var(--surface)',
+                boxShadow: isSelected ? '0 0 0 1px #6366f145, 0 12px 28px rgba(99,102,241,0.12)' : 'var(--shadow)',
+                transition: 'border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease',
+              }}
+            >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                 <div style={{ fontWeight: 800, fontSize: 15 }}>{stats.name}</div>
                 <span className="bdg" style={{ background: '#6366f120', color: '#a5b4fc', border: '1px solid #6366f130' }}>{stats.total} clients</span>
@@ -590,25 +661,34 @@ export function BCBAAssignmentsPage({
               </div>
               <div style={{ fontSize: 10, color: 'var(--dim)', marginTop: 4, textAlign: 'right' }}>{stats.total ? Math.round((stats.completed / stats.total) * 100) : 0}% complete</div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
-      <div style={{ marginBottom: 14, fontSize: 13, fontWeight: 700, color: activeFilter?.key === 'unassigned' ? '#ef4444' : activeFilter?.key === 'assigned' ? '#22c55e' : '#a5b4fc' }}>
-        {activeFilter?.key === 'unassigned'
-          ? `Unassigned Clients (${filteredRows.length})`
-          : activeFilter?.key === 'assigned'
-            ? `Assigned Clients (${filteredRows.length})`
-            : `All Clients (${filteredRows.length})`}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: selectedBcbaKey ? '#a5b4fc' : activeFilter?.key === 'unassigned' ? '#ef4444' : activeFilter?.key === 'assigned' ? '#22c55e' : '#a5b4fc' }}>
+          {tableHeading}
+        </div>
+        {selectedBcbaKey ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span className="bdg" style={{ background: '#6366f120', color: '#a5b4fc', border: '1px solid #6366f135' }}>
+              Filtering by {selectedBcbaName}
+            </span>
+            <button type="button" className="btn-ghost" onClick={() => setSelectedBcbaKey(null)} style={{ padding: '6px 10px', fontSize: 12 }}>
+              Clear filter
+            </button>
+          </div>
+        ) : null}
       </div>
       <div className="card">
         <div className="table-wrap">
           <table>
             <thead><tr><th>Client</th><th>Office</th><th>Assigned BCBA</th><th>Assessment Progress</th><th>PA Status</th><th>Insurance</th><th /></tr></thead>
             <tbody>
-              {filteredRows.length === 0 ? (
-                <tr><td colSpan={7} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No assessment records match the current filter.</td></tr>
-              ) : filteredRows.map(record => (
+              {tableRows.length === 0 ? (
+                <tr><td colSpan={7} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>{selectedBcbaKey ? 'No clients assigned to this BCBA yet.' : 'No assessment records match the current filter.'}</td></tr>
+              ) : tableRows.map(record => (
                 <tr
                   key={record.assessment_id || record.client_name}
                   className="row-hover"
