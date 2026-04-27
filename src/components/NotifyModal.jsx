@@ -4,8 +4,32 @@ import { API_BASE } from '../lib/api'
 export function NotifyModal({ referral, onClose }) {
   const [status, setStatus] = useState(null)
   const [errorMsg, setErrorMsg] = useState('')
+  const [smsStatus, setSmsStatus] = useState(null)
+  const [smsErrorMsg, setSmsErrorMsg] = useState('')
 
   const hasEmail = !!referral.caregiver_email
+  const hasPhone = !!referral.caregiver_phone
+
+  const handleQuickText = async () => {
+    if (!hasPhone) return
+    setSmsStatus('sending')
+    setSmsErrorMsg('')
+    try {
+      const res = await fetch(`${API_BASE}/api/notify-sms`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: referral.caregiver_phone }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data?.error || `Server error ${res.status}`)
+      }
+      setSmsStatus('success')
+    } catch (err) {
+      setSmsStatus('error')
+      setSmsErrorMsg(err.message || 'Failed to send SMS.')
+    }
+  }
 
   const handleQuickEmail = async () => {
     if (!hasEmail) return
@@ -46,6 +70,12 @@ export function NotifyModal({ referral, onClose }) {
             </div>
           )}
 
+          {!hasPhone && (
+            <div style={{ background: '#f59e0b18', border: '1px solid #f59e0b44', borderRadius: 10, padding: '10px 14px', color: '#f59e0b', fontSize: 13, fontWeight: 600 }}>
+              No caregiver phone on file for this referral.
+            </div>
+          )}
+
           {status === 'success' && (
             <div style={{ background: '#16a34a12', border: '1px solid #16a34a33', borderRadius: 10, padding: '10px 14px', color: '#16a34a', fontSize: 13, fontWeight: 600 }}>
               ✅ Email notification sent successfully.
@@ -55,6 +85,18 @@ export function NotifyModal({ referral, onClose }) {
           {status === 'error' && (
             <div style={{ background: '#ef444418', border: '1px solid #ef444433', borderRadius: 10, padding: '10px 14px', color: '#ef4444', fontSize: 13, fontWeight: 600 }}>
               ❌ {errorMsg}
+            </div>
+          )}
+
+          {smsStatus === 'success' && (
+            <div style={{ background: '#16a34a12', border: '1px solid #16a34a33', borderRadius: 10, padding: '10px 14px', color: '#16a34a', fontSize: 13, fontWeight: 600 }}>
+              ✅ SMS notification sent successfully.
+            </div>
+          )}
+
+          {smsStatus === 'error' && (
+            <div style={{ background: '#ef444418', border: '1px solid #ef444433', borderRadius: 10, padding: '10px 14px', color: '#ef4444', fontSize: 13, fontWeight: 600 }}>
+              ❌ {smsErrorMsg}
             </div>
           )}
 
@@ -68,15 +110,14 @@ export function NotifyModal({ referral, onClose }) {
               {status === 'sending' ? 'Sending...' : 'Quick Email'}
             </button>
 
-            <div title="Coming Soon" style={{ flex: 1 }}>
-              <button
-                className="btn-sm"
-                disabled
-                style={{ width: '100%', padding: '10px 16px', fontSize: 13, opacity: 0.45, cursor: 'not-allowed' }}
-              >
-                Quick Text
-              </button>
-            </div>
+            <button
+              className="btn-sm"
+              disabled={!hasPhone || smsStatus === 'sending' || smsStatus === 'success'}
+              onClick={handleQuickText}
+              style={{ flex: 1, padding: '10px 16px', fontSize: 13 }}
+            >
+              {smsStatus === 'sending' ? 'Sending...' : 'Quick Text'}
+            </button>
           </div>
         </div>
 
