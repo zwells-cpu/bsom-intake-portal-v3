@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
+import { ActivityLogItem } from '../components/dashboard/RecentActivityCard'
 import { API_BASE } from '../lib/api'
 import { formatDisplayDate } from '../lib/utils'
 
-export function ClientProfilePage({ referralId, onBack }) {
+export function ClientProfilePage({ referralId, onBack, canShowTechnicalDetails = false }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -153,26 +154,14 @@ export function ClientProfilePage({ referralId, onBack }) {
         <div className="card" style={{ padding: 20 }}>
           <div className="section-hdr" style={{ marginBottom: 12 }}>Activity Timeline</div>
           <div style={{ display: 'grid', gap: 10, maxHeight: 360, overflowY: 'auto' }}>
-            {activity.map(log => (
-              <div key={log.id} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                <div
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    background: 'var(--accent)',
-                    marginTop: 5,
-                    flexShrink: 0,
-                  }}
-                />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{log.description || log.action}</div>
-                  <div style={{ fontSize: 11, color: 'var(--dim)', fontFamily: "'DM Mono',monospace" }}>
-                    {log.actor ? `${log.actor} | ` : ''}
-                    {log.created_at ? new Date(log.created_at).toLocaleString() : ''}
-                  </div>
-                </div>
-              </div>
+            {activity.map((log, index) => (
+              <ActivityLogItem
+                key={log.id || `${log.created_at || 'log'}-${index}`}
+                log={log}
+                index={index}
+                compact
+                canShowTechnicalDetails={canShowTechnicalDetails}
+              />
             ))}
           </div>
         </div>

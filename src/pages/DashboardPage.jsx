@@ -145,7 +145,7 @@ export function DashboardPage({ refs, setSelectedId, openModulePage, activityRef
   )
 }
 
-export function ActivityLogPage({ activityRefreshKey = 0 }) {
+export function ActivityLogPage({ activityRefreshKey = 0, canShowTechnicalDetails = false }) {
   const { logs, loading } = useActivityLogs(null, activityRefreshKey)
 
   return (
@@ -155,7 +155,12 @@ export function ActivityLogPage({ activityRefreshKey = 0 }) {
         <div className="pg-hdr-sub">Full system activity history across referrals and assessments</div>
       </div>
 
-      <ActivityLogList logs={logs} loading={loading} emptyText="No recent activity yet." />
+      <ActivityLogList
+        logs={logs}
+        loading={loading}
+        emptyText="No recent activity yet."
+        canShowTechnicalDetails={canShowTechnicalDetails}
+      />
     </>
   )
 }

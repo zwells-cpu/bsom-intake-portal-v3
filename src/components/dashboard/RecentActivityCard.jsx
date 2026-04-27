@@ -1,3 +1,5 @@
+import { formatActivityLogDisplay } from '../../lib/activityLogs'
+
 function formatRelativeTime(value) {
   if (!value) return 'Just now'
 
@@ -26,84 +28,36 @@ function formatFullTimestamp(value) {
   return date.toLocaleString()
 }
 
-const ACTION_LABELS = {
-  referral_created:                  'Referral Added',
-  referral_updated:                  'Referral Updated',
-  referral_deleted:                  'Referral Removed',
-  referral_status_changed:           'Status Changed',
-  documents_updated:                 'Documents Updated',
-  document_uploaded:                 'Document Uploaded',
-  contact_info_updated:              'Contact Info Updated',
-  insurance_updated:                 'Insurance Updated',
-  insurance_verified:                'Insurance Verified',
-  staff_assigned:                    'Staff Assigned',
-  office_transferred:                'Office Transferred',
-  notes_updated:                     'Notes Updated',
-  parent_interview_ready_enabled:    'Ready for Interview',
-  parent_interview_ready_disabled:   'Interview Put On Hold',
-  client_profile_viewed:             'Profile Viewed',
-  assessment_updated:                'Assessment Updated',
-  assessment_deleted:                'Assessment Removed',
-  authorization_status_updated:      'Authorization Updated',
-  treatment_plan_updated:            'Treatment Plan Updated',
-  parent_interview_updated:          'Parent Interview Updated',
-  bcba_assigned:                     'BCBA Assigned',
-  ready_for_services_updated:        'Services Readiness Updated',
-}
-
-function formatActionLabel(action) {
-  if (!action) return 'Activity'
-  return ACTION_LABELS[action] || action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+function formatEntityType(type) {
+  if (!type) return ''
+  return String(type).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
 function buildActorLine(log) {
-  // New schema: user_email + user_role
   if (log.user_email) {
     return log.user_role
       ? `${log.user_email} (${log.user_role})`
       : log.user_email
   }
-  // Legacy schema fallback: actor string
+
   return log.actor || 'Unknown staff member'
 }
 
-function buildSummary(log) {
-  // New schema: top-level description field
-  if (log.description) return log.description
-  // Legacy: description may be nested in details
-  if (log.details_json?.description) return log.details_json.description
-  return null
+export function ActivityLogTechnicalDetails({ log }) {
+  const details = log.details_json && typeof log.details_json === 'object' ? log.details_json : null
+  if (!details || Object.keys(details).length === 0) return null
+
+  return (
+    <details className="activity-log-technical">
+      <summary>Show technical details</summary>
+      <pre>{JSON.stringify(details, null, 2)}</pre>
+    </details>
+  )
 }
 
-function buildChangeSummary(details_json) {
-  if (!details_json || typeof details_json !== 'object') return null
-
-  const parts = []
-
-  if (Array.isArray(details_json.changed_fields) && details_json.changed_fields.length) {
-    parts.push(`Changed: ${details_json.changed_fields.join(', ')}`)
-  }
-
-  if (details_json.before && details_json.after) {
-    const fields = Object.keys(details_json.before)
-    if (fields.length) {
-      const changes = fields
-        .map(f => `${f}: ${details_json.before[f] ?? '—'} → ${details_json.after[f] ?? '—'}`)
-        .join(' | ')
-      parts.push(changes)
-    }
-  }
-
-  return parts.length ? parts.join(' · ') : null
-}
-
-function ActivityLogItem({ log, index }) {
-  const entityName  = log.entity_label || log.client_name || null
-  const actorLine   = buildActorLine(log)
-  const summary     = buildSummary(log)
-  const changeLine  = buildChangeSummary(log.details_json)
-  const office      = log.details_json?.office || log.details_json?.clinic || log.office || null
-  const entityType  = log.entity_type || null
+export function ActivityLogItem({ log, index, canShowTechnicalDetails = false, compact = false }) {
+  const display = formatActivityLogDisplay(log)
+  const actorLine = buildActorLine(log)
 
   return (
     <div
@@ -113,23 +67,22 @@ function ActivityLogItem({ log, index }) {
         background: 'linear-gradient(180deg, rgba(15,23,42,0.08), rgba(15,23,42,0))',
         border: '1px solid var(--border)',
         borderRadius: 12,
-        padding: '14px 16px',
+        padding: compact ? '12px 14px' : '14px 16px',
       }}
     >
-      {/* Top row: action label + badges + timestamp */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 6 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minWidth: 0 }}>
           <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)' }}>
-            {formatActionLabel(log.action)}
+            {display.actionLabel}
           </span>
-          {entityType && (
-            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', border: '1px solid var(--border2)', background: 'var(--surface2)', borderRadius: 999, padding: '2px 8px' }}>
-              {entityType}
+          {display.entityType && (
+            <span className="activity-log-badge">
+              {formatEntityType(display.entityType)}
             </span>
           )}
-          {office && (
-            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', border: '1px solid var(--border2)', background: 'var(--surface2)', borderRadius: 999, padding: '2px 8px' }}>
-              {office}
+          {display.office && (
+            <span className="activity-log-badge">
+              {display.office}
             </span>
           )}
         </div>
@@ -141,29 +94,54 @@ function ActivityLogItem({ log, index }) {
         </span>
       </div>
 
-      {/* Entity name */}
-      {entityName && (
-        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{entityName}</div>
-      )}
-
-      {/* Human summary */}
-      {summary && (
-        <div className="activity-log-summary" style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 4 }}>{summary}</div>
-      )}
-
-      {/* Change tracking line */}
-      {changeLine && (
-        <div className="activity-log-change" style={{ fontSize: 11, color: 'var(--dim)', fontFamily: "'DM Mono', monospace", marginBottom: 4, lineHeight: 1.5 }}>
-          {changeLine}
+      {display.entityName && (
+        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4, overflowWrap: 'anywhere' }}>
+          {display.entityName}
         </div>
       )}
 
-      {/* Actor */}
+      {display.summary && (
+        <div className="activity-log-summary" style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5, marginBottom: display.chips.length ? 8 : 4 }}>
+          {display.summary}
+        </div>
+      )}
+
+      {display.chips.length > 0 && (
+        <div className="activity-log-chips" aria-label="Updated areas">
+          {display.chips.map(chip => (
+            <span key={chip} className="activity-log-chip">{chip}</span>
+          ))}
+          {display.hiddenChipCount > 0 && (
+            <span className="activity-log-chip activity-log-chip-muted">+{display.hiddenChipCount} more updates</span>
+          )}
+        </div>
+      )}
+
       <div className="activity-log-actor" style={{ marginTop: 8, fontSize: 11, color: 'var(--dim)' }}>
         {actorLine}
       </div>
+
+      {canShowTechnicalDetails && <ActivityLogTechnicalDetails log={log} />}
     </div>
   )
+}
+
+function ActivityLogSkeleton({ count }) {
+  return Array.from({ length: count }).map((_, index) => (
+    <div
+      key={index}
+      style={{
+        borderRadius: 12,
+        border: '1px solid var(--border)',
+        background: 'var(--surface2)',
+        padding: '14px 16px',
+      }}
+    >
+      <div style={{ height: 10, width: '36%', background: 'rgba(148,163,184,0.18)', borderRadius: 999, marginBottom: 10 }} />
+      <div style={{ height: 12, width: '72%', background: 'rgba(148,163,184,0.14)', borderRadius: 999, marginBottom: 10 }} />
+      <div style={{ height: 10, width: '54%', background: 'rgba(148,163,184,0.12)', borderRadius: 999 }} />
+    </div>
+  ))
 }
 
 export function RecentActivityCard({ logs, loading, onViewAll }) {
@@ -173,28 +151,16 @@ export function RecentActivityCard({ logs, loading, onViewAll }) {
 
       <div className="card card-pad" style={{ minHeight: 254, display: 'flex', flexDirection: 'column', gap: 12 }}>
         {loading ? (
-          Array.from({ length: 4 }).map((_, index) => (
-            <div
-              key={index}
-              style={{
-                borderRadius: 12,
-                border: '1px solid var(--border)',
-                background: 'var(--surface2)',
-                padding: '14px 16px',
-              }}
-            >
-              <div style={{ height: 10, width: '36%', background: 'rgba(148,163,184,0.18)', borderRadius: 999, marginBottom: 10 }} />
-              <div style={{ height: 12, width: '72%', background: 'rgba(148,163,184,0.14)', borderRadius: 999, marginBottom: 10 }} />
-              <div style={{ height: 10, width: '54%', background: 'rgba(148,163,184,0.12)', borderRadius: 999 }} />
-            </div>
-          ))
+          <ActivityLogSkeleton count={4} />
         ) : logs.length === 0 ? (
           <div style={{ flex: 1, display: 'grid', placeItems: 'center', textAlign: 'center', color: 'var(--dim)', fontSize: 13 }}>
             No recent activity yet.
           </div>
         ) : (
           <>
-            {logs.map((log, index) => <ActivityLogItem key={`${log.created_at || 'log'}-${log.entity_id || index}-${index}`} log={log} index={index} />)}
+            {logs.map((log, index) => (
+              <ActivityLogItem key={`${log.created_at || 'log'}-${log.entity_id || index}-${index}`} log={log} index={index} compact />
+            ))}
             {onViewAll ? (
               <button
                 type="button"
@@ -202,7 +168,7 @@ export function RecentActivityCard({ logs, loading, onViewAll }) {
                 onClick={onViewAll}
                 style={{ alignSelf: 'flex-start', marginTop: 2, paddingInline: 0, border: 'none', background: 'transparent', color: 'var(--muted)' }}
               >
-                View All Activity {'→'}
+                View All Activity {'->'}
               </button>
             ) : null}
           </>
@@ -212,25 +178,11 @@ export function RecentActivityCard({ logs, loading, onViewAll }) {
   )
 }
 
-export function ActivityLogList({ logs, loading, emptyText = 'No recent activity yet.' }) {
+export function ActivityLogList({ logs, loading, emptyText = 'No recent activity yet.', canShowTechnicalDetails = false }) {
   if (loading) {
     return (
       <div className="card card-pad" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {Array.from({ length: 6 }).map((_, index) => (
-          <div
-            key={index}
-            style={{
-              borderRadius: 12,
-              border: '1px solid var(--border)',
-              background: 'var(--surface2)',
-              padding: '14px 16px',
-            }}
-          >
-            <div style={{ height: 10, width: '36%', background: 'rgba(148,163,184,0.18)', borderRadius: 999, marginBottom: 10 }} />
-            <div style={{ height: 12, width: '72%', background: 'rgba(148,163,184,0.14)', borderRadius: 999, marginBottom: 10 }} />
-            <div style={{ height: 10, width: '54%', background: 'rgba(148,163,184,0.12)', borderRadius: 999 }} />
-          </div>
-        ))}
+        <ActivityLogSkeleton count={6} />
       </div>
     )
   }
@@ -245,7 +197,14 @@ export function ActivityLogList({ logs, loading, emptyText = 'No recent activity
 
   return (
     <div className="card card-pad" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {logs.map((log, index) => <ActivityLogItem key={`${log.created_at || 'log'}-${log.entity_id || index}-${index}`} log={log} index={index} />)}
+      {logs.map((log, index) => (
+        <ActivityLogItem
+          key={`${log.created_at || 'log'}-${log.entity_id || index}-${index}`}
+          log={log}
+          index={index}
+          canShowTechnicalDetails={canShowTechnicalDetails}
+        />
+      ))}
     </div>
   )
 }

@@ -24,7 +24,7 @@ import { PipelineOverviewPage, ReferralAgingPage, ClinicVolumePage, ConversionRa
 import { createActivityLog } from './lib/activityLogs'
 import { getAssessmentRecordId, needsInsuranceVerification } from './lib/utils'
 import { API_BASE } from './lib/api'
-import { formatProfileAccessLabel, formatRoleLabel, normalizeProfile } from './lib/profileUtils'
+import { formatProfileAccessLabel, formatRoleLabel, isAdmin, normalizeProfile } from './lib/profileUtils'
 
 const NAV_STATE_KEY = 'bsom-portal-nav'
 
@@ -970,7 +970,7 @@ export default function App() {
 
     if (module === 'dashboard') {
       if (subpage === 'activity') {
-        return <ActivityLogPage activityRefreshKey={activityRefreshKey} />
+        return <ActivityLogPage activityRefreshKey={activityRefreshKey} canShowTechnicalDetails={isAdmin(profile)} />
       }
 
       return (
@@ -986,7 +986,7 @@ export default function App() {
     if (module === 'intake') {
       if (subpage === 'intakedash') return <IntakeDashboard refs={refs} onSelectRef={setSelId} openModulePage={openModulePage} />
       if (subpage === 'all') return <AllReferralsPage refs={refs} onSelectRef={setSelId} onOpenProfile={handleOpenProfile} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'profile') return <ClientProfilePage referralId={profileId} onBack={() => setSubpageAndClearFilter('all')} />
+      if (subpage === 'profile') return <ClientProfilePage referralId={profileId} onBack={() => setSubpageAndClearFilter('all')} canShowTechnicalDetails={isAdmin(profile)} />
       if (subpage === 'new') return <NewReferralPage onSave={handleCreateReferral} saving={saving} officeOptions={officeOptions} insuranceOptions={insuranceOptions} referralSourceOptions={referralSourceOptions} />
       if (subpage === 'pending') return <PendingDocsPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'insurance') return <InsuranceVerifPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
