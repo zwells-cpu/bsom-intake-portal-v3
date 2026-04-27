@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/react'
 import { supabase } from './lib/supabase'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTheme } from './hooks/useTheme'
@@ -1130,6 +1131,7 @@ export default function App() {
       )}
 
       {idleWarningModal}
+      <Analytics />
     </>
   )
 }
