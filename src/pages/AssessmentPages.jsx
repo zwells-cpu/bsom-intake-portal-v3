@@ -333,7 +333,7 @@ function getDuplicateBcbaGroups(records) {
     .filter(group => group.names.length > 1)
 }
 
-function ManageBcbasSection({ officeOptions = [], onRefreshLookups }) {
+function ManageBcbasContent({ officeOptions = [], onRefreshLookups }) {
   const [staff, setStaff] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
@@ -426,12 +426,8 @@ function ManageBcbasSection({ officeOptions = [], onRefreshLookups }) {
   }
 
   return (
-    <div className="card card-pad" style={{ marginBottom: 22 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap' }}>
-        <div>
-          <div className="section-hdr" style={{ margin: 0 }}>Manage BCBAs</div>
-          <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 4 }}>Add, edit, or deactivate BCBA dropdown options.</div>
-        </div>
+    <>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, alignItems: 'center', marginBottom: 16 }}>
         {editingId ? <button type="button" className="btn-ghost" onClick={resetForm}>Cancel Edit</button> : null}
       </div>
 
@@ -511,6 +507,48 @@ function ManageBcbasSection({ officeOptions = [], onRefreshLookups }) {
           </tbody>
         </table>
       </div>
+    </>
+  )
+}
+
+function ManageBcbasModal({ isOpen, onClose, officeOptions = [], onRefreshLookups }) {
+  useEffect(() => {
+    if (!isOpen) return undefined
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onClose()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
+  if (!isOpen) return null
+
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div
+        className="modal"
+        onClick={event => event.stopPropagation()}
+        style={{
+          width: 'min(100%, 960px)',
+          maxWidth: 960,
+          maxHeight: '88vh',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <div className="modal-head">
+          <div>
+            <div className="modal-title">Manage BCBAs</div>
+            <div className="modal-sub">Add, edit, or deactivate BCBA dropdown options.</div>
+          </div>
+          <button className="close-btn" onClick={onClose}>x</button>
+        </div>
+        <div className="modal-body" style={{ display: 'block', overflowY: 'auto' }}>
+          <ManageBcbasContent officeOptions={officeOptions} onRefreshLookups={onRefreshLookups} />
+        </div>
+      </div>
     </div>
   )
 }
@@ -527,6 +565,7 @@ export function BCBAAssignmentsPage({
   onRefreshLookups,
 }) {
   const [selectedBcbaKey, setSelectedBcbaKey] = useState(null)
+  const [manageBcbasOpen, setManageBcbasOpen] = useState(false)
 
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
@@ -598,9 +637,14 @@ export function BCBAAssignmentsPage({
 
   return (
     <>
-      <div className="pg-hdr">
-        <div className="pg-hdr-title">BCBA Assignments</div>
-        <div className="pg-hdr-sub">Caseload distribution and assignment tracking across BCBAs</div>
+      <div className="pg-hdr" style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div>
+          <div className="pg-hdr-title">BCBA Assignments</div>
+          <div className="pg-hdr-sub">Caseload distribution and assignment tracking across BCBAs</div>
+        </div>
+        <button type="button" className="btn-ghost" onClick={() => setManageBcbasOpen(true)} style={{ fontSize: 12, padding: '8px 12px' }}>
+          Manage BCBAs
+        </button>
       </div>
       <div className="stats-row stats-3" style={{ marginBottom: 22 }}>
         <ClickableStatCard value={assessData.length} label="Total Clients" color="#6366f1" active={activeFilter?.key === 'all'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('all', 'BCBA Assignments: All Clients') }} />
@@ -608,8 +652,6 @@ export function BCBAAssignmentsPage({
         <ClickableStatCard value={Object.keys(byBCBA).length} label="Active BCBAs" color="#22c55e" active={activeFilter?.key === 'assigned'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('assigned', 'BCBA Assignments: Assigned to BCBA') }} />
       </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered BCBA assignments" />
-
-      <ManageBcbasSection officeOptions={officeOptions} onRefreshLookups={onRefreshLookups} />
 
       {duplicateGroups.length > 0 ? (
         <div className="card card-pad" style={{ marginBottom: 22, borderColor: '#f59e0b55' }}>
@@ -708,6 +750,13 @@ export function BCBAAssignmentsPage({
           </table>
         </div>
       </div>
+
+      <ManageBcbasModal
+        isOpen={manageBcbasOpen}
+        onClose={() => setManageBcbasOpen(false)}
+        officeOptions={officeOptions}
+        onRefreshLookups={onRefreshLookups}
+      />
     </>
   )
 }
