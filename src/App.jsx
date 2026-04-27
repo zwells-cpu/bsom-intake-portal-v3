@@ -24,6 +24,7 @@ import { PipelineOverviewPage, ReferralAgingPage, ClinicVolumePage, ConversionRa
 import { createActivityLog } from './lib/activityLogs'
 import { getAssessmentRecordId, needsInsuranceVerification } from './lib/utils'
 import { API_BASE } from './lib/api'
+import { formatProfileAccessLabel, formatRoleLabel, normalizeProfile } from './lib/profileUtils'
 
 const NAV_STATE_KEY = 'bsom-portal-nav'
 
@@ -214,7 +215,7 @@ export default function App() {
         setLoginError(profileError.message)
         setProfile(null)
       } else {
-        setProfile(data ?? null)
+        setProfile(normalizeProfile(data))
       }
 
       setProfileLoading(false)
@@ -338,8 +339,8 @@ export default function App() {
   }
 
   const displayName = profile?.full_name || session?.user?.email || 'Signed-in user'
-  const displayRole = profile?.role || 'Role pending'
-  const displayOffice = profile?.office || 'Office pending'
+  const displayRole = profile ? formatRoleLabel(profile.role) : 'Role pending'
+  const accessLabel = profile ? formatProfileAccessLabel(profile) : 'Role pending'
   const formatReferralName = (record) => {
     if (!record) return 'Referral'
     const fullName = `${record.first_name || ''} ${record.last_name || ''}`.trim()
@@ -881,6 +882,46 @@ export default function App() {
     )
   }
 
+  if (profile && profile.is_active === false) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'grid',
+        placeItems: 'center',
+        padding: 32,
+        background: 'var(--bg)',
+      }}>
+        <div style={{
+          width: '100%',
+          maxWidth: 440,
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 18,
+          boxShadow: 'var(--shadow)',
+          padding: 28,
+          display: 'grid',
+          gap: 16,
+        }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--red)', marginBottom: 8 }}>
+              Access Disabled
+            </div>
+            <h1 style={{ margin: 0, fontSize: 24 }}>Your portal access is inactive.</h1>
+          </div>
+          <p style={{ margin: 0, color: 'var(--muted)', fontSize: 14, lineHeight: 1.5 }}>
+            This account is signed in, but the staff profile is inactive. Please contact a portal administrator if you need access restored.
+          </p>
+          <div style={{ fontSize: 12, color: 'var(--dim)' }}>
+            {displayName} · {accessLabel}
+          </div>
+          <button className="btn-save" onClick={handleSignOut} disabled={signOutPending}>
+            {signOutPending ? 'Signing out...' : 'Sign Out'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   if (screen === 'home') {
     return (
       <>
@@ -1005,7 +1046,7 @@ export default function App() {
               <div className="topbar-profile">
                 <div className="topbar-profile-text">
                   <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>
-                    {profileLoading ? 'Loading profile' : `${displayRole} - ${displayOffice}`}
+                    {profileLoading ? 'Loading profile' : accessLabel}
                   </div>
                   <div style={{ fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</div>
                 </div>
