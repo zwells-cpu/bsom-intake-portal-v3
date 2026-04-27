@@ -427,7 +427,7 @@ textarea{
 }
 .page-inner-wide{ max-width:1600px; }
 /* ── Common Components ── */
-.card{ background:var(--surface); border:1px solid var(--border); border-radius:14px; min-width:0; }
+.card{ background:var(--surface); border:1px solid var(--border); border-radius:16px; min-width:0; }
 .card-pad{ padding:22px; }
 .section-hdr{
   font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase;
@@ -512,9 +512,9 @@ select option{ background:var(--surface); }
 .stats-3{ grid-template-columns:repeat(3,1fr); }
 .stats-2{ grid-template-columns:repeat(2,1fr); }
 .stat-box{
-  background:var(--surface); border:1px solid var(--border); border-radius:13px;
+  background:var(--surface); border:1px solid var(--border); border-radius:14px;
   padding:18px 22px; position:relative; overflow:hidden;
-  min-width:0;
+  min-width:0; transition:border-color 0.15s ease,box-shadow 0.15s ease;
 }
 .stat-box-clickable{
   width:100%; text-align:left; cursor:pointer; transition:border-color 0.15s,transform 0.15s,box-shadow 0.15s;
@@ -538,7 +538,7 @@ select option{ background:var(--surface); }
   margin-bottom:10px;
   opacity:0.78;
 }
-.stat-num{ font-size:30px; font-weight:800; font-family:"DM Mono",monospace; line-height:1; margin-bottom:4px; }
+.stat-num{ font-size:32px; font-weight:800; font-family:"DM Mono",monospace; line-height:1; margin-bottom:5px; }
 .stat-label{ font-size:12px; color:var(--muted); font-weight:500; }
 .stat-sub{ font-size:11px; color:var(--dim); margin-top:2px; }
 .section-title-with-icon{
@@ -572,8 +572,8 @@ select option{ background:var(--surface); }
 }
 table{ width:100%; min-width:max-content; border-collapse:separate; border-spacing:0 6px; font-size:13px; }
 th{
-  background:var(--surface2); color:var(--muted); font-size:11px; font-weight:700;
-  text-transform:uppercase; letter-spacing:0.06em; padding:13px 14px;
+  background:var(--surface2); color:var(--muted); font-size:10.5px; font-weight:700;
+  text-transform:uppercase; letter-spacing:0.08em; padding:13px 14px;
   text-align:left; border-bottom:1px solid var(--border); white-space:nowrap;
 }
 th.sort-asc::after{ content:" ↑"; color:var(--accent); }
@@ -583,7 +583,7 @@ th[onclick]:hover{ color:var(--text); }
 td{ padding:13px 14px; border-bottom:1px solid #0f172a; vertical-align:middle; }
 tr{ transition:background 0.15s ease, transform 0.08s ease; }
 .row-hover{ cursor:pointer; }
-.row-hover:hover{ background:#1e293b55; transform:translateY(-1px); }
+.row-hover:hover{ background:rgba(30,41,59,0.32); }
 .table-compact th,
 .table-compact td{
   padding-left:12px;
@@ -1278,4 +1278,35 @@ tr{ transition:background 0.15s ease, transform 0.08s ease; }
   }
   .hp-kpi-value{ font-size:26px; }
   .hp-kpi-card{ padding:16px 18px; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Module Page Elevation — page headers and polish
+   ═══════════════════════════════════════════════════════════ */
+
+/* Reusable page header block used across all module pages */
+.pg-hdr{
+  margin-bottom:24px;
+}
+.pg-hdr-title{
+  font-size:20px;
+  font-weight:800;
+  letter-spacing:-0.025em;
+  color:var(--text);
+  line-height:1.2;
+  margin-bottom:5px;
+}
+.pg-hdr-sub{
+  font-size:13px;
+  color:var(--muted);
+  font-weight:400;
+  line-height:1.5;
+}
+
+/* Sidebar brand refinement — "BSOM Intake Portal" is longer, so allow slight wrapping */
+.sidebar-title{
+  font-weight:800;
+  font-size:11.5px;
+  letter-spacing:-0.01em;
+  line-height:1.35;
 }

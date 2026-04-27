@@ -88,9 +88,9 @@ export function PipelineOverviewPage({ refs, assessData = [], openModulePage }) 
 
   return (
     <>
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.01em' }}>Pipeline Overview</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Full view of where every referral sits in the intake pipeline</div>
+      <div className="pg-hdr">
+        <div className="pg-hdr-title">Pipeline Overview</div>
+        <div className="pg-hdr-sub">Full view of where every referral sits in the intake pipeline</div>
       </div>
 
       <div className="stats-row" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', marginBottom: 24 }}>
@@ -175,9 +175,9 @@ export function ReferralAgingPage({ refs, onSelectRef }) {
 
   return (
     <>
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.01em' }}>Referral Aging</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>
+      <div className="pg-hdr">
+        <div className="pg-hdr-title">Referral Aging</div>
+        <div className="pg-hdr-sub">
           How long referrals have been in the system. &nbsp;
           <span style={{ color: '#22c55e' }}>● &lt;{WARN}d</span>
           <span style={{ marginLeft: 8, color: '#f59e0b' }}>● {WARN}–{DANGER}d</span>
@@ -264,9 +264,9 @@ export function ClinicVolumePage({ refs }) {
 
   return (
     <>
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.01em' }}>Clinic Referral Volume</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Referral counts, open intake volume, and monthly trends by clinic</div>
+      <div className="pg-hdr">
+        <div className="pg-hdr-title">Clinic Referral Volume</div>
+        <div className="pg-hdr-sub">Referral counts, open intake volume, and monthly trends by clinic</div>
       </div>
 
       {topClinic && (
@@ -398,9 +398,9 @@ export function ConversionRatePage({ refs }) {
 
   return (
     <>
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.01em' }}>Conversion Rate</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Where families enter the pipeline — and where they are lost</div>
+      <div className="pg-hdr">
+        <div className="pg-hdr-title">Conversion Rate</div>
+        <div className="pg-hdr-sub">Where families enter the pipeline — and where they are lost</div>
       </div>
 
       <div className="stats-row stats-3" style={{ marginBottom: 20 }}>
@@ -512,9 +512,9 @@ export function IntakePerformancePage({ refs }) {
 
   return (
     <>
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.01em' }}>Intake Performance</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Staff productivity, completion rates, and monthly intake trends</div>
+      <div className="pg-hdr">
+        <div className="pg-hdr-title">Intake Performance</div>
+        <div className="pg-hdr-sub">Staff productivity, completion rates, and monthly intake trends</div>
       </div>
 
       <div className="stats-row stats-4" style={{ marginBottom: 24 }}>

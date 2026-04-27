@@ -131,9 +131,9 @@ export function NewReferralPage({ onSave, saving }) {
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto' }}>
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.01em', marginBottom: 4 }}>New Referral</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13 }}>Step {step + 1} of {STEPS.length}: {STEPS[step]}</div>
+      <div className="pg-hdr" style={{ marginBottom: 28 }}>
+        <div className="pg-hdr-title">New Referral</div>
+        <div className="pg-hdr-sub">Step {step + 1} of {STEPS.length}: {STEPS[step]}</div>
       </div>
 
       <StepDots step={step} setStep={setStep} />

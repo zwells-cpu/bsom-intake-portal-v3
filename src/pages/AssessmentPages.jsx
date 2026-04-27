@@ -138,8 +138,8 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
   const denied = filtered.filter(record => ['Denied', 'Appeal Pending'].includes(record.authorization_status)).length
   return (
     <>
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontWeight: 800, fontSize: 18 }}>Initial Assessment Board</div>
+      <div className="pg-hdr">
+        <div className="pg-hdr-title">Initial Assessment Board</div>
       </div>
       <div className="stats-row stats-4" style={{ marginBottom: 20 }}>
         <ClickableStatCard value={filtered.length} label="Total Clients" color="#6366f1" sublabel="showing" active={activeFilter?.key === 'all'} onClick={() => toggleFilter('all', 'Assessment Tracker: All Clients')} />
@@ -220,9 +220,9 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
 
   return (
     <>
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontWeight: 800, fontSize: 18 }}>Parent Interviews</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Schedule, track, and complete parent interviews for initial assessments</div>
+      <div className="pg-hdr">
+        <div className="pg-hdr-title">Parent Interviews</div>
+        <div className="pg-hdr-sub">Schedule, track, and complete parent interviews for initial assessments</div>
       </div>
       <div className="stats-row stats-4" style={{ marginBottom: 22 }}>
         <ClickableStatCard value={awaiting.length} label="Awaiting Assignment" color="#fb923c" active={activeFilter?.key === 'awaiting-assignment'} onClick={() => toggleFilter('awaiting-assignment', 'Parent Interviews: Awaiting Assignment')} />
@@ -321,9 +321,9 @@ export function BCBAAssignmentsPage({ assessData, assessLoading, onSelectAssess,
 
   return (
     <>
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontWeight: 800, fontSize: 18 }}>BCBA Assignments</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Caseload distribution and assignment tracking across BCBAs</div>
+      <div className="pg-hdr">
+        <div className="pg-hdr-title">BCBA Assignments</div>
+        <div className="pg-hdr-sub">Caseload distribution and assignment tracking across BCBAs</div>
       </div>
       <div className="stats-row stats-3" style={{ marginBottom: 22 }}>
         <ClickableStatCard value={assessData.length} label="Total Clients" color="#6366f1" active={activeFilter?.key === 'all'} onClick={() => toggleFilter('all', 'BCBA Assignments: All Clients')} />
@@ -405,9 +405,9 @@ export function AssessmentProgressPage({ assessData, assessLoading, onSelectAsse
 
   return (
     <>
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontWeight: 800, fontSize: 18 }}>Assessment Progress</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Track Vineland, SRS-2, VBMAPP, and Socially Savvy assessments</div>
+      <div className="pg-hdr">
+        <div className="pg-hdr-title">Assessment Progress</div>
+        <div className="pg-hdr-sub">Track Vineland, SRS-2, VBMAPP, and Socially Savvy assessments</div>
       </div>
       <div className="stats-row stats-3" style={{ marginBottom: 22 }}>
         <ClickableStatCard value={notStarted.length} label="Not Started" color="#ef4444" active={activeFilter?.key === 'not-started'} onClick={() => toggleFilter('not-started', 'Assessment Progress: Not Started')} />
@@ -484,9 +484,9 @@ export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess, 
 
   return (
     <>
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontWeight: 800, fontSize: 18 }}>Treatment Plan Status</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Track treatment plan drafting, completion, and finalization</div>
+      <div className="pg-hdr">
+        <div className="pg-hdr-title">Treatment Plan Status</div>
+        <div className="pg-hdr-sub">Track treatment plan drafting, completion, and finalization</div>
       </div>
       <div className="stats-row stats-3" style={{ marginBottom: 12 }}>
         {TX_STATUSES.map(status => (
@@ -553,9 +553,9 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
 
   return (
     <>
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontWeight: 800, fontSize: 18 }}>Ready for Services</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Clients who have completed all pre-service requirements</div>
+      <div className="pg-hdr">
+        <div className="pg-hdr-title">Ready for Services</div>
+        <div className="pg-hdr-sub">Clients who have completed all pre-service requirements</div>
       </div>
       <div className="stats-row stats-4" style={{ marginBottom: 22 }}>
         <ClickableStatCard value={ready.length} label="Ready for Services" color="#22c55e" active={activeFilter?.key === 'ready'} onClick={() => toggleFilter('ready', 'Ready for Services')} />

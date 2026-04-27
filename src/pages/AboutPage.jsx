@@ -29,9 +29,9 @@ const locations = [
 export function AboutPortalPage() {
   return (
     <div style={{ width: '100%', maxWidth: 1100, margin: '0 auto' }}>
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ fontWeight: 800, fontSize: 22, letterSpacing: '-0.02em', marginBottom: 6 }}>About the Portal</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13 }}>BSOM Intake Portal - internal operations tool</div>
+      <div className="pg-hdr" style={{ marginBottom: 28 }}>
+        <div className="pg-hdr-title">About the BSOM Intake Portal</div>
+        <div className="pg-hdr-sub">Internal operations tool for Behavioral Solutions of Mississippi</div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, alignItems: 'start' }}>
@@ -68,9 +68,9 @@ export function AboutPortalPage() {
 export function LocationsPage() {
   return (
     <div style={{ width: '100%', maxWidth: 1100, margin: '0 auto' }}>
-      <div style={{ marginBottom: 34 }}>
-        <div style={{ fontWeight: 800, fontSize: 22, letterSpacing: '-0.02em', marginBottom: 4 }}>Office Locations</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13 }}>BSOM clinic locations and contact information</div>
+      <div className="pg-hdr" style={{ marginBottom: 34 }}>
+        <div className="pg-hdr-title">Office Locations</div>
+        <div className="pg-hdr-sub">BSOM Intake Portal — clinic locations and contact information</div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 30, alignItems: 'stretch' }}>

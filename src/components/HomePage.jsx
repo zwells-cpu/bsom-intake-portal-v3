@@ -152,7 +152,7 @@ export function HomePage({
           {/* Hero */}
           <div className="hp-hero">
             <div className="hp-eyebrow">Behavioral Solutions of Mississippi</div>
-            <h1 className="hp-title">Intake Operations Portal</h1>
+            <h1 className="hp-title">Intake Portal</h1>
             {displayName && (
               <p className="hp-greeting">{getGreeting(displayName)}</p>
             )}

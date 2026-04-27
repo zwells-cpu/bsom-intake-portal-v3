@@ -31,9 +31,9 @@ export function IntakeDashboard({ refs, onSelectRef, openModulePage }) {
 
   return (
     <>
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.01em', marginBottom: 4 }}>Intake Dashboard</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13 }}>Real-time overview of all active referrals and action items</div>
+      <div className="pg-hdr">
+        <div className="pg-hdr-title">Intake Dashboard</div>
+        <div className="pg-hdr-sub">Real-time overview of all active referrals and action items</div>
       </div>
 
       <div className="stats-row stats-4" style={{ marginBottom: 24 }}>
@@ -149,9 +149,9 @@ export function PendingDocsPage({ refs, onSelectRef, statFilter, onSetStatFilter
 
   return (
     <>
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.01em' }}>Pending Documents</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Clients requiring document follow-up</div>
+      <div className="pg-hdr">
+        <div className="pg-hdr-title">Pending Documents</div>
+        <div className="pg-hdr-sub">Clients requiring document follow-up</div>
       </div>
       <div className="stats-row stats-4" style={{ marginBottom: 22 }}>
         <ClickableStatCard value={pending.length} label="Total Pending" color="#f59e0b" active={activeFilter?.key === 'total-pending'} onClick={() => toggleFilter('total-pending', 'Pending Documents')} />
@@ -207,9 +207,9 @@ export function InsuranceVerifPage({ refs, onSelectRef, statFilter, onSetStatFil
 
   return (
     <>
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.01em' }}>Insurance Verification</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Track insurance verification status across all active referrals</div>
+      <div className="pg-hdr">
+        <div className="pg-hdr-title">Insurance Verification</div>
+        <div className="pg-hdr-sub">Track insurance verification status across all active referrals</div>
       </div>
       <div className="stats-row stats-4" style={{ marginBottom: 22 }}>
         <ClickableStatCard value={verified.length} label="Verified" color="#22c55e" active={activeFilter?.key === 'verified'} onClick={() => toggleFilter('verified', 'Insurance Verification: Verified')} />
@@ -272,9 +272,9 @@ export function NonResponsivePage({ refs, onRestore, statFilter, onClearStatFilt
   const filteredRows = nr.filter(r => matchesStatFilter(r, activeFilter))
   return (
     <>
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontWeight: 800, fontSize: 18 }}>Non-Responsive / Referred Out</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Clients who could not be reached or were referred elsewhere</div>
+      <div className="pg-hdr">
+        <div className="pg-hdr-title">Non-Responsive / Referred Out</div>
+        <div className="pg-hdr-sub">Clients who could not be reached or were referred elsewhere</div>
       </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing non-responsive records" />
       <div className="card">

@@ -18,7 +18,7 @@ export function Sidebar({ module, subpage, setSubpage, goHome, pendingCount, nrC
           <img src="/bsom-logo.jpg" alt="BSOM" onError={e => { e.target.style.display = 'none' }} />
         </div>
         <div>
-          <div className="sidebar-title">BSOM Portal</div>
+          <div className="sidebar-title">BSOM Intake Portal</div>
           <div className="sidebar-sub">{m?.name}</div>
         </div>
       </div>

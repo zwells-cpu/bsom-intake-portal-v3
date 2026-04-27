@@ -150,9 +150,9 @@ export function ActivityLogPage({ activityRefreshKey = 0 }) {
 
   return (
     <>
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontWeight: 800, fontSize: 18, letterSpacing: '-0.01em', marginBottom: 4 }}>Activity Log</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13 }}>Full system activity history across referrals and assessments</div>
+      <div className="pg-hdr">
+        <div className="pg-hdr-title">Activity Log</div>
+        <div className="pg-hdr-sub">Full system activity history across referrals and assessments</div>
       </div>
 
       <ActivityLogList logs={logs} loading={loading} emptyText="No recent activity yet." />

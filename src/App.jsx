@@ -763,7 +763,7 @@ export default function App() {
                 Behavioral Solutions of Mississippi
               </div>
               <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>
-                Intake Operations Portal
+                BSOM Intake Portal
               </div>
             </div>
           </div>
