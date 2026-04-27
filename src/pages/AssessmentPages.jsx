@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { PaStatusBadge } from '../components/Badge'
 import { NotifyModal } from '../components/NotifyModal'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
-import { cleanLookupValue, normalizeLookupValue } from '../lib/lookups'
+import { cleanLookupValue, createBcbaStaff, deactivateBcbaStaff, getBcbaStaffRecords, normalizeLookupValue, optionValues, updateBcbaStaff } from '../lib/lookups'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
 import { formatDisplayDate, getAssessmentLifecycleStatus, getAssessmentRecordId, getAssessmentWorkflowProgress, getAssessmentWorkflowStatus, getAuthorizationStatus, isAuthorizationApproved, normalizeTreatmentPlanStatus } from '../lib/utils'
 
@@ -323,6 +323,188 @@ function getDuplicateBcbaGroups(records) {
     .filter(group => group.names.length > 1)
 }
 
+function ManageBcbasSection({ officeOptions = [], onRefreshLookups }) {
+  const [staff, setStaff] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
+  const [actionError, setActionError] = useState(null)
+  const [message, setMessage] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [busyId, setBusyId] = useState(null)
+  const [editingId, setEditingId] = useState(null)
+  const [form, setForm] = useState({ full_name: '', email: '', office: '' })
+  const officeValues = optionValues(officeOptions)
+
+  const resetForm = () => {
+    setEditingId(null)
+    setForm({ full_name: '', email: '', office: '' })
+  }
+
+  const loadStaff = async () => {
+    setLoading(true)
+    setLoadError(null)
+    try {
+      const data = await getBcbaStaffRecords()
+      setStaff(data)
+    } catch (err) {
+      setLoadError(err.message || 'Failed to load BCBAs.')
+      setStaff([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadStaff()
+  }, [])
+
+  const startEdit = (record) => {
+    setEditingId(record.id)
+    setForm({
+      full_name: cleanLookupValue(record.full_name),
+      email: record.email || '',
+      office: record.office || '',
+    })
+    setActionError(null)
+    setMessage(null)
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    const fullName = cleanLookupValue(form.full_name)
+    if (!fullName) {
+      setActionError('BCBA name is required.')
+      return
+    }
+
+    setSaving(true)
+    setActionError(null)
+    setMessage(null)
+    try {
+      if (editingId) {
+        await updateBcbaStaff(editingId, form)
+        setMessage('BCBA updated.')
+      } else {
+        await createBcbaStaff(form)
+        setMessage('BCBA added.')
+      }
+      resetForm()
+      await loadStaff()
+      await onRefreshLookups?.()
+    } catch (err) {
+      setActionError(err.message || 'Could not save BCBA.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeactivate = async (record) => {
+    setBusyId(record.id)
+    setActionError(null)
+    setMessage(null)
+    try {
+      await deactivateBcbaStaff(record.id)
+      setMessage(`${cleanLookupValue(record.full_name)} deactivated.`)
+      await loadStaff()
+      await onRefreshLookups?.()
+      if (editingId === record.id) resetForm()
+    } catch (err) {
+      setActionError(err.message || 'Could not deactivate BCBA.')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  return (
+    <div className="card card-pad" style={{ marginBottom: 22 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap' }}>
+        <div>
+          <div className="section-hdr" style={{ margin: 0 }}>Manage BCBAs</div>
+          <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 4 }}>Add, edit, or deactivate BCBA dropdown options.</div>
+        </div>
+        {editingId ? <button type="button" className="btn-ghost" onClick={resetForm}>Cancel Edit</button> : null}
+      </div>
+
+      {loadError ? (
+        <div className="error-bar" style={{ marginBottom: 14 }}>
+          Failed to load BCBAs: {loadError}
+          <button className="x-btn" onClick={() => setLoadError(null)}>Close</button>
+        </div>
+      ) : null}
+
+      {actionError ? (
+        <div className="error-bar" style={{ marginBottom: 14 }}>
+          {actionError}
+          <button className="x-btn" onClick={() => setActionError(null)}>Close</button>
+        </div>
+      ) : null}
+
+      {message ? (
+        <div style={{ marginBottom: 14, borderRadius: 10, border: '1px solid #16a34a33', background: '#16a34a12', color: '#16a34a', padding: '10px 12px', fontSize: 12, fontWeight: 700 }}>
+          {message}
+        </div>
+      ) : null}
+
+      <form onSubmit={handleSubmit} className="responsive-review-grid" style={{ gap: 12, marginBottom: 16 }}>
+        <div>
+          <div className="label">BCBA Name</div>
+          <input className="edit-input" value={form.full_name} onChange={event => setForm(prev => ({ ...prev, full_name: event.target.value }))} placeholder="Full name" />
+        </div>
+        <div>
+          <div className="label">Email</div>
+          <input className="edit-input" type="email" value={form.email} onChange={event => setForm(prev => ({ ...prev, email: event.target.value }))} placeholder="Optional" />
+        </div>
+        <div>
+          <div className="label">Office</div>
+          {officeValues.length ? (
+            <select className="edit-select" value={form.office} onChange={event => setForm(prev => ({ ...prev, office: event.target.value }))}>
+              <option value="">Optional</option>
+              {officeValues.map(office => <option key={office} value={office}>{office}</option>)}
+            </select>
+          ) : (
+            <input className="edit-input" value={form.office} onChange={event => setForm(prev => ({ ...prev, office: event.target.value }))} placeholder="Optional" />
+          )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+          <button className="btn-save" type="submit" disabled={saving || !cleanLookupValue(form.full_name)} style={{ width: '100%' }}>
+            {saving ? 'Saving...' : editingId ? 'Save BCBA' : 'Add BCBA'}
+          </button>
+        </div>
+      </form>
+
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Office</th><th>Status</th><th /></tr></thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={5} style={{ padding: 28, textAlign: 'center', color: 'var(--dim)' }}>Loading BCBAs...</td></tr>
+            ) : loadError ? (
+              <tr><td colSpan={5} style={{ padding: 28, textAlign: 'center', color: 'var(--red)' }}>Failed to load BCBAs.</td></tr>
+            ) : staff.length === 0 ? (
+              <tr><td colSpan={5} style={{ padding: 28, textAlign: 'center', color: 'var(--dim)' }}>No BCBAs found.</td></tr>
+            ) : staff.map(record => (
+              <tr key={record.id || record.full_name}>
+                <td style={{ fontWeight: 800 }}>{cleanLookupValue(record.full_name)}</td>
+                <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.email || '--'}</td>
+                <td><span className="office-pill">{record.office || '--'}</span></td>
+                <td>{record.is_active === false ? <span className="bdg" style={{ background: '#64748b20', color: '#94a3b8', border: '1px solid #64748b35' }}>Inactive</span> : <span className="bdg" style={{ background: '#22c55e20', color: '#22c55e', border: '1px solid #22c55e35' }}>Active</span>}</td>
+                <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <button type="button" className="btn-ghost" onClick={() => startEdit(record)} style={{ padding: '6px 10px', fontSize: 12, marginRight: 8 }}>Edit</button>
+                  {record.is_active !== false ? (
+                    <button type="button" className="btn-ghost" onClick={() => handleDeactivate(record)} disabled={busyId === record.id} style={{ padding: '6px 10px', fontSize: 12, color: '#ef4444', borderColor: '#ef444440' }}>
+                      {busyId === record.id ? 'Deactivating...' : 'Deactivate'}
+                    </button>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 export function BCBAAssignmentsPage({
   assessData,
   assessLoading,
@@ -331,6 +513,8 @@ export function BCBAAssignmentsPage({
   onSetStatFilter,
   onClearStatFilter,
   bcbaOptions = [],
+  officeOptions = [],
+  onRefreshLookups,
 }) {
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
@@ -370,6 +554,8 @@ export function BCBAAssignmentsPage({
         <ClickableStatCard value={Object.keys(byBCBA).length} label="Active BCBAs" color="#22c55e" active={activeFilter?.key === 'assigned'} onClick={() => toggleFilter('assigned', 'BCBA Assignments: Assigned to BCBA')} />
       </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered BCBA assignments" />
+
+      <ManageBcbasSection officeOptions={officeOptions} onRefreshLookups={onRefreshLookups} />
 
       {duplicateGroups.length > 0 ? (
         <div className="card card-pad" style={{ marginBottom: 22, borderColor: '#f59e0b55' }}>

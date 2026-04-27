@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { getBcbaStaff, getInsurancePayers, getOffices, getReferralSources } from '../lib/lookups'
 
 export function useLookups() {
@@ -10,30 +10,21 @@ export function useLookups() {
     referralSourceOptions: [],
   })
 
-  useEffect(() => {
-    let cancelled = false
-
-    const load = async () => {
-      setLoading(true)
-      const [bcbaOptions, officeOptions, insuranceOptions, referralSourceOptions] = await Promise.all([
-        getBcbaStaff(),
-        getOffices(),
-        getInsurancePayers(),
-        getReferralSources(),
-      ])
-
-      if (!cancelled) {
-        setLookups({ bcbaOptions, officeOptions, insuranceOptions, referralSourceOptions })
-        setLoading(false)
-      }
-    }
-
-    load()
-
-    return () => {
-      cancelled = true
-    }
+  const loadLookups = useCallback(async () => {
+    setLoading(true)
+    const [bcbaOptions, officeOptions, insuranceOptions, referralSourceOptions] = await Promise.all([
+      getBcbaStaff(),
+      getOffices(),
+      getInsurancePayers(),
+      getReferralSources(),
+    ])
+    setLookups({ bcbaOptions, officeOptions, insuranceOptions, referralSourceOptions })
+    setLoading(false)
   }, [])
 
-  return { loading, ...lookups }
+  useEffect(() => {
+    loadLookups()
+  }, [loadLookups])
+
+  return { loading, reloadLookups: loadLookups, ...lookups }
 }

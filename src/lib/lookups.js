@@ -63,8 +63,75 @@ async function fetchLookup(path, key = 'name') {
   }
 }
 
+async function apiJson(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, options)
+  const text = await res.text()
+  let body = null
+
+  try {
+    body = text ? JSON.parse(text) : null
+  } catch {
+    body = text
+  }
+
+  if (!res.ok) {
+    const message = body?.error || body?.message || text || `HTTP ${res.status}`
+    throw new Error(message)
+  }
+
+  return body
+}
+
 export function getBcbaStaff() {
   return fetchLookup('/bcba-staff', 'full_name')
+}
+
+export async function getBcbaStaffRecords() {
+  const data = await apiJson('/bcba-staff')
+  return Array.isArray(data)
+    ? data.slice().sort((a, b) => {
+      const sortA = getSortOrder(a)
+      const sortB = getSortOrder(b)
+      if (sortA !== sortB) return sortA - sortB
+      return cleanLookupValue(a.full_name).localeCompare(cleanLookupValue(b.full_name))
+    })
+    : []
+}
+
+export function createBcbaStaff(input) {
+  const payload = {
+    full_name: cleanLookupValue(input?.full_name),
+    email: cleanLookupValue(input?.email) || null,
+    office: cleanLookupValue(input?.office) || null,
+  }
+
+  if (!payload.full_name) throw new Error('BCBA name is required.')
+
+  return apiJson('/bcba-staff', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateBcbaStaff(id, input) {
+  const payload = {
+    full_name: cleanLookupValue(input?.full_name),
+    email: cleanLookupValue(input?.email) || null,
+    office: cleanLookupValue(input?.office) || null,
+  }
+
+  if (!payload.full_name) throw new Error('BCBA name is required.')
+
+  return apiJson(`/bcba-staff/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export function deactivateBcbaStaff(id) {
+  return apiJson(`/bcba-staff/${id}`, { method: 'DELETE' })
 }
 
 export function getOffices() {
