@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ConfirmationModal } from './ConfirmationModal'
 import { OFFICES, BOOL } from '../lib/constants'
+import { cleanBcbaName } from '../lib/bcbaStaff'
 import { getAssessmentLifecycleStatus, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 const INTERVIEW_STATUSES = ['Awaiting Assignment', 'Scheduled', 'Completed', 'No Show']
@@ -59,12 +60,12 @@ function TextField({ label, value, onChange, placeholder = '' }) {
   )
 }
 
-function SelectField({ label, value, onChange, options }) {
+function SelectField({ label, value, onChange, options, placeholder = '-- Select --' }) {
   return (
     <div>
       <div className="label">{label}</div>
       <select className="edit-select" value={value || ''} onChange={ev => onChange(ev.target.value)}>
-        <option value="">-- Select --</option>
+        <option value="">{placeholder}</option>
         {options.map(option => <option key={option} value={option}>{option}</option>)}
       </select>
     </div>
@@ -83,7 +84,7 @@ function DateField({ label, value, onChange }) {
   )
 }
 
-export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete }) {
+export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, bcbaStaff = [] }) {
   const [form, setForm] = useState(assessment)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -96,6 +97,17 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
   const recordId = form?.assessment_id ?? form?.id ?? null
   const clinic = form?.clinic || form?.office || ''
   const lifecycleStatus = getAssessmentLifecycleStatus(form)
+  const currentBcba = cleanBcbaName(form?.assigned_bcba)
+  const bcbaOptions = bcbaStaff
+    .filter(record => record?.is_active !== false)
+    .map(record => cleanBcbaName(record.full_name))
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b))
+  const matchingBcbaOption = bcbaOptions.find(option => option.toLowerCase() === currentBcba.toLowerCase())
+  const selectedBcbaValue = matchingBcbaOption || currentBcba
+  const assignedBcbaOptions = currentBcba && !matchingBcbaOption
+    ? [currentBcba, ...bcbaOptions]
+    : bcbaOptions
 
   const setField = (key) => (value) => setForm(prev => ({ ...prev, [key]: value }))
 
@@ -105,7 +117,7 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
     const patch = {
       client_name: form.client_name || '',
       clinic: form.clinic || form.office || '',
-      assigned_bcba: form.assigned_bcba || '',
+      assigned_bcba: selectedBcbaValue,
       caregiver: form.caregiver || '',
       caregiver_phone: form.caregiver_phone || '',
       caregiver_email: form.caregiver_email || '',
@@ -227,7 +239,7 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
               <TextField label="Client Name" value={form?.client_name} onChange={setField('client_name')} />
               <SelectField label="Clinic" value={form?.clinic || form?.office || ''} onChange={setField('clinic')} options={OFFICES} />
 
-              <TextField label="Assigned BCBA" value={form?.assigned_bcba} onChange={setField('assigned_bcba')} />
+              <SelectField label="Assigned BCBA" value={selectedBcbaValue} onChange={setField('assigned_bcba')} options={assignedBcbaOptions} placeholder="Select BCBA" />
             </div>
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Caregiver / Insurance</div>
@@ -249,7 +261,7 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete })
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Parent Interview Workflow</div>
             <div className="responsive-review-grid" style={{ gap: 12 }}>
-              <TextField label="Assigned BCBA" value={form?.assigned_bcba} onChange={setField('assigned_bcba')} />
+              <SelectField label="Assigned BCBA" value={selectedBcbaValue} onChange={setField('assigned_bcba')} options={assignedBcbaOptions} placeholder="Select BCBA" />
               <SelectField label="Parent Interview Status" value={form?.parent_interview_status} onChange={setField('parent_interview_status')} options={INTERVIEW_STATUSES} />
               <DateField label="Interview Scheduled" value={form?.parent_interview_scheduled_date} onChange={setField('parent_interview_scheduled_date')} />
               <DateField label="Interview Completed" value={form?.parent_interview_completed_date} onChange={setField('parent_interview_completed_date')} />
