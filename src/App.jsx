@@ -277,6 +277,7 @@ export default function App() {
   const active = useMemo(() => refs.filter(r => r.status === 'active'), [refs])
   const nr = useMemo(() => refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out'), [refs])
   const pending = useMemo(() => active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase())), [active])
+  const readyForInterview = useMemo(() => refs.filter(r => r.ready_for_parent_interview === true), [refs])
   const noIns = useMemo(() => active.filter(r => needsInsuranceVerification(r.insurance_verified)).length, [active])
   const operationsRefs = useMemo(() => refs, [refs])
   const operationsAssessData = useMemo(() => assessData, [assessData])
@@ -885,9 +886,15 @@ export default function App() {
           onEnterModule={enterModule}
           onAddReferral={() => openModulePage('intake', 'new')}
           onScheduleParentInterview={() => openModulePage('assessment', 'interviews')}
+          onEnterSubpage={openModulePage}
           theme={theme}
           setTheme={setTheme}
           displayName={displayName}
+          activeCount={active.length}
+          pendingDocsCount={pending.length}
+          readyForInterviewCount={readyForInterview.length}
+          assessmentsCount={assessData.length}
+          statsLoading={loading}
           topRightContent={(
             <div className="home-account-card">
               <div style={{ minWidth: 0 }}>

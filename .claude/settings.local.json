@@ -12,7 +12,8 @@
       "Read(//c/Users/zdom9/**)",
       "Bash(xargs grep *)",
       "Bash(grep -E \"\\\\.\\(sql|ts|js\\)$\")",
-      "Bash(xargs cat *)"
+      "Bash(xargs cat *)",
+      "Bash(npm run *)"
     ]
   }
 }
