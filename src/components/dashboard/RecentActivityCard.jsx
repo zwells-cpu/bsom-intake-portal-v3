@@ -107,6 +107,7 @@ function ActivityLogItem({ log, index }) {
 
   return (
     <div
+      className="activity-log-item"
       key={`${log.created_at || 'log'}-${log.entity_id || index}-${index}`}
       style={{
         background: 'linear-gradient(180deg, rgba(15,23,42,0.08), rgba(15,23,42,0))',
@@ -147,18 +148,18 @@ function ActivityLogItem({ log, index }) {
 
       {/* Human summary */}
       {summary && (
-        <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 4 }}>{summary}</div>
+        <div className="activity-log-summary" style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 4 }}>{summary}</div>
       )}
 
       {/* Change tracking line */}
       {changeLine && (
-        <div style={{ fontSize: 11, color: 'var(--dim)', fontFamily: "'DM Mono', monospace", marginBottom: 4, lineHeight: 1.5 }}>
+        <div className="activity-log-change" style={{ fontSize: 11, color: 'var(--dim)', fontFamily: "'DM Mono', monospace", marginBottom: 4, lineHeight: 1.5 }}>
           {changeLine}
         </div>
       )}
 
       {/* Actor */}
-      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--dim)' }}>
+      <div className="activity-log-actor" style={{ marginTop: 8, fontSize: 11, color: 'var(--dim)' }}>
         {actorLine}
       </div>
     </div>
