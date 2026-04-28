@@ -6,6 +6,7 @@ import {
   ASSESSMENT_COMPONENT_STATUSES,
   PARENT_INTERVIEW_STATUSES,
   TREATMENT_PLAN_STATUSES,
+  formatDate,
   getAssessmentLifecycleStatus,
   normalizeAssessmentComponentStatus,
   normalizeParentInterviewStatus,
@@ -221,9 +222,10 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, b
             <div className="section-hdr" style={{ marginTop: 18 }}>Treatment Plan / Authorization</div>
             <DetailRow label="Treatment Plan" value={normalizeTreatmentPlanStatus(form?.treatment_plan_status)} />
             <DetailRow label="Authorization Status" value={form?.authorization_status} />
+            <DetailRow label="Auth Approved" value={formatDate(form?.authorization_approved_date)} />
             <DetailRow label="Lifecycle Status" value={lifecycleStatus} />
             <DetailRow label="Ready for Services" value={form?.ready_for_services === true ? 'Yes' : 'No'} />
-            <DetailRow label="Active Client Date" value={form?.active_client_date} />
+            <DetailRow label="Active Client Date" value={formatDate(form?.active_client_date)} />
 
             <div style={{ marginTop: 14 }}>
               <div className="label">Notes</div>

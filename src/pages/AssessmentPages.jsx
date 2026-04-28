@@ -6,6 +6,7 @@ import { cleanLookupValue, createBcbaStaff, deactivateBcbaStaff, getBcbaStaffRec
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
 import {
   TREATMENT_PLAN_STATUSES,
+  formatDate,
   formatDisplayDate,
   getAssessmentLifecycleStatus,
   getAssessmentRecordId,
@@ -957,8 +958,8 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
                       </td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
                       <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
-                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: '#a5b4fc' }}>{formatDisplayDate(record.authorization_approved_date || record.pa_decision_date)}</td>
-                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.active_client_date ? '#22c55e' : '#fb923c' }}>{record.active_client_date ? formatDisplayDate(record.active_client_date) : 'Pending'}</td>
+                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: '#a5b4fc' }}>{formatDate(record.authorization_approved_date || record.pa_decision_date)}</td>
+                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.active_client_date ? '#22c55e' : '#fb923c' }}>{formatDate(record.active_client_date || 'Pending')}</td>
                       <td style={{ fontSize: 11, color: 'var(--dim)', maxWidth: 160 }}>{record.notes || '--'}</td>
                       <td style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 12 }}>Open</td>
                     </tr>

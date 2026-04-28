@@ -150,14 +150,36 @@ export function formatDisplayDate(value) {
 
   const normalized = String(value).trim()
   if (!normalized) return '--'
+  if (normalized.toLowerCase() === 'pending') return 'Pending'
 
-  const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2})/)
   if (match) {
     const [, year, month, day] = match
-    return `${month}-${day}-${year}`
+    return `${month}/${day}/${year}`
+  }
+
+  const parsed = new Date(normalized)
+  if (!Number.isNaN(parsed.getTime())) {
+    const month = String(parsed.getMonth() + 1).padStart(2, '0')
+    const day = String(parsed.getDate()).padStart(2, '0')
+    const year = parsed.getFullYear()
+    return `${month}/${day}/${year}`
   }
 
   return normalized
+}
+
+export function formatDate(value) {
+  if (value === null || value === undefined) return '--'
+
+  const normalized = String(value).trim()
+  if (!normalized) return '--'
+  if (normalized === 'Pending') return 'Pending'
+
+  const parsed = new Date(normalized)
+  if (Number.isNaN(parsed.getTime())) return '--'
+
+  return parsed.toLocaleDateString('en-US')
 }
 
 export function normalizeAutismDx(value, { emptyAsNotReceived = true } = {}) {
