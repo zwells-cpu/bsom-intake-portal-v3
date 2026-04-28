@@ -52,20 +52,21 @@ Open: http://localhost:5173
 
 4. Build for production
 npm run build
-Deploy (Vercel)
-Import repo into Vercel
-Add environment variables
-Deploy
-Project Structure
-src/
-├── components/
-├── hooks/
-├── lib/
-├── pages/
-├── styles/
-├── App.jsx
-└── main.jsx
-Notes
-Built as an internal operations system for behavioral health intake workflows
-Designed to replace spreadsheet-based intake tracking with a scalable system
-Continuously evolving based on operational needs
+```
+
+Output goes to `/dist`. Deploy to Vercel or Netlify.
+
+## Deploy to Vercel (recommended)
+
+1. Push this repo to GitHub
+2. Go to [vercel.com](https://vercel.com) → Import Project → select your repo
+3. Add environment variables in Vercel dashboard:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+4. Click Deploy — auto-deploys on every push to `main`
+
+## Notes
+
+- Assessment and Operations pages are scaffolded with stubs and ready for the next build phase
+- The original `index.html` single-file version is preserved separately for reference
+- All Supabase queries use the official `@supabase/supabase-js` v2 client
