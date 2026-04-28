@@ -4,42 +4,45 @@ import { NotifyModal } from '../components/NotifyModal'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
 import { cleanLookupValue, createBcbaStaff, deactivateBcbaStaff, getBcbaStaffRecords, normalizeLookupValue, optionValues, updateBcbaStaff } from '../lib/lookups'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
-import { formatDisplayDate, getAssessmentLifecycleStatus, getAssessmentRecordId, getAssessmentWorkflowProgress, getAssessmentWorkflowStatus, getAuthorizationStatus, isAuthorizationApproved, normalizeTreatmentPlanStatus } from '../lib/utils'
+import {
+  TREATMENT_PLAN_STATUSES,
+  formatDisplayDate,
+  getAssessmentLifecycleStatus,
+  getAssessmentRecordId,
+  getAssessmentWorkflowProgress,
+  getAssessmentWorkflowStatus,
+  getAuthorizationStatus,
+  isAuthorizationApproved,
+  normalizeAssessmentComponentStatus,
+  normalizeParentInterviewStatus,
+  normalizeTreatmentPlanStatus,
+  statusColor,
+} from '../lib/utils'
 
 function assessVal(value) {
+  const normalized = normalizeAssessmentComponentStatus(value)
+  if (!normalized) return <span style={{ color: 'var(--dim)', fontSize: 12 }}>--</span>
+
+  const color = statusColor(normalized)
+  return <span className="bdg" style={{ background: `${color}20`, color, border: `1px solid ${color}35` }}>{normalized}</span>
+}
+
+function simpleValueBadge(value) {
   if (!value) return <span style={{ color: 'var(--dim)', fontSize: 12 }}>--</span>
-
-  const upper = value.toUpperCase()
-  let color = '#64748b'
-  let icon = ''
-
-  if (['DONE', 'YES', 'COMPLETED'].some(token => upper.includes(token))) {
-    color = '#22c55e'
-  } else if (['IN-PROGRESS', 'IN PROGRESS', 'NOW SCHEDULED', 'REPORT IN PROGRESS'].some(token => upper.includes(token))) {
-    color = '#f59e0b'
-  } else if (['WAITING', 'TBD'].some(token => upper.includes(token))) {
-    color = '#fb923c'
-  } else if (['NO', 'DECLINED'].some(token => upper.includes(token))) {
-    color = '#ef4444'
-  }
-
-  return <span className="bdg" style={{ background: `${color}20`, color, border: `1px solid ${color}35` }}>{icon}{value}</span>
+  const normalized = String(value).trim()
+  const color = normalized.toUpperCase() === 'YES' ? '#22c55e' : normalized.toUpperCase() === 'NO' ? '#ef4444' : '#64748b'
+  return <span className="bdg" style={{ background: `${color}20`, color, border: `1px solid ${color}35` }}>{normalized}</span>
 }
 
 function sBdg(status) {
-  const normalizedStatus = normalizeTreatmentPlanStatus(status)
+  const normalizedStatus = status || 'Not Started'
   const map = {
     Completed: '#22c55e',
-    Done: '#22c55e',
     'In Progress': '#f59e0b',
     'Not Started': '#ef4444',
-    'Awaiting Assignment': '#fb923c',
     Scheduled: '#f59e0b',
     'No Show': '#ef4444',
     Finalized: '#22c55e',
-    'Draft Complete': '#6366f1',
-    'In Review': '#6366f1',
-    Written: '#22c55e',
   }
   const color = map[normalizedStatus] || '#64748b'
   return <span className="bdg" style={{ background: `${color}20`, color, border: `1px solid ${color}35` }}>{normalizedStatus || '--'}</span>
@@ -50,8 +53,7 @@ function paStatus(status) {
 }
 
 function isTrackedAssessmentComplete(value) {
-  const normalized = String(value || '').trim().toUpperCase()
-  return ['DONE', 'COMPLETED', 'YES', 'FINALIZED'].some(token => normalized.includes(token))
+  return normalizeAssessmentComponentStatus(value) === 'Completed'
 }
 
 function getAssessmentProgressFields(record) {
@@ -70,7 +72,7 @@ function getAssessmentProgressPercent(record) {
 }
 
 const ALL_PA = ['All', 'Approved', 'In Review', 'Pending', 'Reauthorization Needed', 'Appeal Pending', 'Denied', 'No PA Needed', 'Approved/Discharged', 'Referred Out']
-const TX_STATUSES = ['Not Started', 'In Progress', 'Finalized']
+const TX_STATUSES = TREATMENT_PLAN_STATUSES
 
 function renderClientCell(record, secondaryText) {
   return (
@@ -82,9 +84,7 @@ function renderClientCell(record, secondaryText) {
 }
 
 function txColor(status) {
-  if (['Finalized', 'Done', 'Completed'].includes(status)) return '#22c55e'
-  if (['In Progress'].includes(status)) return '#f59e0b'
-  return '#ef4444'
+  return statusColor(status)
 }
 
 function lifecycleBadge(status) {
@@ -189,9 +189,9 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.insurance || '--'}</td>
                     <td>{assessVal(record.vineland)}</td>
                     <td>{assessVal(record.srs2)}</td>
-                    <td>{sBdg(record.parent_interview_status || 'Awaiting Assignment')}</td>
+                    <td>{sBdg(normalizeParentInterviewStatus(record.parent_interview_status))}</td>
                     <td>{assessVal(record.direct_obs)}</td>
-                    <td>{assessVal(record.in_school)}</td>
+                    <td>{simpleValueBadge(record.in_school)}</td>
                     <td style={{ fontSize: 11, color: record.other_services ? 'var(--muted)' : 'var(--dim)', maxWidth: 140 }}>{record.other_services || '--'}</td>
                     <td>{lifecycleBadge(getAssessmentLifecycleStatus(record))}</td>
                     <td><PaStatusBadge status={record.authorization_status} /></td>
@@ -208,10 +208,11 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
 export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess, statFilter, onSetStatFilter, onClearStatFilter }) {
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
-  const awaiting = assessData.filter(record => !record.parent_interview_status || record.parent_interview_status === 'Awaiting Assignment')
-  const scheduled = assessData.filter(record => record.parent_interview_status === 'Scheduled')
-  const completed = assessData.filter(record => record.parent_interview_status === 'Completed')
-  const noShow = assessData.filter(record => record.parent_interview_status === 'No Show')
+  const notStarted = assessData.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === 'Not Started')
+  const scheduled = assessData.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === 'Scheduled')
+  const inProgress = assessData.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === 'In Progress')
+  const completed = assessData.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === 'Completed')
+  const noShow = assessData.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === 'No Show')
   const { activeFilter, toggleFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'parent-interviews')
   const filteredRows = assessData.filter(record => matchesStatFilter(record, activeFilter))
   const openAssessment = (record) => {
@@ -225,9 +226,10 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
         <div className="pg-hdr-title">Parent Interviews</div>
         <div className="pg-hdr-sub">Schedule, track, and complete parent interviews for initial assessments</div>
       </div>
-      <div className="stats-row stats-4" style={{ marginBottom: 22 }}>
-        <ClickableStatCard value={awaiting.length} label="Awaiting Assignment" color="#fb923c" active={activeFilter?.key === 'awaiting-assignment'} onClick={() => toggleFilter('awaiting-assignment', 'Parent Interviews: Awaiting Assignment')} />
+      <div className="stats-row stats-5" style={{ marginBottom: 22 }}>
+        <ClickableStatCard value={notStarted.length} label="Not Started" color="#ef4444" active={activeFilter?.key === 'not-started'} onClick={() => toggleFilter('not-started', 'Parent Interviews: Not Started')} />
         <ClickableStatCard value={scheduled.length} label="Scheduled" color="#f59e0b" active={activeFilter?.key === 'scheduled'} onClick={() => toggleFilter('scheduled', 'Parent Interviews: Scheduled')} />
+        <ClickableStatCard value={inProgress.length} label="In Progress" color="#f59e0b" active={activeFilter?.key === 'in-progress'} onClick={() => toggleFilter('in-progress', 'Parent Interviews: In Progress')} />
         <ClickableStatCard value={completed.length} label="Completed" color="#22c55e" active={activeFilter?.key === 'completed'} onClick={() => toggleFilter('completed', 'Parent Interviews: Completed')} />
         <ClickableStatCard value={noShow.length} label="No Show" color="#ef4444" active={activeFilter?.key === 'no-show'} onClick={() => toggleFilter('no-show', 'Parent Interviews: No Show')} />
       </div>
@@ -271,7 +273,7 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
                       </td>
                       <td><span className="office-pill">{record.clinic || record.office || '--'}</span></td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || <span style={{ color: 'var(--dim)', fontStyle: 'italic' }}>Unassigned</span>}</td>
-                      <td>{sBdg(record.parent_interview_status || 'Awaiting Assignment')}</td>
+                      <td>{sBdg(normalizeParentInterviewStatus(record.parent_interview_status))}</td>
                       <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.parent_interview_scheduled_date ? '#a5b4fc' : 'var(--dim)' }}>{formatDisplayDate(record.parent_interview_scheduled_date)}</td>
                       <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.parent_interview_completed_date ? '#22c55e' : 'var(--dim)' }}>{formatDisplayDate(record.parent_interview_completed_date)}</td>
                       <td>{assessVal(directObsStatus)}</td>

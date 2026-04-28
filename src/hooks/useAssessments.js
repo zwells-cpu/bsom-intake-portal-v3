@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { removeRecordById, replaceRecordById } from '../lib/recordStore'
+import { normalizeAssessmentComponentStatus, normalizeParentInterviewStatus, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -67,10 +68,17 @@ function normalizeAssessmentRecord(record, fallbackId = null) {
     office: clinic,
     authorization_status: authorizationStatus,
     pa_status: authorizationStatus,
-    direct_obs_status: record.direct_obs_status ?? record.direct_obs ?? '',
-    direct_obs: record.direct_obs_status ?? record.direct_obs ?? '',
+    vineland: normalizeAssessmentComponentStatus(record.vineland),
+    srs2: normalizeAssessmentComponentStatus(record.srs2),
+    vbmapp: normalizeAssessmentComponentStatus(record.vbmapp),
+    socially_savvy: normalizeAssessmentComponentStatus(record.socially_savvy),
+    parent_interview_status: normalizeParentInterviewStatus(record.parent_interview_status),
+    assessment_status: normalizeAssessmentComponentStatus(record.assessment_status),
+    direct_obs_status: normalizeAssessmentComponentStatus(record.direct_obs_status ?? record.direct_obs),
+    direct_obs: normalizeAssessmentComponentStatus(record.direct_obs_status ?? record.direct_obs),
     direct_obs_scheduled_date: record.direct_obs_scheduled_date ?? null,
     direct_obs_completed_date: record.direct_obs_completed_date ?? null,
+    treatment_plan_status: normalizeTreatmentPlanStatus(record.treatment_plan_status),
     ready_for_services: normalizeBoolean(record.ready_for_services) === true,
   }
 }
@@ -82,6 +90,18 @@ function sanitizeAssessmentPatch(patch = {}) {
     const value = patch[field]
     if (field === 'ready_for_services') {
       cleaned[field] = normalizeBoolean(value) === true
+      return
+    }
+    if (['vineland', 'srs2', 'vbmapp', 'socially_savvy', 'assessment_status', 'direct_obs_status', 'direct_obs'].includes(field)) {
+      cleaned[field] = normalizeAssessmentComponentStatus(value)
+      return
+    }
+    if (field === 'parent_interview_status') {
+      cleaned[field] = normalizeParentInterviewStatus(value)
+      return
+    }
+    if (field === 'treatment_plan_status') {
+      cleaned[field] = normalizeTreatmentPlanStatus(value)
       return
     }
     if (field.endsWith('_date')) {

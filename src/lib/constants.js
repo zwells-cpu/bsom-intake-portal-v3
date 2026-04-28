@@ -84,7 +84,7 @@ export const MODULE_NAV = {
   ],
 }
 
-export const TX_STATUSES = ['Not Started', 'In Progress', 'Draft Complete', 'In Review', 'Finalized']
+export const TX_STATUSES = ['Not Started', 'In Progress', 'Completed', 'Finalized']
 
 export const PA_COLORS = {
   Approved: '#22c55e',

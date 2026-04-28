@@ -1,7 +1,7 @@
 import { Activity, BarChart3, Clock, FileText, PieChart, UserCheck, Users, UserX } from 'lucide-react'
 import { StagePill } from '../components/Badge'
 import { ClickableStatCard } from '../components/StatFilterControls'
-import { displayStaffName, getAuthorizationStatus, getReferralStage, isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, normalizeOffice, normalizeStaffName, normalizeTreatmentPlanStatus } from '../lib/utils'
+import { displayStaffName, getAuthorizationStatus, getReferralStage, isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, normalizeOffice, normalizeParentInterviewStatus, normalizeStaffName, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 // ── Shared helpers ──
 function daysSince(dateStr) {
@@ -380,7 +380,7 @@ export function ConversionRatePage({ refs }) {
     { label: 'Referral Received',         count: total,                                                                                                      color: '#6366f1' },
     { label: 'Paperwork Completed',        count: active.filter(r => ['signed','completed'].some(v => (r.intake_paperwork||'').toLowerCase().includes(v))).length, color: '#8b5cf6' },
     { label: 'Insurance Verified',         count: active.filter(r => isInsuranceVerified(r.insurance_verified)).length,                             color: '#f59e0b' },
-    { label: 'Parent Interview Completed', count: active.filter(r => ['completed','yes','done'].some(v => (r.permission_assessment||'').toLowerCase().includes(v))).length, color: '#fb923c' },
+    { label: 'Parent Interview Completed', count: active.filter(r => normalizeParentInterviewStatus(r.parent_interview_status || r.permission_assessment) === 'Completed').length, color: '#fb923c' },
     { label: 'Assessment Completed',       count: active.filter(r => normalizeAutismDx(r.autism_diagnosis) === 'Received').length,                    color: '#fb923c' },
     { label: 'Active Client',              count: active.filter(r => Boolean(r.active_client_date)).length,                                                   color: '#22c55e' },
   ]

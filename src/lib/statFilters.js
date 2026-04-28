@@ -1,4 +1,4 @@
-import { getAssessmentLifecycleStatus, getAssessmentWorkflowStatus, getAuthorizationStatus, getReferralStage, isAuthorizationApproved, normalizeAutismDx, normalizeTreatmentPlanStatus } from './utils'
+import { getAssessmentLifecycleStatus, getAssessmentWorkflowStatus, getAuthorizationStatus, getReferralStage, isAuthorizationApproved, normalizeAutismDx, normalizeParentInterviewStatus, normalizeTreatmentPlanStatus } from './utils'
 
 export function isStatFilterTarget(filter, target) {
   return filter?.target === target ? filter : null
@@ -60,9 +60,10 @@ export function matchesStatFilter(record, filter) {
   }
 
   if (target === 'parent-interviews') {
-    const status = record.parent_interview_status || ''
-    if (key === 'awaiting-assignment') return !status || status === 'Awaiting Assignment'
+    const status = normalizeParentInterviewStatus(record.parent_interview_status)
+    if (key === 'not-started' || key === 'awaiting-assignment') return status === 'Not Started'
     if (key === 'scheduled') return status === 'Scheduled'
+    if (key === 'in-progress') return status === 'In Progress'
     if (key === 'completed') return status === 'Completed'
     if (key === 'no-show') return status === 'No Show'
     return true

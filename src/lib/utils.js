@@ -1,5 +1,9 @@
 import { STAGE_COLORS, STAGE_ICONS, PA_COLORS, PA_ICONS } from './constants'
 
+export const PARENT_INTERVIEW_STATUSES = ['Not Started', 'Scheduled', 'In Progress', 'Completed', 'No Show']
+export const ASSESSMENT_COMPONENT_STATUSES = ['Not Started', 'Scheduled', 'In Progress', 'Completed']
+export const TREATMENT_PLAN_STATUSES = ['Not Started', 'In Progress', 'Completed', 'Finalized']
+
 // ── Status color ──
 export function sc(v) {
   if (!v || v === 'N/A' || v === '--') return '#94a3b8'
@@ -177,9 +181,39 @@ export function normalizeTreatmentPlanStatus(status) {
   const value = String(status).trim()
   const upper = value.toUpperCase()
 
-  if (['DRAFTING', 'DRAFT COMPLETE', 'WRITTEN', 'IN REVIEW', 'IN PROGRESS'].includes(upper)) return 'In Progress'
-  if (['FINALIZED', 'DONE', 'COMPLETED'].includes(upper)) return 'Finalized'
-  if (upper === 'NOT STARTED') return 'Not Started'
+  if (['DRAFTING', 'DRAFT COMPLETE', 'WRITTEN', 'IN REVIEW', 'IN PROGRESS', 'SCHEDULED'].includes(upper)) return 'In Progress'
+  if (['DONE', 'YES', 'COMPLETED'].includes(upper)) return 'Completed'
+  if (upper === 'FINALIZED') return 'Finalized'
+  if (['AWAITING', 'AWAITING ASSIGNMENT', 'WAITING', 'TBD', 'NO', 'NO SHOW', 'NOT STARTED'].includes(upper)) return 'Not Started'
+
+  return value
+}
+
+export function normalizeParentInterviewStatus(status) {
+  if (!status) return 'Not Started'
+
+  const value = String(status).trim()
+  const upper = value.toUpperCase()
+
+  if (upper === 'NO SHOW') return 'No Show'
+  if (upper === 'SCHEDULED') return 'Scheduled'
+  if (['IN PROGRESS', 'IN-PROGRESS', 'STARTED'].includes(upper)) return 'In Progress'
+  if (['DONE', 'YES', 'COMPLETED', 'FINALIZED'].includes(upper)) return 'Completed'
+  if (['AWAITING', 'AWAITING ASSIGNMENT', 'WAITING', 'TBD', 'NO', 'NOT STARTED'].includes(upper)) return 'Not Started'
+
+  return value
+}
+
+export function normalizeAssessmentComponentStatus(status) {
+  if (!status) return 'Not Started'
+
+  const value = String(status).trim()
+  const upper = value.toUpperCase()
+
+  if (upper === 'SCHEDULED') return 'Scheduled'
+  if (['IN PROGRESS', 'IN-PROGRESS', 'NOW SCHEDULED', 'REPORT IN PROGRESS', 'STARTED'].includes(upper)) return 'In Progress'
+  if (['DONE', 'YES', 'COMPLETED', 'FINALIZED', 'RECEIVED', 'SIGNED'].includes(upper)) return 'Completed'
+  if (['AWAITING', 'AWAITING ASSIGNMENT', 'WAITING', 'TBD', 'NO', 'NO SHOW', 'DECLINED', 'NOT STARTED'].includes(upper)) return 'Not Started'
 
   return value
 }
@@ -192,16 +226,15 @@ function hasMeaningfulAssessmentValue(value) {
 }
 
 function isCompletedAssessmentValue(value) {
-  const normalized = String(value || '').trim().toUpperCase()
-  return ['YES', 'DONE', 'COMPLETED', 'RECEIVED', 'SIGNED'].some(token => normalized.includes(token))
+  return normalizeAssessmentComponentStatus(value) === 'Completed'
 }
 
 export function getAssessmentWorkflowProgress(record) {
   const components = [
-    { key: 'parent_interview_status', completed: String(record?.parent_interview_status || '').trim().toUpperCase() === 'COMPLETED', started: hasMeaningfulAssessmentValue(record?.parent_interview_status) },
-    { key: 'vineland', completed: isCompletedAssessmentValue(record?.vineland), started: hasMeaningfulAssessmentValue(record?.vineland) },
-    { key: 'srs2', completed: isCompletedAssessmentValue(record?.srs2), started: hasMeaningfulAssessmentValue(record?.srs2) },
-    { key: 'direct_obs', completed: isCompletedAssessmentValue(record?.direct_obs), started: hasMeaningfulAssessmentValue(record?.direct_obs) },
+    { key: 'parent_interview_status', completed: normalizeParentInterviewStatus(record?.parent_interview_status) === 'Completed', started: normalizeParentInterviewStatus(record?.parent_interview_status) !== 'Not Started' },
+    { key: 'vineland', completed: isCompletedAssessmentValue(record?.vineland), started: normalizeAssessmentComponentStatus(record?.vineland) !== 'Not Started' },
+    { key: 'srs2', completed: isCompletedAssessmentValue(record?.srs2), started: normalizeAssessmentComponentStatus(record?.srs2) !== 'Not Started' },
+    { key: 'direct_obs', completed: isCompletedAssessmentValue(record?.direct_obs), started: normalizeAssessmentComponentStatus(record?.direct_obs) !== 'Not Started' },
   ]
 
   const total = components.length
@@ -282,9 +315,10 @@ export function needsInsuranceVerification(value) {
 
 // ── Status color helper for assessments ──
 export function statusColor(s) {
-  if (['Finalized','Done','Completed'].includes(s)) return '#22c55e'
-  if (['In Progress','In Review','Draft Complete'].includes(s)) return '#f59e0b'
+  if (['Finalized','Completed'].includes(s)) return '#22c55e'
+  if (['In Progress','Scheduled'].includes(s)) return '#f59e0b'
   if (['Not Started'].includes(s)) return '#ef4444'
+  if (['No Show'].includes(s)) return '#ef4444'
   return '#64748b'
 }
 

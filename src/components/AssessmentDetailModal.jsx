@@ -1,13 +1,19 @@
 import { useEffect, useState } from 'react'
 import { ConfirmationModal } from './ConfirmationModal'
-import { OFFICES, BOOL } from '../lib/constants'
+import { OFFICES } from '../lib/constants'
 import { cleanLookupValue, includeCurrentOption, normalizeOptions, optionValues } from '../lib/lookups'
-import { getAssessmentLifecycleStatus, normalizeTreatmentPlanStatus } from '../lib/utils'
+import {
+  ASSESSMENT_COMPONENT_STATUSES,
+  PARENT_INTERVIEW_STATUSES,
+  TREATMENT_PLAN_STATUSES,
+  getAssessmentLifecycleStatus,
+  normalizeAssessmentComponentStatus,
+  normalizeParentInterviewStatus,
+  normalizeTreatmentPlanStatus,
+  statusColor,
+} from '../lib/utils'
 
-const INTERVIEW_STATUSES = ['Awaiting Assignment', 'Scheduled', 'Completed', 'No Show']
-const TREATMENT_PLAN_STATUSES = ['Not Started', 'In Progress', 'Finalized']
 const AUTHORIZATION_STATUSES = ['Not Submitted', 'Pending', 'In Review', 'Approved', 'Reauthorization Needed', 'Appeal Pending', 'Denied', 'No PA Needed', 'Approved/Discharged', 'Referred Out']
-const ASSESSMENT_STATUS_OPTIONS = ['Done', 'Completed', 'Finalized', 'In Progress', 'Awaiting', 'Not Started', 'Yes', 'No']
 
 function asBoolString(value) {
   return value === true || value === 'true' ? 'true' : 'false'
@@ -20,17 +26,11 @@ function displayValue(value) {
 }
 
 function assessVal(value) {
-  if (!value) return <span style={{ color: 'var(--dim)', fontSize: 12 }}>--</span>
+  const normalized = normalizeAssessmentComponentStatus(value)
+  if (!normalized) return <span style={{ color: 'var(--dim)', fontSize: 12 }}>--</span>
+  const color = statusColor(normalized)
 
-  const upper = value.toUpperCase()
-  let color = '#64748b'
-
-  if (['DONE', 'YES', 'COMPLETED', 'FINALIZED'].some(token => upper.includes(token))) color = '#22c55e'
-  else if (['IN-PROGRESS', 'IN PROGRESS'].some(token => upper.includes(token))) color = '#f59e0b'
-  else if (['WAITING', 'AWAITING', 'TBD'].some(token => upper.includes(token))) color = '#fb923c'
-  else if (['NO', 'DECLINED'].some(token => upper.includes(token))) color = '#ef4444'
-
-  return <span className="bdg" style={{ background: `${color}20`, color, border: `1px solid ${color}35` }}>{value}</span>
+  return <span className="bdg" style={{ background: `${color}20`, color, border: `1px solid ${color}35` }}>{normalized}</span>
 }
 
 function DetailRow({ label, value }) {
@@ -122,14 +122,14 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, b
       caregiver_phone: form.caregiver_phone || '',
       caregiver_email: form.caregiver_email || '',
       insurance: form.insurance || '',
-      vineland: form.vineland || '',
-      srs2: form.srs2 || '',
-      vbmapp: form.vbmapp || '',
-      socially_savvy: form.socially_savvy || '',
-      parent_interview_status: form.parent_interview_status || '',
+      vineland: normalizeAssessmentComponentStatus(form.vineland),
+      srs2: normalizeAssessmentComponentStatus(form.srs2),
+      vbmapp: normalizeAssessmentComponentStatus(form.vbmapp),
+      socially_savvy: normalizeAssessmentComponentStatus(form.socially_savvy),
+      parent_interview_status: normalizeParentInterviewStatus(form.parent_interview_status),
       parent_interview_scheduled_date: form.parent_interview_scheduled_date || null,
       parent_interview_completed_date: form.parent_interview_completed_date || null,
-      direct_obs_status: form.direct_obs_status || form.direct_obs || '',
+      direct_obs_status: normalizeAssessmentComponentStatus(form.direct_obs_status || form.direct_obs),
       direct_obs_scheduled_date: form.direct_obs_scheduled_date || null,
       direct_obs_completed_date: form.direct_obs_completed_date || null,
       treatment_plan_status: normalizeTreatmentPlanStatus(form.treatment_plan_status || 'Not Started'),
@@ -211,7 +211,7 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, b
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Parent Interview Workflow</div>
             <DetailRow label="Assigned BCBA" value={form?.assigned_bcba} />
-            <BadgeDetailRow label="Parent Interview Status" value={form?.parent_interview_status} />
+            <BadgeDetailRow label="Parent Interview Status" value={normalizeParentInterviewStatus(form?.parent_interview_status)} />
             <DetailRow label="Interview Scheduled" value={form?.parent_interview_scheduled_date} />
             <DetailRow label="Interview Completed" value={form?.parent_interview_completed_date} />
             <BadgeDetailRow label="Direct Observation Status" value={form?.direct_obs_status || form?.direct_obs} />
@@ -253,19 +253,19 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, b
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Assessment Components</div>
             <div className="responsive-review-grid" style={{ gap: 12 }}>
-              <SelectField label="Vineland" value={form?.vineland} onChange={setField('vineland')} options={ASSESSMENT_STATUS_OPTIONS} />
-              <SelectField label="SRS-2" value={form?.srs2} onChange={setField('srs2')} options={ASSESSMENT_STATUS_OPTIONS} />
-              <SelectField label="VBMAPP" value={form?.vbmapp} onChange={setField('vbmapp')} options={ASSESSMENT_STATUS_OPTIONS} />
-              <SelectField label="Socially Savvy" value={form?.socially_savvy} onChange={setField('socially_savvy')} options={ASSESSMENT_STATUS_OPTIONS} />
+              <SelectField label="Vineland" value={normalizeAssessmentComponentStatus(form?.vineland)} onChange={setField('vineland')} options={ASSESSMENT_COMPONENT_STATUSES} />
+              <SelectField label="SRS-2" value={normalizeAssessmentComponentStatus(form?.srs2)} onChange={setField('srs2')} options={ASSESSMENT_COMPONENT_STATUSES} />
+              <SelectField label="VBMAPP" value={normalizeAssessmentComponentStatus(form?.vbmapp)} onChange={setField('vbmapp')} options={ASSESSMENT_COMPONENT_STATUSES} />
+              <SelectField label="Socially Savvy" value={normalizeAssessmentComponentStatus(form?.socially_savvy)} onChange={setField('socially_savvy')} options={ASSESSMENT_COMPONENT_STATUSES} />
             </div>
 
             <div className="section-hdr" style={{ marginTop: 18 }}>Parent Interview Workflow</div>
             <div className="responsive-review-grid" style={{ gap: 12 }}>
               <SelectField label="Assigned BCBA" value={selectedBcbaValue} onChange={setField('assigned_bcba')} options={assignedBcbaOptions} placeholder="Select BCBA" />
-              <SelectField label="Parent Interview Status" value={form?.parent_interview_status} onChange={setField('parent_interview_status')} options={INTERVIEW_STATUSES} />
+              <SelectField label="Parent Interview Status" value={normalizeParentInterviewStatus(form?.parent_interview_status)} onChange={setField('parent_interview_status')} options={PARENT_INTERVIEW_STATUSES} />
               <DateField label="Interview Scheduled" value={form?.parent_interview_scheduled_date} onChange={setField('parent_interview_scheduled_date')} />
               <DateField label="Interview Completed" value={form?.parent_interview_completed_date} onChange={setField('parent_interview_completed_date')} />
-              <SelectField label="Direct Observation Status" value={form?.direct_obs_status || form?.direct_obs || ''} onChange={setField('direct_obs_status')} options={ASSESSMENT_STATUS_OPTIONS} />
+              <SelectField label="Direct Observation Status" value={normalizeAssessmentComponentStatus(form?.direct_obs_status || form?.direct_obs)} onChange={setField('direct_obs_status')} options={ASSESSMENT_COMPONENT_STATUSES} />
               <DateField label="Direct Observation Scheduled" value={form?.direct_obs_scheduled_date} onChange={setField('direct_obs_scheduled_date')} />
               <DateField label="Direct Observation Completed" value={form?.direct_obs_completed_date} onChange={setField('direct_obs_completed_date')} />
             </div>
