@@ -1,6 +1,6 @@
 import { Analytics } from '@vercel/analytics/react'
 import { supabase } from './lib/supabase'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import { useTheme } from './hooks/useTheme'
 import { useIdleTimeout } from './hooks/useIdleTimeout'
 import { useReferrals } from './hooks/useReferrals'
@@ -14,24 +14,48 @@ import { ThemeToggle } from './components/ThemeToggle'
 import { ReferralModal } from './components/ReferralModal'
 import { AssessmentDetailModal } from './components/AssessmentDetailModal'
 
-import { ActivityLogPage, DashboardPage } from './pages/DashboardPage'
-import { ClientProfilePage } from './pages/ClientProfilePage'
-import { AllReferralsPage } from './pages/AllReferralsPage'
 import { NewReferralPage } from './pages/NewReferralPage'
-import { IntakeDashboard, PendingDocsPage, InsuranceVerifPage, NonResponsivePage } from './pages/IntakePages'
-import { AboutPortalPage, LocationsPage } from './pages/AboutPage'
-import { AssessmentTracker, ParentInterviewsPage, BCBAAssignmentsPage, AssessmentProgressPage, TreatmentPlansPage, ReadyForServicesPage } from './pages/AssessmentPages'
-import { PipelineOverviewPage, ReferralAgingPage, ClinicVolumePage, ConversionRatePage, IntakePerformancePage } from './pages/OperationsPages'
 import { createActivityLog } from './lib/activityLogs'
 import { getAssessmentRecordId, needsInsuranceVerification } from './lib/utils'
 import { API_BASE } from './lib/api'
 import { formatProfileAccessLabel, formatRoleLabel, isAdmin, normalizeProfile } from './lib/profileUtils'
+
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then(module => ({ default: module.DashboardPage })))
+const ActivityLogPage = lazy(() => import('./pages/DashboardPage').then(module => ({ default: module.ActivityLogPage })))
+const ClientProfilePage = lazy(() => import('./pages/ClientProfilePage').then(module => ({ default: module.ClientProfilePage })))
+const AllReferralsPage = lazy(() => import('./pages/AllReferralsPage').then(module => ({ default: module.AllReferralsPage })))
+const IntakeDashboard = lazy(() => import('./pages/IntakePages').then(module => ({ default: module.IntakeDashboard })))
+const PendingDocsPage = lazy(() => import('./pages/IntakePages').then(module => ({ default: module.PendingDocsPage })))
+const InsuranceVerifPage = lazy(() => import('./pages/IntakePages').then(module => ({ default: module.InsuranceVerifPage })))
+const NonResponsivePage = lazy(() => import('./pages/IntakePages').then(module => ({ default: module.NonResponsivePage })))
+const AboutPortalPage = lazy(() => import('./pages/AboutPage').then(module => ({ default: module.AboutPortalPage })))
+const LocationsPage = lazy(() => import('./pages/AboutPage').then(module => ({ default: module.LocationsPage })))
+const AssessmentTracker = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.AssessmentTracker })))
+const ParentInterviewsPage = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.ParentInterviewsPage })))
+const BCBAAssignmentsPage = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.BCBAAssignmentsPage })))
+const AssessmentProgressPage = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.AssessmentProgressPage })))
+const TreatmentPlansPage = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.TreatmentPlansPage })))
+const ReadyForServicesPage = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.ReadyForServicesPage })))
+const PipelineOverviewPage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.PipelineOverviewPage })))
+const ReferralAgingPage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.ReferralAgingPage })))
+const ClinicVolumePage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.ClinicVolumePage })))
+const ConversionRatePage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.ConversionRatePage })))
+const IntakePerformancePage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.IntakePerformancePage })))
 
 const NAV_STATE_KEY = 'bsom-portal-nav'
 
 const REFERRAL_DOCUMENT_FIELDS = new Set(['referral_form', 'permission_assessment', 'vineland', 'srs2', 'autism_diagnosis', 'intake_paperwork', 'iep_report', 'attends_school'])
 const REFERRAL_CONTACT_FIELDS  = new Set(['caregiver', 'caregiver_phone', 'caregiver_email', 'referral_source', 'referral_source_phone', 'referral_source_fax', 'provider_npi', 'point_of_contact'])
 const REFERRAL_INSURANCE_FIELDS = new Set(['insurance', 'secondary_insurance'])
+
+function PageLoader({ label = 'Loading page...' }) {
+  return (
+    <div className="loader-wrap">
+      <div className="spinner" />
+      <div style={{ color: 'var(--muted)' }}>{label}</div>
+    </div>
+  )
+}
 
 function describeReferralUpdate(name, changedFields, afterData) {
   const fields = changedFields.filter(f => f !== 'current_stage')
@@ -1078,7 +1102,9 @@ export default function App() {
               </div>
             )}
             <div className={`page-inner ${module === 'intake' && subpage === 'all' ? 'page-inner-wide' : ''}`}>
-              {renderPage()}
+              <Suspense fallback={<PageLoader />}>
+                {renderPage()}
+              </Suspense>
             </div>
           </div>
 
