@@ -1,97 +1,71 @@
-# BSOM Intake Portal — v3
+BSOM Intake Portal — v3
 
-Internal intake operations portal for Behavioral Solutions of Mississippi. Version 3 is a full rewrite in React + Vite, replacing the previous single-file HTML versions.
+The BSOM Intake Portal is a centralized intake operations platform designed to support referral tracking, intake coordination, initial assessments, and operational visibility across multiple clinic locations.
 
-## Tech Stack
+Originally introduced to evolve beyond spreadsheet-based workflows adopted in August 2024, the portal transitions intake management from manual tracking to a structured, stage-based system.
 
-- **React 18** — component-based UI
-- **Vite** — fast build tool and dev server
-- **React Router v6** — client-side navigation
-- **Supabase** — PostgreSQL database + auth
-- **DM Sans / DM Mono** — typography
+This system enables:
 
-## Project Structure
+Clear visibility into referral and assessment pipelines
+Consistent intake workflows across staff and clinics
+Real-time tracking of client progression
+Improved operational reporting and performance insight
 
-```
-src/
-├── components/       # Reusable UI components
-│   ├── Badge.jsx       # Status badges, office pills, progress ring
-│   ├── HomePage.jsx    # Landing screen with module grid
-│   ├── ReferralModal.jsx  # Client detail / edit modal
-│   ├── Sidebar.jsx     # Module navigation sidebar
-│   └── ThemeToggle.jsx # Light/dark toggle
-├── hooks/            # Data & state hooks
-│   ├── useReferrals.js   # Referral CRUD (Supabase)
-│   ├── useAssessments.js # Assessment CRUD (Supabase)
-│   └── useTheme.js       # Light/dark theme persistence
-├── lib/              # Utilities & constants
-│   ├── constants.js    # OFFICES, STAFF, MODULES, field lists
-│   ├── supabase.js     # Supabase client init
-│   └── utils.js        # Badge colors, pct(), sortList(), exportCSV()
-├── pages/            # Page-level components
-│   ├── AllReferralsPage.jsx
-│   ├── DashboardPage.jsx
-│   ├── IntakePages.jsx   # IntakeDash, Pending, Insurance, NR
-│   ├── NewReferralPage.jsx
-│   └── AboutPage.jsx
-├── styles/
-│   └── global.css      # All CSS (CSS variables, layout, components)
-├── App.jsx           # Root — routing + app shell
-└── main.jsx          # React entry point
-```
+Before: Spreadsheet-based tracking
+After: Structured intake operations system
 
-## Setup
+Developed independently by Zanteria Wells as an internal operations solution.
 
-### 1. Clone and install
+Core Modules
 
-```bash
+Dashboard
+High-level visibility into active referrals, pending actions, and recent operational activity.
+
+Intake
+Manage referrals, intake coordination, pending documents, and insurance workflows in one place.
+
+Initial Assessments
+Track the full assessment workflow, including parent interviews, Vineland, SRS-2, VB-MAPP, Socially Savvy, BCBA assignment, and authorization readiness.
+
+Operational Insights
+Monitor referral aging, clinic volume, conversion trends, and intake performance across locations.
+
+Developer Setup (Internal Use)
+1. Clone and install
 git clone https://github.com/YOUR_USERNAME/bsom-intake-portal.git
 cd bsom-intake-portal
 npm install
-```
+2. Configure environment
 
-### 2. Configure environment
+Copy .env.example to .env and add credentials:
 
-Copy `.env.example` to `.env` and fill in your Supabase credentials:
-
-```bash
 cp .env.example .env
-```
-
-```
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
-```
 
-> ⚠️ Never commit `.env` — it's in `.gitignore` by default.
+⚠️ Never commit .env
 
-### 3. Run locally
-
-```bash
+3. Run locally
 npm run dev
-```
 
-Open [http://localhost:5173](http://localhost:5173)
+Open: http://localhost:5173
 
-### 4. Build for production
-
-```bash
+4. Build for production
 npm run build
-```
-
-Output goes to `/dist`. Deploy to Vercel or Netlify.
-
-## Deploy to Vercel (recommended)
-
-1. Push this repo to GitHub
-2. Go to [vercel.com](https://vercel.com) → Import Project → select your repo
-3. Add environment variables in Vercel dashboard:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-4. Click Deploy — auto-deploys on every push to `main`
-
-## Notes
-
-- Assessment and Operations pages are scaffolded with stubs and ready for the next build phase
-- The original `index.html` single-file version is preserved separately for reference
-- All Supabase queries use the official `@supabase/supabase-js` v2 client
+Deploy (Vercel)
+Import repo into Vercel
+Add environment variables
+Deploy
+Project Structure
+src/
+├── components/
+├── hooks/
+├── lib/
+├── pages/
+├── styles/
+├── App.jsx
+└── main.jsx
+Notes
+Built as an internal operations system for behavioral health intake workflows
+Designed to replace spreadsheet-based intake tracking with a scalable system
+Continuously evolving based on operational needs
