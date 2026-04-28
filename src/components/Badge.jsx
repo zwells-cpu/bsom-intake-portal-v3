@@ -1,4 +1,4 @@
-import { sc } from '../lib/utils'
+import { normalizeAuthorizationStatus, sc } from '../lib/utils'
 
 export function Badge({ value }) {
   if (!value || value === '--') {
@@ -70,10 +70,11 @@ export function StagePill({ stage }) {
 export function PaStatusBadge({ status }) {
   const PA_COLORS = {
     'Approved': '#22c55e', 'Approved/Discharged': '#64748b', 'No PA Needed': '#22c55e',
+    'Pending Submission': '#f59e0b', 'Submitted / In Review': '#6366f1',
     'Pending': '#f59e0b', 'In Review': '#6366f1', 'Reauthorization Needed': '#f59e0b',
     'Appeal Pending': '#fb923c', 'Denied': '#ef4444', 'Referred Out': '#64748b',
   }
-  const s = status || 'Pending'
+  const s = normalizeAuthorizationStatus(status) || 'Pending Submission'
   const c = PA_COLORS[s] || '#64748b'
   return (
     <span className="bdg" style={{ background: `${c}20`, color: c, border: `1px solid ${c}35` }}>

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { removeRecordById, replaceRecordById } from '../lib/recordStore'
-import { normalizeAssessmentComponentStatus, normalizeParentInterviewStatus, normalizeTreatmentPlanStatus } from '../lib/utils'
+import { normalizeAssessmentComponentStatus, normalizeAuthorizationStatus, normalizeParentInterviewStatus, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -57,7 +57,7 @@ function normalizeAssessmentRecord(record, fallbackId = null) {
   if (!record) return null
 
   const assessmentId = getAssessmentId(record) ?? fallbackId
-  const authorizationStatus = record.authorization_status ?? record.pa_status ?? ''
+  const authorizationStatus = normalizeAuthorizationStatus(record.authorization_status ?? record.pa_status ?? '')
   const clinic = record.clinic ?? record.office ?? ''
 
   return {
@@ -102,6 +102,10 @@ function sanitizeAssessmentPatch(patch = {}) {
     }
     if (field === 'treatment_plan_status') {
       cleaned[field] = normalizeTreatmentPlanStatus(value)
+      return
+    }
+    if (field === 'authorization_status') {
+      cleaned[field] = normalizeAuthorizationStatus(value)
       return
     }
     if (field.endsWith('_date')) {

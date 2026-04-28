@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Badge, OfficePill, ProgressRing, StagePill } from './Badge'
 import { ConfirmationModal } from './ConfirmationModal'
 import { INSURANCE_PAYERS, REFERRAL_SOURCES, BOOL, STAFF, OFFICES, CHECKLIST_FIELDS } from '../lib/constants'
@@ -15,6 +15,17 @@ function formatFileSize(size) {
   if (size < 1024) return `${size} B`
   if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`
   return `${(size / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function getEditableReferralPatch(record = {}) {
+  const patch = { ...record }
+  patch.autism_diagnosis = normalizeAutismDx(record.autism_diagnosis)
+  patch.referral_form = normalizeReferralFieldValue('referral_form', record.referral_form)
+  patch.iep_report = normalizeReferralFieldValue('iep_report', record.iep_report)
+  delete patch.id
+  delete patch.created_at
+  delete patch.user_id
+  return patch
 }
 
 export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus, onToggleParentInterview, onUploadDocument, officeOptions: liveOfficeOptions = [], insuranceOptions: liveInsuranceOptions = [], referralSourceOptions: liveReferralSourceOptions = [] }) {
@@ -55,16 +66,27 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
   const insuranceOptions = includeCurrentOption(optionValues(liveInsuranceOptions.length ? liveInsuranceOptions : normalizeOptions(INSURANCE_PAYERS)), e.insurance)
   const secondaryInsuranceOptions = includeCurrentOption(['None', ...insuranceOptions], e.secondary_insurance)
   const referralSourceOptions = includeCurrentOption(optionValues(liveReferralSourceOptions.length ? liveReferralSourceOptions : normalizeOptions(REFERRAL_SOURCES)), e.referral_source)
+  const originalPatch = useMemo(() => getEditableReferralPatch(referral), [referral])
+  const currentPatch = useMemo(() => getEditableReferralPatch(form), [form])
+  const hasUnsavedChanges = editMode && JSON.stringify(currentPatch) !== JSON.stringify(originalPatch)
 
   const field = (key) => (val) => setForm(f => ({ ...f, [key]: val }))
 
+  useEffect(() => {
+    if (!hasUnsavedChanges) return
+
+    const handleBeforeUnload = (event) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasUnsavedChanges])
+
   const handleSave = async () => {
     setSaving(true)
-    const patch = { ...form }
-    patch.autism_diagnosis = normalizeAutismDx(form.autism_diagnosis)
-    delete patch.id
-    delete patch.created_at
-    delete patch.user_id
+    const patch = getEditableReferralPatch(form)
     const res = await onSave(r.id, patch)
     if (res?.success) setEditMode(false)
     setSaving(false)

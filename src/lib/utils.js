@@ -282,8 +282,15 @@ export function getAssessmentRecordId(record) {
   return record?.assessment_id ?? record?.id ?? null
 }
 
+export function normalizeAuthorizationStatus(status) {
+  const normalized = String(status || '').trim()
+  if (normalized === 'Pending') return 'Pending Submission'
+  if (normalized === 'In Review') return 'Submitted / In Review'
+  return normalized
+}
+
 export function getAuthorizationStatus(record) {
-  return record?.authorization_status || record?.pa_status || ''
+  return normalizeAuthorizationStatus(record?.authorization_status || record?.pa_status || '')
 }
 
 export function getAssessmentLifecycleStatus(record) {

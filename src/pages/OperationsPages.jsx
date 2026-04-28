@@ -66,7 +66,7 @@ export function PipelineOverviewPage({ refs, assessData = [], openModulePage }) 
   const active = refs.filter(r => r.status === 'active')
   const nr     = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
   const activeClients = assessData.filter(record => Boolean(record.active_client_date)).length
-  const awaitingPA = assessData.filter(record => ['Pending', 'In Review'].includes(getAuthorizationStatus(record))).length
+  const awaitingPA = assessData.filter(record => ['Pending Submission', 'Submitted / In Review'].includes(getAuthorizationStatus(record))).length
   const txInProgress = assessData.filter(record => normalizeTreatmentPlanStatus(record.treatment_plan_status) === 'In Progress').length
 
   const stageOrder = ['New Referral','Intake','Ready for Interview','Initial Assessment','PA Submitted','PA In Review','PA Approved','Active Client','Reauth Needed','Discharged']

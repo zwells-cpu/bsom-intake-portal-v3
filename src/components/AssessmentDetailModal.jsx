@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ConfirmationModal } from './ConfirmationModal'
 import { OFFICES } from '../lib/constants'
 import { cleanLookupValue, includeCurrentOption, normalizeOptions, optionValues } from '../lib/lookups'
@@ -8,13 +8,14 @@ import {
   TREATMENT_PLAN_STATUSES,
   formatDate,
   getAssessmentLifecycleStatus,
+  normalizeAuthorizationStatus,
   normalizeAssessmentComponentStatus,
   normalizeParentInterviewStatus,
   normalizeTreatmentPlanStatus,
   statusColor,
 } from '../lib/utils'
 
-const AUTHORIZATION_STATUSES = ['Not Submitted', 'Pending', 'In Review', 'Approved', 'Reauthorization Needed', 'Appeal Pending', 'Denied', 'No PA Needed', 'Approved/Discharged', 'Referred Out']
+const AUTHORIZATION_STATUSES = ['Not Submitted', 'Pending Submission', 'Submitted / In Review', 'Approved', 'Reauthorization Needed', 'Appeal Pending', 'Denied', 'No PA Needed', 'Approved/Discharged', 'Referred Out']
 
 function asBoolString(value) {
   return value === true || value === 'true' ? 'true' : 'false'
@@ -85,6 +86,52 @@ function DateField({ label, value, onChange }) {
   )
 }
 
+function getBcbaValues(bcbaOptions) {
+  return (bcbaOptions.length ? bcbaOptions : normalizeOptions([]))
+    .map(option => cleanLookupValue(option.value ?? option.label ?? option))
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b))
+}
+
+function getSelectedBcbaValue(record, bcbaOptions) {
+  const currentBcba = cleanLookupValue(record?.assigned_bcba)
+  const bcbaValues = getBcbaValues(bcbaOptions)
+  const matchingBcbaOption = bcbaValues.find(option => option.toLowerCase() === currentBcba.toLowerCase())
+  return matchingBcbaOption || currentBcba
+}
+
+function getEditableAssessmentPatch(record = {}, assignedBcba = '') {
+  return {
+    client_name: record.client_name || '',
+    clinic: record.clinic || record.office || '',
+    assigned_bcba: assignedBcba,
+    caregiver: record.caregiver || '',
+    caregiver_phone: record.caregiver_phone || '',
+    caregiver_email: record.caregiver_email || '',
+    insurance: record.insurance || '',
+    vineland: normalizeAssessmentComponentStatus(record.vineland),
+    srs2: normalizeAssessmentComponentStatus(record.srs2),
+    vbmapp: normalizeAssessmentComponentStatus(record.vbmapp),
+    socially_savvy: normalizeAssessmentComponentStatus(record.socially_savvy),
+    parent_interview_status: normalizeParentInterviewStatus(record.parent_interview_status),
+    parent_interview_scheduled_date: record.parent_interview_scheduled_date || null,
+    parent_interview_completed_date: record.parent_interview_completed_date || null,
+    direct_obs_status: normalizeAssessmentComponentStatus(record.direct_obs_status || record.direct_obs),
+    direct_obs_scheduled_date: record.direct_obs_scheduled_date || null,
+    direct_obs_completed_date: record.direct_obs_completed_date || null,
+    treatment_plan_status: normalizeTreatmentPlanStatus(record.treatment_plan_status || 'Not Started'),
+    treatment_plan_started_date: record.treatment_plan_started_date || null,
+    treatment_plan_completed_date: record.treatment_plan_completed_date || null,
+    authorization_status: normalizeAuthorizationStatus(record.authorization_status),
+    authorization_submitted_date: record.authorization_submitted_date || null,
+    authorization_approved_date: record.authorization_approved_date || null,
+    ready_for_services: record.ready_for_services === true || record.ready_for_services === 'true',
+    active_client_date: record.active_client_date || null,
+    other_services: record.other_services || '',
+    notes: record.notes || '',
+  }
+}
+
 export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, bcbaOptions = [], officeOptions: liveOfficeOptions = [] }) {
   const [form, setForm] = useState(assessment)
   const [saving, setSaving] = useState(false)
@@ -100,50 +147,35 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, b
   const lifecycleStatus = getAssessmentLifecycleStatus(form)
   const officeOptions = includeCurrentOption(optionValues(liveOfficeOptions.length ? liveOfficeOptions : normalizeOptions(OFFICES)), clinic)
   const currentBcba = cleanLookupValue(form?.assigned_bcba)
-  const bcbaValues = (bcbaOptions.length ? bcbaOptions : normalizeOptions([]))
-    .map(option => cleanLookupValue(option.value ?? option.label ?? option))
-    .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b))
+  const bcbaValues = useMemo(() => getBcbaValues(bcbaOptions), [bcbaOptions])
   const matchingBcbaOption = bcbaValues.find(option => option.toLowerCase() === currentBcba.toLowerCase())
   const selectedBcbaValue = matchingBcbaOption || currentBcba
   const assignedBcbaOptions = currentBcba && !matchingBcbaOption
     ? [currentBcba, ...bcbaValues]
     : bcbaValues
+  const originalSelectedBcbaValue = useMemo(() => getSelectedBcbaValue(assessment, bcbaOptions), [assessment, bcbaOptions])
+  const originalPatch = useMemo(() => getEditableAssessmentPatch(assessment, originalSelectedBcbaValue), [assessment, originalSelectedBcbaValue])
+  const currentPatch = useMemo(() => getEditableAssessmentPatch(form, selectedBcbaValue), [form, selectedBcbaValue])
+  const hasUnsavedChanges = JSON.stringify(currentPatch) !== JSON.stringify(originalPatch)
 
   const setField = (key) => (value) => setForm(prev => ({ ...prev, [key]: value }))
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return
+
+    const handleBeforeUnload = (event) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasUnsavedChanges])
 
   const handleSave = async () => {
     if (!recordId) return
     setSaving(true)
-    const patch = {
-      client_name: form.client_name || '',
-      clinic: form.clinic || form.office || '',
-      assigned_bcba: selectedBcbaValue,
-      caregiver: form.caregiver || '',
-      caregiver_phone: form.caregiver_phone || '',
-      caregiver_email: form.caregiver_email || '',
-      insurance: form.insurance || '',
-      vineland: normalizeAssessmentComponentStatus(form.vineland),
-      srs2: normalizeAssessmentComponentStatus(form.srs2),
-      vbmapp: normalizeAssessmentComponentStatus(form.vbmapp),
-      socially_savvy: normalizeAssessmentComponentStatus(form.socially_savvy),
-      parent_interview_status: normalizeParentInterviewStatus(form.parent_interview_status),
-      parent_interview_scheduled_date: form.parent_interview_scheduled_date || null,
-      parent_interview_completed_date: form.parent_interview_completed_date || null,
-      direct_obs_status: normalizeAssessmentComponentStatus(form.direct_obs_status || form.direct_obs),
-      direct_obs_scheduled_date: form.direct_obs_scheduled_date || null,
-      direct_obs_completed_date: form.direct_obs_completed_date || null,
-      treatment_plan_status: normalizeTreatmentPlanStatus(form.treatment_plan_status || 'Not Started'),
-      treatment_plan_started_date: form.treatment_plan_started_date || null,
-      treatment_plan_completed_date: form.treatment_plan_completed_date || null,
-      authorization_status: form.authorization_status || '',
-      authorization_submitted_date: form.authorization_submitted_date || null,
-      authorization_approved_date: form.authorization_approved_date || null,
-      ready_for_services: form.ready_for_services === true || form.ready_for_services === 'true',
-      active_client_date: form.active_client_date || null,
-      other_services: form.other_services || '',
-      notes: form.notes || '',
-    }
+    const patch = getEditableAssessmentPatch(form, selectedBcbaValue)
     const res = await onSave(recordId, patch)
     if (res?.success) onClose()
     setSaving(false)
@@ -277,7 +309,7 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, b
               <SelectField label="Treatment Plan Status" value={normalizeTreatmentPlanStatus(form?.treatment_plan_status)} onChange={setField('treatment_plan_status')} options={TREATMENT_PLAN_STATUSES} />
               <DateField label="Treatment Plan Started" value={form?.treatment_plan_started_date} onChange={setField('treatment_plan_started_date')} />
               <DateField label="Treatment Plan Completed" value={form?.treatment_plan_completed_date} onChange={setField('treatment_plan_completed_date')} />
-              <SelectField label="Authorization Status" value={form?.authorization_status || ''} onChange={setField('authorization_status')} options={AUTHORIZATION_STATUSES} />
+              <SelectField label="Authorization Status" value={normalizeAuthorizationStatus(form?.authorization_status)} onChange={setField('authorization_status')} options={AUTHORIZATION_STATUSES} />
               <DateField label="Auth Submitted" value={form?.authorization_submitted_date} onChange={setField('authorization_submitted_date')} />
               <DateField label="Auth Approved" value={form?.authorization_approved_date} onChange={setField('authorization_approved_date')} />
               <div>

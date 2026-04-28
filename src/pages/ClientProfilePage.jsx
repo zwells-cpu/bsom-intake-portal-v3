@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ActivityLogItem } from '../components/dashboard/RecentActivityCard'
 import { API_BASE } from '../lib/api'
-import { formatDisplayDate, normalizeParentInterviewStatus, normalizeTreatmentPlanStatus } from '../lib/utils'
+import { formatDisplayDate, normalizeAuthorizationStatus, normalizeParentInterviewStatus, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 export function ClientProfilePage({ referralId, onBack, canShowTechnicalDetails = false }) {
   const [data, setData] = useState(null)
@@ -74,7 +74,7 @@ export function ClientProfilePage({ referralId, onBack, canShowTechnicalDetails 
   const pipeline = [
     { stage: 'Parent Interview', status: normalizeParentInterviewStatus(latest?.parent_interview_status) },
     { stage: 'Treatment Plan', status: normalizeTreatmentPlanStatus(latest?.treatment_plan_status) },
-    { stage: 'Authorization', status: latest?.authorization_status ?? 'Pending' },
+    { stage: 'Authorization', status: normalizeAuthorizationStatus(latest?.authorization_status) || 'Pending Submission' },
     { stage: 'Active Client', status: latest?.ready_for_services ? 'Ready' : 'Pending' },
   ]
 
@@ -138,7 +138,7 @@ export function ClientProfilePage({ referralId, onBack, canShowTechnicalDetails 
                     <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 12 }}>{formatDisplayDate(a.assessment_completed_date)}</td>
                     <td style={{ color: stageColor(normalizeParentInterviewStatus(a.parent_interview_status)), fontSize: 12, fontWeight: 700 }}>{normalizeParentInterviewStatus(a.parent_interview_status)}</td>
                     <td style={{ color: stageColor(normalizeTreatmentPlanStatus(a.treatment_plan_status)), fontSize: 12, fontWeight: 700 }}>{normalizeTreatmentPlanStatus(a.treatment_plan_status)}</td>
-                    <td style={{ color: stageColor(a.authorization_status), fontSize: 12, fontWeight: 700 }}>{a.authorization_status || '--'}</td>
+                    <td style={{ color: stageColor(normalizeAuthorizationStatus(a.authorization_status)), fontSize: 12, fontWeight: 700 }}>{normalizeAuthorizationStatus(a.authorization_status) || '--'}</td>
                     <td style={{ color: a.ready_for_services ? 'var(--green)' : 'var(--dim)', fontSize: 12, fontWeight: 700 }}>
                       {a.ready_for_services ? 'Yes' : 'No'}
                     </td>
@@ -183,6 +183,6 @@ function stageColor(status) {
   const s = String(status || '').toLowerCase()
   if (['completed', 'finalized', 'ready', 'approved'].includes(s)) return 'var(--green)'
   if (s === 'no show') return 'var(--red)'
-  if (['in progress', 'submitted', 'scheduled'].includes(s)) return 'var(--yellow)'
+  if (['in progress', 'submitted', 'scheduled', 'pending submission', 'submitted / in review'].includes(s)) return 'var(--yellow)'
   return 'var(--dim)'
 }

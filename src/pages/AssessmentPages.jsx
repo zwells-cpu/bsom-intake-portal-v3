@@ -15,6 +15,7 @@ import {
   getAuthorizationStatus,
   isAuthorizationApproved,
   normalizeAssessmentComponentStatus,
+  normalizeAuthorizationStatus,
   normalizeParentInterviewStatus,
   normalizeTreatmentPlanStatus,
   statusColor,
@@ -72,7 +73,7 @@ function getAssessmentProgressPercent(record) {
   return `${completedCount * 25}%`
 }
 
-const ALL_PA = ['All', 'Approved', 'In Review', 'Pending', 'Reauthorization Needed', 'Appeal Pending', 'Denied', 'No PA Needed', 'Approved/Discharged', 'Referred Out']
+const ALL_PA = ['All', 'Approved', 'Submitted / In Review', 'Pending Submission', 'Reauthorization Needed', 'Appeal Pending', 'Denied', 'No PA Needed', 'Approved/Discharged', 'Referred Out']
 const TX_STATUSES = TREATMENT_PLAN_STATUSES
 
 function renderClientCell(record, secondaryText) {
@@ -131,7 +132,7 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
 
     return (name.includes(query) || caregiver.includes(query))
       && (office === 'ALL' || (record.clinic || '').toUpperCase() === office)
-      && (paFilter === 'All' || record.authorization_status === paFilter)
+      && (paFilter === 'All' || normalizeAuthorizationStatus(record.authorization_status) === paFilter)
       && matchesStatFilter(record, activeFilter)
   })
 

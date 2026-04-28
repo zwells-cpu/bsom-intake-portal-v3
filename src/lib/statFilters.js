@@ -55,7 +55,7 @@ export function matchesStatFilter(record, filter) {
     if (key === 'pa-approved') return ['Approved', 'No PA Needed', 'Approved/Discharged'].includes(pa)
     if (key === 'in-progress') return stage === 'In Progress'
     if (key === 'denied-appealed') return ['Denied', 'Appeal Pending'].includes(pa)
-    if (key === 'awaiting-pa') return ['Pending', 'In Review'].includes(pa)
+    if (key === 'awaiting-pa') return ['Pending Submission', 'Submitted / In Review'].includes(pa)
     return true
   }
 

@@ -43,6 +43,8 @@ const ConversionRatePage = lazy(() => import('./pages/OperationsPages').then(mod
 const IntakePerformancePage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.IntakePerformancePage })))
 
 const NAV_STATE_KEY = 'bsom-portal-nav'
+const REFERRAL_MODAL_STATE_KEY = 'bsom-portal-open-referral-modal'
+const ASSESSMENT_MODAL_STATE_KEY = 'bsom-portal-open-assessment-modal'
 
 const REFERRAL_DOCUMENT_FIELDS = new Set(['referral_form', 'permission_assessment', 'vineland', 'srs2', 'autism_diagnosis', 'intake_paperwork', 'iep_report', 'attends_school'])
 const REFERRAL_CONTACT_FIELDS  = new Set(['caregiver', 'caregiver_phone', 'caregiver_email', 'referral_source', 'referral_source_phone', 'referral_source_fax', 'provider_npi', 'point_of_contact'])
@@ -132,6 +134,14 @@ function readSavedNav() {
   }
 }
 
+function readSavedModalId(key) {
+  try {
+    return sessionStorage.getItem(key) || null
+  } catch {
+    return null
+  }
+}
+
 export default function App() {
   const { theme, setTheme } = useTheme()
   const { refs, loading, error, saving, saved, setError, load, saveReferral, updateReferral, deleteReferral, setStatus, toggleParentInterview } = useReferrals()
@@ -156,10 +166,17 @@ export default function App() {
   const [screen, setScreen] = useState(() => readSavedNav()?.screen ?? 'home')
   const [module, setModule] = useState(() => readSavedNav()?.module ?? null)
   const [subpage, setSubpage] = useState(() => readSavedNav()?.subpage ?? null)
-  const [selId, setSelId] = useState(null)
-  const [selAssessId, setSelAssessId] = useState(null)
+  const [selId, setSelId] = useState(() => readSavedModalId(REFERRAL_MODAL_STATE_KEY))
+  const [selAssessId, setSelAssessId] = useState(() => readSavedModalId(ASSESSMENT_MODAL_STATE_KEY))
   const [routeFilter, setRouteFilter] = useState(null)
   const [profileId, setProfileId] = useState(null)
+  const assessmentLoadRequestedRef = useRef(false)
+  const assessmentModalRestorePendingRef = useRef(Boolean(selAssessId))
+
+  const requestLoadAssessments = () => {
+    assessmentLoadRequestedRef.current = true
+    return loadAssessments()
+  }
 
   useEffect(() => {
     let mounted = true
@@ -268,20 +285,40 @@ export default function App() {
     }
   }, [screen, module, subpage])
 
+  // Persist open client modals across browser refreshes (session-scoped).
+  useEffect(() => {
+    if (selId) {
+      sessionStorage.setItem(REFERRAL_MODAL_STATE_KEY, selId)
+    } else {
+      sessionStorage.removeItem(REFERRAL_MODAL_STATE_KEY)
+    }
+  }, [selId])
+
+  useEffect(() => {
+    if (selAssessId) {
+      sessionStorage.setItem(ASSESSMENT_MODAL_STATE_KEY, String(selAssessId))
+    } else {
+      sessionStorage.removeItem(ASSESSMENT_MODAL_STATE_KEY)
+    }
+  }, [selAssessId])
+
   // When session resolves and nav was restored to assessment/operations, trigger data load.
   const _restoredModule = useRef(readSavedNav()?.module ?? null)
   useEffect(() => {
     if (!session || recoveryMode) return
     const m = _restoredModule.current
-    if (m === 'assessment' || m === 'operations') loadAssessments()
-  }, [session, recoveryMode, loadAssessments])
+    if (m === 'assessment' || m === 'operations' || assessmentModalRestorePendingRef.current) {
+      assessmentModalRestorePendingRef.current = false
+      requestLoadAssessments()
+    }
+  }, [session, recoveryMode])
 
   const openModulePage = (nextModule, nextSubpage, filter = null) => {
     setModule(nextModule)
     setSubpage(nextSubpage)
     setScreen('module')
     setRouteFilter(filter)
-    if ((nextModule === 'assessment' || nextModule === 'operations') && assessData.length === 0) loadAssessments()
+    if ((nextModule === 'assessment' || nextModule === 'operations') && assessData.length === 0) requestLoadAssessments()
   }
 
   const enterModule = (id) => {
@@ -316,14 +353,19 @@ export default function App() {
     : null
 
   useEffect(() => {
-    if (selId && !refs.some(record => record.id === selId)) setSelId(null)
-  }, [refs, selId])
+    if (!loading && selId && !refs.some(record => record.id === selId)) setSelId(null)
+  }, [loading, refs, selId])
 
   useEffect(() => {
-    if (selAssessId && !assessData.some(record => String(getAssessmentRecordId(record) || '') === String(selAssessId))) {
+    if (
+      !assessLoading &&
+      assessmentLoadRequestedRef.current &&
+      selAssessId &&
+      !assessData.some(record => String(getAssessmentRecordId(record) || '') === String(selAssessId))
+    ) {
       setSelAssessId(null)
     }
-  }, [assessData, selAssessId])
+  }, [assessData, assessLoading, selAssessId])
 
   const handleSelectAssessment = (record) => {
     const id = getAssessmentRecordId(record)
@@ -1086,7 +1128,7 @@ export default function App() {
                 className="btn-sm"
                 onClick={() => {
                   load()
-                  if (module === 'assessment' || module === 'operations') loadAssessments()
+                  if (module === 'assessment' || module === 'operations') requestLoadAssessments()
                 }}
               >
                 Refresh
