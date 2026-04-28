@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  envPrefix: ['VITE_', 'ACTIVITY_LOG_'],
   build: {
     chunkSizeWarningLimit: 900,
     rollupOptions: {

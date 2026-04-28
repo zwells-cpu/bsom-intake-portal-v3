@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ActivityLogItem } from '../components/dashboard/RecentActivityCard'
 import { API_BASE } from '../lib/api'
+import { filterActivityLogsForLaunch } from '../lib/activityLogs'
 import { formatDisplayDate, normalizeAuthorizationStatus, normalizeParentInterviewStatus, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 export function ClientProfilePage({ referralId, onBack, canShowTechnicalDetails = false }) {
@@ -26,7 +27,7 @@ export function ClientProfilePage({ referralId, onBack, canShowTechnicalDetails 
         setData({
           referral,
           assessments: Array.isArray(assessments) ? assessments : [],
-          activity: Array.isArray(activity) ? activity : [],
+          activity: filterActivityLogsForLaunch(activity),
         })
         setLoading(false)
       })

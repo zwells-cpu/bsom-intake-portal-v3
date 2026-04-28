@@ -11,6 +11,26 @@
 
 import { API_BASE } from './api'
 
+const DEFAULT_ACTIVITY_LOG_LAUNCH_DATE = '2026-04-28T00:00:00Z'
+
+export const ACTIVITY_LOG_LAUNCH_DATE =
+  import.meta.env.ACTIVITY_LOG_LAUNCH_DATE ||
+  import.meta.env.VITE_ACTIVITY_LOG_LAUNCH_DATE ||
+  DEFAULT_ACTIVITY_LOG_LAUNCH_DATE
+
+const ACTIVITY_LOG_LAUNCH_TIME = Date.parse(ACTIVITY_LOG_LAUNCH_DATE)
+
+export function filterActivityLogsForLaunch(logs = []) {
+  if (!Array.isArray(logs)) return []
+  if (!Number.isFinite(ACTIVITY_LOG_LAUNCH_TIME)) return logs
+
+  // This hides pre-launch QA/testing activity so the visible activity log starts at go-live.
+  return logs.filter(log => {
+    const createdAt = Date.parse(log?.created_at)
+    return Number.isFinite(createdAt) && createdAt >= ACTIVITY_LOG_LAUNCH_TIME
+  })
+}
+
 export const ACTIVITY_FIELD_LABELS = {
   client_name: 'Client name',
   clinic: 'Clinic',
@@ -312,12 +332,20 @@ export async function fetchRecentActivityLogs(limit = 10) {
   try {
     const params = new URLSearchParams()
     if (typeof limit === 'number' && limit > 0) params.set('limit', String(limit))
+    params.set('created_at_gte', ACTIVITY_LOG_LAUNCH_DATE)
 
     const res = await fetch(`${API_BASE}/api/audit-logs?${params}`)
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    if (!res.ok) {
+      params.delete('created_at_gte')
+      const fallbackRes = await fetch(`${API_BASE}/api/audit-logs?${params}`)
+      if (!fallbackRes.ok) throw new Error(`HTTP ${fallbackRes.status}`)
+
+      const fallbackJson = await fallbackRes.json()
+      return filterActivityLogsForLaunch(Array.isArray(fallbackJson.data) ? fallbackJson.data : [])
+    }
 
     const json = await res.json()
-    return Array.isArray(json.data) ? json.data : []
+    return filterActivityLogsForLaunch(Array.isArray(json.data) ? json.data : [])
   } catch (err) {
     console.error('fetchRecentActivityLogs: failed', err.message)
     return []
