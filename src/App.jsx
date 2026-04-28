@@ -786,7 +786,7 @@ export default function App() {
                 <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--accent)' }}>
                   Secure Access
                 </div>
-                <h1 style={{ margin: '8px 0 0', fontSize: 26, lineHeight: 1.1 }}>
+                <h1 style={{ margin: '14px 0 0', fontSize: 26, lineHeight: 1.1 }}>
                   {recoveryMode ? 'Reset password' : 'Staff Sign In'}
                 </h1>
               </div>
@@ -804,7 +804,7 @@ export default function App() {
                       onChange={(e) => setResetPassword(e.target.value)}
                       autoComplete="new-password"
                       required
-                      style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
+                      style={{ width: '100%', background: 'var(--surface2)', border: '1px solid color-mix(in srgb, var(--border2) 88%, var(--text))', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
                     />
                   </label>
                   <label style={{ display: 'grid', gap: 6 }}>
@@ -815,7 +815,7 @@ export default function App() {
                       onChange={(e) => setResetConfirmPassword(e.target.value)}
                       autoComplete="new-password"
                       required
-                      style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
+                      style={{ width: '100%', background: 'var(--surface2)', border: '1px solid color-mix(in srgb, var(--border2) 88%, var(--text))', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
                     />
                   </label>
                 </>
@@ -829,7 +829,7 @@ export default function App() {
                       onChange={(e) => setLoginEmail(e.target.value)}
                       autoComplete="email"
                       required
-                      style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
+                      style={{ width: '100%', background: 'var(--surface2)', border: '1px solid color-mix(in srgb, var(--border2) 88%, var(--text))', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
                     />
                   </label>
                   <label style={{ display: 'grid', gap: 6 }}>
@@ -840,7 +840,7 @@ export default function App() {
                       onChange={(e) => setLoginPassword(e.target.value)}
                       autoComplete="current-password"
                       required
-                      style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
+                      style={{ width: '100%', background: 'var(--surface2)', border: '1px solid color-mix(in srgb, var(--border2) 88%, var(--text))', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 14 }}
                     />
                   </label>
                 </>
