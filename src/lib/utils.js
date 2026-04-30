@@ -1,6 +1,6 @@
 import { STAGE_COLORS, STAGE_ICONS, PA_COLORS, PA_ICONS } from './constants'
 
-export const PARENT_INTERVIEW_STATUSES = ['Not Started', 'Scheduled', 'In Progress', 'Completed', 'No Show']
+export const PARENT_INTERVIEW_STATUSES = ['Awaiting Assignment', 'Not Started', 'Scheduled', 'In Progress', 'Completed', 'No Show']
 export const ASSESSMENT_COMPONENT_STATUSES = ['Not Started', 'Scheduled', 'In Progress', 'Completed']
 export const TREATMENT_PLAN_STATUSES = ['Not Started', 'In Progress', 'Completed', 'Finalized']
 export const AUTHORIZATION_STATUSES = ['Not Submitted', 'Pending Submission', 'Submitted / In Review', 'Approved', 'Partially Approved', 'Reauthorization Needed', 'Appeal Pending', 'Denied', 'No PA Needed', 'Approved/Discharged', 'Referred Out']
@@ -96,6 +96,36 @@ export function getReferralStage(record) {
   if (rawStage && rawStage !== 'Active Client') return rawStage
   if (hasReferralIntakeProgress(record)) return 'Intake'
   return 'New Referral'
+}
+
+function referralIdentityValues(record) {
+  return [record?.id, record?.referral_id]
+    .filter(value => value !== null && value !== undefined && String(value).trim() !== '')
+    .map(value => String(value))
+}
+
+export function hasLinkedAssessment(record, assessments = []) {
+  const referralIds = new Set(referralIdentityValues(record))
+  if (!referralIds.size) return false
+
+  return (assessments || []).some(assessment => {
+    const linkedReferralId = assessment?.referral_id
+    return linkedReferralId !== null
+      && linkedReferralId !== undefined
+      && referralIds.has(String(linkedReferralId))
+  })
+}
+
+export function isReferralTransitioned(record, assessments = []) {
+  return record?.ready_for_parent_interview === true || hasLinkedAssessment(record, assessments)
+}
+
+export function isActiveReferralWork(record, assessments = []) {
+  return record?.status === 'active' && !isReferralTransitioned(record, assessments)
+}
+
+export function getReferralBoardStage(record, assessments = []) {
+  return isReferralTransitioned(record, assessments) ? 'Moved to Initial Assessment' : getReferralStage(record)
 }
 
 // ── Office normalization ──
@@ -222,10 +252,12 @@ export function normalizeParentInterviewStatus(status) {
   const upper = value.toUpperCase()
 
   if (upper === 'NO SHOW') return 'No Show'
+  if (upper === 'AWAITING ASSIGNMENT') return 'Awaiting Assignment'
+  if (['AWAITING', 'WAITING', 'TBD'].includes(upper)) return 'Awaiting Assignment'
   if (upper === 'SCHEDULED') return 'Scheduled'
   if (['IN PROGRESS', 'IN-PROGRESS', 'STARTED'].includes(upper)) return 'In Progress'
   if (['DONE', 'YES', 'COMPLETED', 'FINALIZED'].includes(upper)) return 'Completed'
-  if (['AWAITING', 'AWAITING ASSIGNMENT', 'WAITING', 'TBD', 'NO', 'NOT STARTED'].includes(upper)) return 'Not Started'
+  if (['NO', 'NOT STARTED'].includes(upper)) return 'Not Started'
 
   return value
 }
@@ -257,7 +289,7 @@ function isCompletedAssessmentValue(value) {
 
 export function getAssessmentWorkflowProgress(record) {
   const components = [
-    { key: 'parent_interview_status', completed: normalizeParentInterviewStatus(record?.parent_interview_status) === 'Completed', started: normalizeParentInterviewStatus(record?.parent_interview_status) !== 'Not Started' },
+    { key: 'parent_interview_status', completed: normalizeParentInterviewStatus(record?.parent_interview_status) === 'Completed', started: !['Awaiting Assignment', 'Not Started'].includes(normalizeParentInterviewStatus(record?.parent_interview_status)) },
     { key: 'vineland', completed: isCompletedAssessmentValue(record?.vineland), started: normalizeAssessmentComponentStatus(record?.vineland) !== 'Not Started' },
     { key: 'srs2', completed: isCompletedAssessmentValue(record?.srs2), started: normalizeAssessmentComponentStatus(record?.srs2) !== 'Not Started' },
     { key: 'direct_obs', completed: isCompletedAssessmentValue(record?.direct_obs), started: normalizeAssessmentComponentStatus(record?.direct_obs) !== 'Not Started' },
@@ -350,6 +382,7 @@ export function needsInsuranceVerification(value) {
 export function statusColor(s) {
   if (['Finalized','Completed'].includes(s)) return '#22c55e'
   if (['In Progress','Scheduled'].includes(s)) return '#f59e0b'
+  if (['Awaiting Assignment'].includes(s)) return '#64748b'
   if (['Not Started'].includes(s)) return '#ef4444'
   if (['No Show'].includes(s)) return '#ef4444'
   return '#64748b'

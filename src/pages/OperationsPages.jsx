@@ -1,7 +1,7 @@
 import { Activity, BarChart3, Clock, FileText, PieChart, UserCheck, Users, UserX } from 'lucide-react'
 import { StagePill } from '../components/Badge'
 import { ClickableStatCard } from '../components/StatFilterControls'
-import { displayStaffName, getAuthorizationStatus, getReferralStage, isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, normalizeOffice, normalizeParentInterviewStatus, normalizeStaffName, normalizeTreatmentPlanStatus } from '../lib/utils'
+import { displayStaffName, getAuthorizationStatus, getReferralStage, isActiveReferralWork, isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, normalizeOffice, normalizeParentInterviewStatus, normalizeStaffName, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 // ── Shared helpers ──
 function daysSince(dateStr) {
@@ -63,7 +63,7 @@ function SectionHeader({ icon: Icon, children }) {
 // PIPELINE OVERVIEW
 // ══════════════════════════════════════
 export function PipelineOverviewPage({ refs, assessData = [], openModulePage }) {
-  const active = refs.filter(r => r.status === 'active')
+  const active = refs.filter(r => isActiveReferralWork(r, assessData))
   const nr     = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
   const activeClients = assessData.filter(record => Boolean(record.active_client_date)).length
   const awaitingPA = assessData.filter(record => ['Pending Submission', 'Submitted / In Review'].includes(getAuthorizationStatus(record))).length
@@ -153,8 +153,8 @@ export function PipelineOverviewPage({ refs, assessData = [], openModulePage }) 
 // ══════════════════════════════════════
 // REFERRAL AGING
 // ══════════════════════════════════════
-export function ReferralAgingPage({ refs, onSelectRef }) {
-  const active = refs.filter(r => r.status === 'active')
+export function ReferralAgingPage({ refs, assessData = [], onSelectRef }) {
+  const active = refs.filter(r => isActiveReferralWork(r, assessData))
   const WARN = 14, DANGER = 30
 
   const aged = active.map(r => {
@@ -233,8 +233,8 @@ export function ReferralAgingPage({ refs, onSelectRef }) {
 // ══════════════════════════════════════
 const OFFICE_COLORS = { 'MERIDIAN': '#6366f1', 'FOREST': '#22c55e', 'FLOWOOD': '#f59e0b', 'DAY TREATMENT': '#fb923c' }
 
-export function ClinicVolumePage({ refs }) {
-  const active  = refs.filter(r => r.status === 'active')
+export function ClinicVolumePage({ refs, assessData = [] }) {
+  const active  = refs.filter(r => isActiveReferralWork(r, assessData))
   const nr      = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
   const all     = [...active, ...nr]
   const offices = ['MERIDIAN','FOREST','FLOWOOD','DAY TREATMENT']
@@ -370,8 +370,8 @@ export function ClinicVolumePage({ refs }) {
 // ══════════════════════════════════════
 // CONVERSION RATE
 // ══════════════════════════════════════
-export function ConversionRatePage({ refs }) {
-  const active = refs.filter(r => r.status === 'active')
+export function ConversionRatePage({ refs, assessData = [] }) {
+  const active = refs.filter(r => isActiveReferralWork(r, assessData))
   const nr     = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
   const all    = [...active, ...nr]
   const total  = all.length
@@ -480,8 +480,8 @@ export function ConversionRatePage({ refs }) {
 // ══════════════════════════════════════
 // INTAKE PERFORMANCE
 // ══════════════════════════════════════
-export function IntakePerformancePage({ refs }) {
-  const active     = refs.filter(r => r.status === 'active')
+export function IntakePerformancePage({ refs, assessData = [] }) {
+  const active     = refs.filter(r => isActiveReferralWork(r, assessData))
   const STAFF_LIST = [...new Set(active.map(r => normalizeStaffName(r.intake_personnel)).filter(Boolean))].sort()
 
   const perf = STAFF_LIST.map(staff => {

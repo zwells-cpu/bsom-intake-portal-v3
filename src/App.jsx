@@ -16,7 +16,7 @@ import { AssessmentDetailModal } from './components/AssessmentDetailModal'
 
 import { NewReferralPage } from './pages/NewReferralPage'
 import { createActivityLog } from './lib/activityLogs'
-import { getAssessmentRecordId, needsInsuranceVerification } from './lib/utils'
+import { getAssessmentRecordId, isActiveReferralWork, isReferralTransitioned, needsInsuranceVerification } from './lib/utils'
 import { API_BASE } from './lib/api'
 import { formatProfileAccessLabel, formatRoleLabel, isAdmin, normalizeProfile } from './lib/profileUtils'
 
@@ -145,7 +145,7 @@ function readSavedModalId(key) {
 export default function App() {
   const { theme, setTheme } = useTheme()
   const { refs, loading, error, saving, saved, setError, load, saveReferral, updateReferral, deleteReferral, setStatus, toggleParentInterview } = useReferrals()
-  const { assessData, assessLoading, loadAssessments, saveAssessEdit, deleteAssessment } = useAssessments()
+  const { assessData, assessLoading, loadAssessments, saveAssessEdit, deleteAssessment, ensureAssessmentForReferral } = useAssessments()
   const { bcbaOptions, officeOptions, insuranceOptions, referralSourceOptions, reloadLookups } = useLookups()
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -162,6 +162,7 @@ export default function App() {
   const [resetSuccess, setResetSuccess] = useState(null)
   const [signOutPending, setSignOutPending] = useState(false)
   const [activityRefreshKey, setActivityRefreshKey] = useState(0)
+  const [workflowToast, setWorkflowToast] = useState(null)
 
   const [screen, setScreen] = useState(() => readSavedNav()?.screen ?? 'home')
   const [module, setModule] = useState(() => readSavedNav()?.module ?? null)
@@ -176,6 +177,11 @@ export default function App() {
   const requestLoadAssessments = () => {
     assessmentLoadRequestedRef.current = true
     return loadAssessments()
+  }
+
+  const showWorkflowToast = (message) => {
+    setWorkflowToast(message)
+    setTimeout(() => setWorkflowToast(null), 2200)
   }
 
   useEffect(() => {
@@ -227,6 +233,7 @@ export default function App() {
   useEffect(() => {
     if (!session || recoveryMode) return
     load()
+    requestLoadAssessments()
   }, [load, recoveryMode, session])
 
   useEffect(() => {
@@ -339,10 +346,10 @@ export default function App() {
     setRouteFilter(null)
   }
 
-  const active = useMemo(() => refs.filter(r => r.status === 'active'), [refs])
+  const active = useMemo(() => refs.filter(r => isActiveReferralWork(r, assessData)), [refs, assessData])
   const nr = useMemo(() => refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out'), [refs])
   const pending = useMemo(() => active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase())), [active])
-  const readyForInterview = useMemo(() => refs.filter(r => r.ready_for_parent_interview === true), [refs])
+  const readyForInterview = useMemo(() => refs.filter(r => isReferralTransitioned(r, assessData)), [refs, assessData])
   const noIns = useMemo(() => active.filter(r => needsInsuranceVerification(r.insurance_verified)).length, [active])
   const operationsRefs = useMemo(() => refs, [refs])
   const operationsAssessData = useMemo(() => assessData, [assessData])
@@ -608,6 +615,31 @@ export default function App() {
     const res = await toggleParentInterview(id, val)
 
     if (res?.success && res?.data) {
+      let assessmentResult = null
+
+      if (val === true) {
+        assessmentResult = await ensureAssessmentForReferral(res.data)
+
+        if (!assessmentResult?.success) {
+          setError(`Referral was marked ready, but the assessment record could not be created: ${assessmentResult?.error || 'Unknown error'}`)
+        } else {
+          showWorkflowToast('Client moved to Initial Assessment Board.')
+
+          if (assessmentResult.created) {
+            await writeAssessmentActivity({
+              action: 'assessment_created_from_referral',
+              record: assessmentResult.data,
+              description: `${formatReferralName(res.data)} moved from referral intake to initial assessment workflow.`,
+              details_json: {
+                referral_id: res.data.id || res.data.referral_id || '',
+                source_workflow: 'referral_intake',
+                destination_workflow: 'initial_assessment',
+              },
+            })
+          }
+        }
+      }
+
       await writeReferralActivity({
         action: val ? 'parent_interview_ready_enabled' : 'parent_interview_ready_disabled',
         record: res.data,
@@ -1024,6 +1056,7 @@ export default function App() {
           )}
         />
         {saved && <div className="toast">Referral saved.</div>}
+        {workflowToast && <div className="toast">{workflowToast}</div>}
         {idleWarningModal}
       </>
     )
@@ -1049,6 +1082,7 @@ export default function App() {
       return (
         <DashboardPage
           refs={refs}
+          assessData={assessData}
           setSelectedId={setSelId}
           openModulePage={openModulePage}
           activityRefreshKey={activityRefreshKey}
@@ -1057,12 +1091,12 @@ export default function App() {
     }
 
     if (module === 'intake') {
-      if (subpage === 'intakedash') return <IntakeDashboard refs={refs} onSelectRef={setSelId} openModulePage={openModulePage} />
-      if (subpage === 'all') return <AllReferralsPage refs={refs} onSelectRef={setSelId} onOpenProfile={handleOpenProfile} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'intakedash') return <IntakeDashboard refs={refs} assessData={assessData} onSelectRef={setSelId} openModulePage={openModulePage} />
+      if (subpage === 'all') return <AllReferralsPage refs={refs} assessData={assessData} onSelectRef={setSelId} onOpenProfile={handleOpenProfile} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'profile') return <ClientProfilePage referralId={profileId} onBack={() => setSubpageAndClearFilter('all')} canShowTechnicalDetails={isAdmin(profile)} />
       if (subpage === 'new') return <NewReferralPage onSave={handleCreateReferral} saving={saving} officeOptions={officeOptions} insuranceOptions={insuranceOptions} referralSourceOptions={referralSourceOptions} />
-      if (subpage === 'pending') return <PendingDocsPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'insurance') return <InsuranceVerifPage refs={refs} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'pending') return <PendingDocsPage refs={refs} assessData={assessData} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'insurance') return <InsuranceVerifPage refs={refs} assessData={assessData} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'nr') return <NonResponsivePage refs={refs} onRestore={(id) => handleSetReferralStatus(id, 'active')} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
     }
 
@@ -1082,10 +1116,10 @@ export default function App() {
 
     if (module === 'operations') {
       if (subpage === 'pipeline') return <PipelineOverviewPage refs={operationsRefs} assessData={operationsAssessData} openModulePage={openModulePage} />
-      if (subpage === 'aging') return <ReferralAgingPage refs={operationsRefs} onSelectRef={setSelId} />
-      if (subpage === 'volume') return <ClinicVolumePage refs={operationsRefs} />
-      if (subpage === 'conversion') return <ConversionRatePage refs={operationsRefs} />
-      if (subpage === 'performance') return <IntakePerformancePage refs={operationsRefs} />
+      if (subpage === 'aging') return <ReferralAgingPage refs={operationsRefs} assessData={operationsAssessData} onSelectRef={setSelId} />
+      if (subpage === 'volume') return <ClinicVolumePage refs={operationsRefs} assessData={operationsAssessData} />
+      if (subpage === 'conversion') return <ConversionRatePage refs={operationsRefs} assessData={operationsAssessData} />
+      if (subpage === 'performance') return <IntakePerformancePage refs={operationsRefs} assessData={operationsAssessData} />
     }
 
     return (
@@ -1098,6 +1132,7 @@ export default function App() {
   return (
     <>
       {saved && <div className="toast">Referral saved.</div>}
+      {workflowToast && <div className="toast">{workflowToast}</div>}
 
       <div className="shell">
         <Sidebar

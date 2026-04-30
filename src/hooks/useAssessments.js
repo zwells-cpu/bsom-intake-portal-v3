@@ -5,6 +5,7 @@ import { normalizeAssessmentComponentStatus, normalizeAuthorizationStatus, norma
 const API_URL = import.meta.env.VITE_API_URL
 
 const ASSESSMENT_DB_FIELDS = [
+  'referral_id',
   'client_name',
   'clinic',
   'assigned_bcba',
@@ -83,6 +84,40 @@ function normalizeAssessmentRecord(record, fallbackId = null) {
   }
 }
 
+function sortAssessments(records = []) {
+  return (records || [])
+    .slice()
+    .sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''))
+}
+
+function buildAssessmentFromReferral(referral = {}) {
+  const clientName = `${referral.first_name || ''} ${referral.last_name || ''}`.trim()
+
+  return {
+    referral_id: referral.id || referral.referral_id || null,
+    client_name: clientName || referral.client_name || '',
+    clinic: referral.office || referral.clinic || '',
+    caregiver: referral.caregiver || '',
+    caregiver_phone: referral.caregiver_phone || '',
+    caregiver_email: referral.caregiver_email || '',
+    insurance: referral.insurance || '',
+    vineland: 'Not Started',
+    srs2: 'Not Started',
+    vbmapp: 'Not Started',
+    socially_savvy: 'Not Started',
+    parent_interview_status: 'Awaiting Assignment',
+    assessment_status: 'Not Started',
+    direct_obs_status: 'Not Started',
+    direct_obs: 'Not Started',
+    treatment_plan_status: 'Not Started',
+    authorization_status: 'Not Submitted',
+    ready_for_services: false,
+    in_school: referral.attends_school || '',
+    other_services: referral.other_services || '',
+    notes: '',
+  }
+}
+
 function sanitizeAssessmentPatch(patch = {}) {
   const cleaned = {}
   ASSESSMENT_DB_FIELDS.forEach((field) => {
@@ -129,7 +164,7 @@ export function useAssessments() {
       const res = await fetch(`${API_URL}/assessments`)
       if (!res.ok) throw new Error(await res.text())
       const data = await res.json()
-      const sorted = (data || []).slice().sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''))
+      const sorted = sortAssessments(data)
       setAssessData(sorted.map(record => normalizeAssessmentRecord(record)))
     } catch (e) {
       setAssessError('Could not load assessments: ' + e.message)
@@ -155,7 +190,7 @@ export function useAssessments() {
       const allRes = await fetch(`${API_URL}/assessments`)
       if (!allRes.ok) throw new Error(await allRes.text())
       const all = await allRes.json()
-      const sorted = (all || []).slice().sort((a, b) => (a.client_name || '').localeCompare(b.client_name || ''))
+      const sorted = sortAssessments(all)
       setAssessData(sorted.map(record => normalizeAssessmentRecord(record)))
 
       const nextRecord = normalizeAssessmentRecord(saved ?? { assessment_id: id, ...normalizedPatch }, id)
@@ -179,5 +214,46 @@ export function useAssessments() {
     }
   }, [])
 
-  return { assessData, assessLoading, assessError, loadAssessments, saveAssessEdit, deleteAssessment }
+  const ensureAssessmentForReferral = useCallback(async (referral) => {
+    try {
+      setAssessError(null)
+      const referralId = referral?.id || referral?.referral_id
+      if (!referralId) throw new Error('Referral is missing an ID.')
+
+      const allRes = await fetch(`${API_URL}/assessments`)
+      if (!allRes.ok) throw new Error(await allRes.text())
+      const all = await allRes.json()
+      const existing = (all || []).find(record => String(record.referral_id || '') === String(referralId))
+
+      if (existing) {
+        const sorted = sortAssessments(all)
+        setAssessData(sorted.map(record => normalizeAssessmentRecord(record)))
+        return { success: true, data: normalizeAssessmentRecord(existing), created: false }
+      }
+
+      const payload = sanitizeAssessmentPatch(buildAssessmentFromReferral(referral))
+      const createRes = await fetch(`${API_URL}/assessments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!createRes.ok) throw new Error(await createRes.text())
+
+      const createdJson = await createRes.json().catch(() => null)
+      const created = Array.isArray(createdJson) ? createdJson[0] : createdJson
+
+      const refreshedRes = await fetch(`${API_URL}/assessments`)
+      if (!refreshedRes.ok) throw new Error(await refreshedRes.text())
+      const refreshed = await refreshedRes.json()
+      const sorted = sortAssessments(refreshed)
+      setAssessData(sorted.map(record => normalizeAssessmentRecord(record)))
+
+      return { success: true, data: normalizeAssessmentRecord(created || payload), created: true }
+    } catch (e) {
+      setAssessError('Could not create assessment from referral: ' + e.message)
+      return { success: false, error: e.message }
+    }
+  }, [])
+
+  return { assessData, assessLoading, assessError, loadAssessments, saveAssessEdit, deleteAssessment, ensureAssessmentForReferral }
 }

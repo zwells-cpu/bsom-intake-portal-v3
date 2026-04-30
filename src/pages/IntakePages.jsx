@@ -1,19 +1,20 @@
 import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
-import { getReferralStage, pct, displayStaffName, formatDisplayDate, formatInsurance, normalizeAutismDx, normalizeOffice, normalizeStaffName } from '../lib/utils'
+import { getReferralBoardStage, getReferralStage, isActiveReferralWork, isReferralTransitioned, pct, displayStaffName, formatDisplayDate, formatInsurance, normalizeAutismDx, normalizeOffice, normalizeStaffName } from '../lib/utils'
 
 // ══════════════════════════════════════
 // INTAKE DASHBOARD
 // ══════════════════════════════════════
-export function IntakeDashboard({ refs, onSelectRef, openModulePage }) {
-  const active  = refs.filter(r => r.status === 'active')
+export function IntakeDashboard({ refs, assessData = [], onSelectRef, openModulePage }) {
+  const active  = refs.filter(r => isActiveReferralWork(r, assessData))
+  const transitioned = refs.filter(r => r.status === 'active' && isReferralTransitioned(r, assessData))
   const nr      = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
   const pending = active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
   const signed  = active.filter(r => (r.intake_paperwork || '').toLowerCase().includes('signed'))
   const noIns   = active.filter(r => !['yes'].includes((r.insurance_verified || '').toLowerCase()))
   const noDx    = active.filter(r => normalizeAutismDx(r.autism_diagnosis) !== 'Received')
-  const readyPI = active.filter(r => getReferralStage(r) === 'Ready for Interview')
+  const readyPI = transitioned
 
   const byStage = {}
   active.forEach(r => { const s = getReferralStage(r); byStage[s] = (byStage[s] || 0) + 1 })
@@ -50,7 +51,7 @@ export function IntakeDashboard({ refs, onSelectRef, openModulePage }) {
             const count = byStage[s] || 0
             if (!count) return null
             const max = Math.max(...Object.values(byStage), 1)
-            const STAGE_C = { 'New Referral': '#6366f1', 'Intake': '#8b5cf6', 'Ready for Interview': '#22c55e', 'Initial Assessment': '#f59e0b', 'PA Submitted': '#fb923c', 'PA In Review': '#fb923c', 'PA Approved': '#22c55e', 'Active Client': '#22c55e', 'Reauth Needed': '#f59e0b', 'Discharged': '#64748b' }
+            const STAGE_C = { 'New Referral': '#6366f1', 'Intake': '#8b5cf6', 'Ready for Interview': '#22c55e', 'Initial Assessment': '#f59e0b', 'Moved to Initial Assessment': '#f59e0b', 'PA Submitted': '#fb923c', 'PA In Review': '#fb923c', 'PA Approved': '#22c55e', 'Active Client': '#22c55e', 'Reauth Needed': '#f59e0b', 'Discharged': '#64748b' }
             const c = STAGE_C[s] || '#64748b'
             return (
               <div key={s} style={{ marginBottom: 10 }}>
@@ -74,7 +75,7 @@ export function IntakeDashboard({ refs, onSelectRef, openModulePage }) {
               {noIns.length ? <ActionItem color="#a5b4fc" text={`${noIns.length} unverified insurance`} onClick={() => openModulePage('intake', 'insurance', { target: 'insurance-verification', key: 'unverified', label: 'Unverified Insurance' })} /> : null}
               {noDx.length ? <ActionItem color="#fb923c" text={`${noDx.length} awaiting diagnosis docs`} /> : null}
               {nr.length ? <ActionItem color="#ef4444" text={`${nr.length} non-responsive / referred out`} onClick={() => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'all', label: 'Non-Responsive / Referred Out' })} /> : null}
-              {readyPI.length ? <ActionItem color="#22c55e" text={`${readyPI.length} ready for parent interview`} /> : null}
+              {readyPI.length ? <ActionItem color="#f59e0b" text={`${readyPI.length} moved to initial assessment`} onClick={() => openModulePage('intake', 'all', { target: 'all-referrals', key: 'transitioned-to-initial', label: 'Moved to Initial Assessment' })} /> : null}
               {!pending.length && !noIns.length && !nr.length && <div style={{ color: 'var(--dim)', fontSize: 13, textAlign: 'center', padding: 16 }}>No action items.</div>}
             </div>
           </div>
@@ -107,7 +108,7 @@ export function IntakeDashboard({ refs, onSelectRef, openModulePage }) {
                   <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}>
                     <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--muted)' }}>{r.date_received ? formatDisplayDate(r.date_received) : ''}</div></td>
                     <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--muted)' }}>{r.referral_id || '--'}</td>
-                    <td><StagePill stage={getReferralStage(r)} /></td>
+                    <td><StagePill stage={getReferralBoardStage(r, assessData)} /></td>
                     <td><Badge value={r.intake_paperwork} /></td>
                     <td><Badge value={r.insurance_verified} /></td>
                     <td style={{ fontSize: 12, color: 'var(--text)' }}>{r.intake_personnel || '--'}</td>
@@ -135,8 +136,8 @@ function ActionItem({ color, text, onClick }) {
 // ══════════════════════════════════════
 // PENDING DOCUMENTS
 // ══════════════════════════════════════
-export function PendingDocsPage({ refs, onSelectRef, statFilter, onSetStatFilter, onClearStatFilter }) {
-  const active  = refs.filter(r => r.status === 'active')
+export function PendingDocsPage({ refs, assessData = [], onSelectRef, statFilter, onSetStatFilter, onClearStatFilter }) {
+  const active  = refs.filter(r => isActiveReferralWork(r, assessData))
   const pending = active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
   const needsPaperwork = pending.filter(r => !(r.intake_paperwork || '').toLowerCase().includes('emailed'))
   const emailed        = pending.filter(r => (r.intake_paperwork || '').toLowerCase().includes('emailed'))
@@ -192,8 +193,8 @@ export function PendingDocsPage({ refs, onSelectRef, statFilter, onSetStatFilter
 // ══════════════════════════════════════
 // INSURANCE VERIFICATION
 // ══════════════════════════════════════
-export function InsuranceVerifPage({ refs, onSelectRef, statFilter, onSetStatFilter, onClearStatFilter }) {
-  const active     = refs.filter(r => r.status === 'active')
+export function InsuranceVerifPage({ refs, assessData = [], onSelectRef, statFilter, onSetStatFilter, onClearStatFilter }) {
+  const active     = refs.filter(r => isActiveReferralWork(r, assessData))
   const unverified = active.filter(r => !['yes'].includes((r.insurance_verified || '').toLowerCase()))
   const verified   = active.filter(r => (r.insurance_verified || '').toLowerCase() === 'yes')
   const awaiting   = active.filter(r => (r.insurance_verified || '').toLowerCase() === 'awaiting')

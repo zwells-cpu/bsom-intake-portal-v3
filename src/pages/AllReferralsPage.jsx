@@ -3,23 +3,44 @@ import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
 import { ActiveFilterBanner } from '../components/StatFilterControls'
 import { NotifyModal } from '../components/NotifyModal'
 import { OFFICES } from '../lib/constants'
-import { isStatFilterTarget, matchesStatFilter } from '../lib/statFilters'
-import { sortList, normalizeOffice, normalizeAutismDx, formatInsurance, exportCSV, formatDisplayDate, pct } from '../lib/utils'
+import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
+import { sortList, normalizeOffice, normalizeAutismDx, formatInsurance, exportCSV, formatDisplayDate, pct, getReferralBoardStage, isActiveReferralWork, isReferralTransitioned } from '../lib/utils'
 
-export function AllReferralsPage({ refs, onSelectRef, onOpenProfile, statFilter, onClearStatFilter }) {
+export function AllReferralsPage({ refs, assessData = [], onSelectRef, onOpenProfile, statFilter, onSetStatFilter, onClearStatFilter }) {
   const active = refs.filter(r => r.status === 'active')
+  const activeWork = active.filter(r => isActiveReferralWork(r, assessData))
+  const transitioned = active.filter(r => isReferralTransitioned(r, assessData))
   const [search, setSearch]       = useState('')
   const [office, setOffice]       = useState('ALL')
   const [sortCol, setSortCol]     = useState(null)
   const [sortDir, setSortDir]     = useState('asc')
   const [notifyReferral, setNotifyReferral] = useState(null)
   const activeFilter = isStatFilterTarget(statFilter, 'all-referrals')
+  const showingTransitioned = activeFilter?.key === 'transitioned-to-initial'
+  const searchActive = search.trim().length > 0
+  const baseRows = showingTransitioned
+    ? transitioned
+    : searchActive
+      ? active
+      : activeWork
 
-  const visibleBeforeOfficeFilter = active.filter(r => {
+  const visibleBeforeOfficeFilter = baseRows.map(r => ({
+    ...r,
+    __transitioned: isReferralTransitioned(r, assessData),
+  })).filter(r => {
     const n = `${r.first_name} ${r.last_name}`.toLowerCase()
     return (n.includes(search.toLowerCase()) || (r.caregiver || '').toLowerCase().includes(search.toLowerCase()))
       && matchesStatFilter(r, activeFilter)
   })
+
+  const toggleTransitionedFilter = () => {
+    if (!onSetStatFilter) return
+    onSetStatFilter(toggleStatFilter(activeFilter, {
+      target: 'all-referrals',
+      key: 'transitioned-to-initial',
+      label: 'Moved to Initial Assessment',
+    }))
+  }
 
   const officeCounts = ['ALL', ...OFFICES].reduce((acc, officeKey) => {
     acc[officeKey] = officeKey === 'ALL'
@@ -51,6 +72,12 @@ export function AllReferralsPage({ refs, onSelectRef, onOpenProfile, statFilter,
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <div className="filter-btns">
+          <button
+            className={`filter-btn ${showingTransitioned ? 'active' : ''}`}
+            onClick={toggleTransitionedFilter}
+          >
+            Moved to Initial Assessment ({transitioned.length})
+          </button>
           {['ALL', ...OFFICES].map(o => (
             <button key={o} className={`filter-btn ${office === o ? 'active' : ''}`} onClick={() => setOffice(o)}>{o} ({officeCounts[o] || 0})</button>
           ))}
@@ -93,7 +120,7 @@ export function AllReferralsPage({ refs, onSelectRef, onOpenProfile, statFilter,
                   <td style={{ color: 'var(--text)', fontSize: 12 }}>{formatInsurance(r.insurance) || '--'}</td>
                   <td><Badge value={r.insurance_verified} /></td>
                   <td><Badge value={normalizeAutismDx(r.autism_diagnosis)} /></td>
-                  <td><StagePill stage={r.current_stage} /></td>
+                  <td><StagePill stage={getReferralBoardStage(r, assessData)} /></td>
                   <td><Badge value={r.intake_paperwork} /></td>
                   <td style={{ color: 'var(--text)', fontSize: 12 }}>{r.intake_personnel || '--'}</td>
                   <td style={{ whiteSpace: 'nowrap', display: 'flex', gap: 6, alignItems: 'center' }}>

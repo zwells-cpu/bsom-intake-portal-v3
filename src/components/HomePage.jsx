@@ -168,7 +168,7 @@ export function HomePage({
             />
             <KPICard
               icon={MessagesSquare}
-              label="Ready for Interview"
+              label="Moved to Initial"
               value={readyForInterviewCount}
               color="var(--green)"
               loading={statsLoading}

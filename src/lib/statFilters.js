@@ -20,6 +20,7 @@ export function matchesStatFilter(record, filter) {
     if (key === 'paperwork-signed') return paperwork.includes('signed')
     if (key === 'paperwork-pending') return !['signed', 'completed'].includes(paperwork)
     if (key === 'ready-for-interview') return getReferralStage(record) === 'Ready for Interview'
+    if (key === 'transitioned-to-initial') return record.__transitioned === true
     if (key === 'non-responsive-only') return record.status === 'non-responsive'
     if (key === 'non-responsive-all') return record.status === 'non-responsive' || record.status === 'referred-out'
     return true
@@ -61,7 +62,8 @@ export function matchesStatFilter(record, filter) {
 
   if (target === 'parent-interviews') {
     const status = normalizeParentInterviewStatus(record.parent_interview_status)
-    if (key === 'not-started' || key === 'awaiting-assignment') return status === 'Not Started'
+    if (key === 'awaiting-assignment') return status === 'Awaiting Assignment'
+    if (key === 'not-started') return status === 'Not Started'
     if (key === 'scheduled') return status === 'Scheduled'
     if (key === 'in-progress') return status === 'In Progress'
     if (key === 'completed') return status === 'Completed'

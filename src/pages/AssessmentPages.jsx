@@ -212,6 +212,7 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
 export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess, statFilter, onSetStatFilter, onClearStatFilter }) {
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
+  const awaitingAssignment = assessData.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === 'Awaiting Assignment')
   const notStarted = assessData.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === 'Not Started')
   const scheduled = assessData.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === 'Scheduled')
   const inProgress = assessData.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === 'In Progress')
@@ -230,7 +231,8 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
         <div className="pg-hdr-title">Parent Interviews</div>
         <div className="pg-hdr-sub">Schedule, track, and complete parent interviews for initial assessments</div>
       </div>
-      <div className="stats-row stats-5" style={{ marginBottom: 22 }}>
+      <div className="stats-row stats-6" style={{ marginBottom: 22 }}>
+        <ClickableStatCard value={awaitingAssignment.length} label="Awaiting Assignment" color="#64748b" active={activeFilter?.key === 'awaiting-assignment'} onClick={() => toggleFilter('awaiting-assignment', 'Parent Interviews: Awaiting Assignment')} />
         <ClickableStatCard value={notStarted.length} label="Not Started" color="#ef4444" active={activeFilter?.key === 'not-started'} onClick={() => toggleFilter('not-started', 'Parent Interviews: Not Started')} />
         <ClickableStatCard value={scheduled.length} label="Scheduled" color="#f59e0b" active={activeFilter?.key === 'scheduled'} onClick={() => toggleFilter('scheduled', 'Parent Interviews: Scheduled')} />
         <ClickableStatCard value={inProgress.length} label="In Progress" color="#f59e0b" active={activeFilter?.key === 'in-progress'} onClick={() => toggleFilter('in-progress', 'Parent Interviews: In Progress')} />

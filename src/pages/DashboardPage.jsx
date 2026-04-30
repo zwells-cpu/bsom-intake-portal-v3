@@ -2,17 +2,17 @@ import { Badge, OfficePill, ProgressRing } from '../components/Badge'
 import { ClickableStatCard } from '../components/StatFilterControls'
 import { ActivityLogList, RecentActivityCard } from '../components/dashboard/RecentActivityCard'
 import { useActivityLogs } from '../hooks/useActivityLogs'
-import { formatDisplayDate, getReferralStage, isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, pct } from '../lib/utils'
+import { formatDisplayDate, isActiveReferralWork, isInsuranceVerified, isReferralTransitioned, needsInsuranceVerification, normalizeAutismDx, pct } from '../lib/utils'
 
-export function DashboardPage({ refs, setSelectedId, openModulePage, activityRefreshKey = 0 }) {
+export function DashboardPage({ refs, assessData = [], setSelectedId, openModulePage, activityRefreshKey = 0 }) {
   const { logs, loading: activityLoading } = useActivityLogs(8, activityRefreshKey)
   const recentLogs = logs.slice(0, 5)
-  const active = refs.filter((r) => r.status === 'active')
+  const active = refs.filter((r) => isActiveReferralWork(r, assessData))
   const nr = refs.filter((r) => r.status === 'non-responsive' || r.status === 'referred-out')
   const signed = active.filter((r) => (r.intake_paperwork || '').toLowerCase().includes('signed'))
   const pending = active.filter((r) => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
   const noIns = active.filter((r) => needsInsuranceVerification(r.insurance_verified))
-  const readyForInterview = active.filter((r) => getReferralStage(r) === 'Ready for Interview').length
+  const transitioned = refs.filter((r) => r.status === 'active' && isReferralTransitioned(r, assessData)).length
   const aging14 = active.filter((r) => {
     const received = r.referral_received_date || r.date_received
     if (!received) return false
@@ -30,7 +30,7 @@ export function DashboardPage({ refs, setSelectedId, openModulePage, activityRef
   const needsAttentionItems = [
     { label: 'Pending Documents', value: pending.length, color: '#f59e0b', action: () => openModulePage('intake', 'pending', { target: 'pending-docs', key: 'total-pending', label: 'Pending Documents' }) },
     { label: 'Unverified Insurance', value: noIns.length, color: '#a5b4fc', action: () => openModulePage('intake', 'insurance', { target: 'insurance-verification', key: 'unverified', label: 'Unverified Insurance' }) },
-    { label: 'Ready for Interview', value: readyForInterview, color: '#22c55e', action: () => openModulePage('intake', 'all', { target: 'all-referrals', key: 'ready-for-interview', label: 'Ready for Interview' }) },
+    { label: 'Moved to Initial', value: transitioned, color: '#f59e0b', action: () => openModulePage('intake', 'all', { target: 'all-referrals', key: 'transitioned-to-initial', label: 'Moved to Initial Assessment' }) },
     { label: 'Aging 14+ Days', value: aging14, color: '#fb923c', action: () => openModulePage('operations', 'aging', { target: 'referral-aging', key: 'aging-14-plus', label: 'Aging 14+ Days' }) },
   ]
 

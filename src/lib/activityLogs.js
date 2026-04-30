@@ -84,6 +84,7 @@ const ACTION_LABELS = {
   notes_updated: 'Notes Updated',
   parent_interview_ready_enabled: 'Ready for Interview',
   parent_interview_ready_disabled: 'Interview Put On Hold',
+  assessment_created_from_referral: 'Moved to Assessment',
   client_profile_viewed: 'Profile Viewed',
   assessment_updated: 'Assessment Updated',
   assessment_deleted: 'Assessment Removed',
@@ -227,6 +228,8 @@ function fallbackSummary(log) {
       return `${clientName} client profile was viewed.`
     case 'assessment_deleted':
       return `${clientName} assessment was removed.`
+    case 'assessment_created_from_referral':
+      return `${clientName} moved from referral intake to initial assessment workflow.`
     case 'user_signed_in':
       return 'User signed in.'
     case 'user_signed_out':
