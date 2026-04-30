@@ -3,6 +3,7 @@ import { FilePlus2 } from 'lucide-react'
 import { PaStatusBadge } from '../components/Badge'
 import { NotifyModal } from '../components/NotifyModal'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
+import { SyncedHorizontalScrollTable } from '../components/SyncedHorizontalScrollTable'
 import { LIFECYCLE_BADGE_STYLES } from '../lib/constants'
 import { cleanLookupValue, createBcbaStaff, deactivateBcbaStaff, getBcbaStaffRecords, normalizeLookupValue, optionValues, updateBcbaStaff } from '../lib/lookups'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
@@ -182,7 +183,7 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, o
       </div>
 
       <div className="card">
-        <div className="table-wrap">
+        <SyncedHorizontalScrollTable>
           <table>
             <thead><tr><th>Client</th><th>Clinic</th><th>Insurance</th><th>Vineland</th><th>SRS-2</th><th>Parent Interview</th><th>Direct Obs.</th><th>In School</th><th>Other Services</th><th>Status</th><th>PA Status</th></tr></thead>
             <tbody>
@@ -210,7 +211,7 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, o
                 ))}
             </tbody>
           </table>
-        </div>
+        </SyncedHorizontalScrollTable>
       </div>
     </>
   )

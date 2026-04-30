@@ -1208,7 +1208,9 @@ export default function App() {
 
   const m = MODULES.find(x => x.id === module)
   const navItems = MODULE_NAV[module] || []
-  const currentNavLabel = navItems.find(n => n.id === subpage)?.label || ''
+  const canViewActivityLog = profile?.role === 'admin'
+  const activeSubpage = module === 'dashboard' && subpage === 'activity' && !canViewActivityLog ? 'overview' : subpage
+  const currentNavLabel = navItems.find(n => n.id === activeSubpage)?.label || ''
 
   const renderPage = () => {
     if (loading) return (
@@ -1219,7 +1221,7 @@ export default function App() {
     )
 
     if (module === 'dashboard') {
-      if (subpage === 'activity') {
+      if (activeSubpage === 'activity') {
         return <ActivityLogPage activityRefreshKey={activityRefreshKey} canShowTechnicalDetails={isAdmin(profile)} />
       }
 
@@ -1282,7 +1284,7 @@ export default function App() {
       <div className="shell">
         <Sidebar
           module={module}
-          subpage={subpage}
+          subpage={activeSubpage}
           setSubpage={setSubpageAndClearFilter}
           goHome={goHome}
           pendingCount={pending.length}
@@ -1330,7 +1332,7 @@ export default function App() {
                 <button className="x-btn" onClick={() => setError(null)}>Close</button>
               </div>
             )}
-            <div className={`page-inner ${module === 'intake' && subpage === 'all' ? 'page-inner-wide' : ''}`}>
+            <div className={`page-inner ${module === 'intake' && activeSubpage === 'all' ? 'page-inner-wide' : ''}`}>
               <Suspense fallback={<PageLoader />}>
                 {renderPage()}
               </Suspense>

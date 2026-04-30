@@ -873,6 +873,47 @@ select option{ background:var(--surface); }
   -webkit-overflow-scrolling:touch;
   overscroll-behavior-x:contain;
 }
+.synced-scroll-table{
+  width:100%;
+  min-width:0;
+}
+.synced-scroll-table-top{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  height:14px;
+  margin:0 0 8px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+  scrollbar-color:var(--border2) transparent;
+  scrollbar-width:thin;
+}
+.synced-scroll-table-top::-webkit-scrollbar,
+.synced-scroll-table-main::-webkit-scrollbar{
+  height:10px;
+}
+.synced-scroll-table-top::-webkit-scrollbar-track,
+.synced-scroll-table-main::-webkit-scrollbar-track{
+  background:transparent;
+}
+.synced-scroll-table-top::-webkit-scrollbar-thumb,
+.synced-scroll-table-main::-webkit-scrollbar-thumb{
+  background:linear-gradient(90deg,rgba(99,102,241,0.38),rgba(148,163,184,0.34));
+  border:3px solid transparent;
+  border-radius:999px;
+  background-clip:content-box;
+}
+.synced-scroll-table-top::-webkit-scrollbar-thumb:hover,
+.synced-scroll-table-main::-webkit-scrollbar-thumb:hover{
+  background:linear-gradient(90deg,rgba(99,102,241,0.56),rgba(148,163,184,0.48));
+  border:3px solid transparent;
+  background-clip:content-box;
+}
+.synced-scroll-table-spacer{
+  height:1px;
+}
 table{ width:100%; min-width:max-content; border-collapse:separate; border-spacing:0 6px; font-size:13px; }
 th{
   background:var(--surface2); color:var(--muted); font-size:10.5px; font-weight:700;
