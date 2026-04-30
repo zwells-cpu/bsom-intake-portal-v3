@@ -4,7 +4,7 @@ export const PARENT_INTERVIEW_STATUSES = ['Awaiting Assignment', 'Not Started', 
 export const ASSESSMENT_COMPONENT_STATUSES = ['Not Started', 'Scheduled', 'In Progress', 'Completed']
 export const TREATMENT_PLAN_STATUSES = ['Not Started', 'In Progress', 'Completed', 'Finalized']
 export const AUTHORIZATION_STATUSES = ['Not Submitted', 'Pending Submission', 'Submitted / In Review', 'Approved', 'Partially Approved', 'Reauthorization Needed', 'Appeal Pending', 'Denied', 'No PA Needed', 'Approved/Discharged', 'Referred Out']
-export const POSITIVE_AUTHORIZATION_STATUSES = ['Approved', 'Partially Approved', 'No PA Needed', 'Approved/Discharged']
+export const POSITIVE_AUTHORIZATION_STATUSES = ['Approved', 'No PA Needed', 'Approved/Discharged']
 
 // ── Status color ──
 export function sc(v) {
@@ -322,6 +322,8 @@ export function normalizeAuthorizationStatus(status) {
   const normalized = String(status || '').trim()
   if (normalized === 'Pending') return 'Pending Submission'
   if (normalized === 'In Review') return 'Submitted / In Review'
+  if (normalized === 'Partial Approval') return 'Partially Approved'
+  if (normalized === 'Partial Approved') return 'Partially Approved'
   return normalized
 }
 
@@ -329,11 +331,21 @@ export function getAuthorizationStatus(record) {
   return normalizeAuthorizationStatus(record?.authorization_status || record?.pa_status || '')
 }
 
+export function isAssessmentActiveClient(record) {
+  return getAuthorizationStatus(record) === 'Approved'
+    && (record?.ready_for_services === true || record?.ready_for_services === 'true')
+    && Boolean(record?.active_client_date)
+}
+
+export function isAssessmentClosedRecord(record) {
+  return isAssessmentActiveClient(record)
+}
+
 export function getAssessmentLifecycleStatus(record) {
   const authorizationStatus = getAuthorizationStatus(record)
 
   if (authorizationStatus === 'Referred Out') return 'Referred Out'
-  if (record?.active_client_date) return 'Active Client'
+  if (isAssessmentActiveClient(record)) return 'Active Client'
   if (record?.ready_for_services === true || record?.ready_for_services === 'true') return 'Ready for Services'
   return 'In Assessment'
 }

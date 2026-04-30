@@ -1,4 +1,4 @@
-import { POSITIVE_AUTHORIZATION_STATUSES, getAssessmentLifecycleStatus, getAssessmentWorkflowStatus, getAuthorizationStatus, getReferralStage, isAuthorizationApproved, normalizeAutismDx, normalizeParentInterviewStatus, normalizeTreatmentPlanStatus } from './utils'
+import { getAssessmentLifecycleStatus, getAssessmentWorkflowStatus, getAuthorizationStatus, getReferralStage, isAssessmentActiveClient, isAuthorizationApproved, normalizeAutismDx, normalizeParentInterviewStatus, normalizeTreatmentPlanStatus } from './utils'
 
 export function isStatFilterTarget(filter, target) {
   return filter?.target === target ? filter : null
@@ -53,7 +53,8 @@ export function matchesStatFilter(record, filter) {
   if (target === 'assessment-tracker') {
     const pa = getAuthorizationStatus(record)
     const stage = getAssessmentWorkflowStatus(record)
-    if (key === 'pa-approved') return POSITIVE_AUTHORIZATION_STATUSES.includes(pa)
+    if (key === 'pa-approved') return pa === 'Approved'
+    if (key === 'partially-approved') return pa === 'Partially Approved'
     if (key === 'in-progress') return stage === 'In Progress'
     if (key === 'denied-appealed') return ['Denied', 'Appeal Pending'].includes(pa)
     if (key === 'awaiting-pa') return ['Pending Submission', 'Submitted / In Review'].includes(pa)
@@ -90,7 +91,7 @@ export function matchesStatFilter(record, filter) {
   }
 
   if (target === 'ready-for-services') {
-    if (key === 'active-clients') return Boolean(record.active_client_date)
+    if (key === 'active-clients') return isAssessmentActiveClient(record)
     if (key === 'ready') return record.ready_for_services === true
     if (key === 'referred-out') return getAssessmentLifecycleStatus(record) === 'Referred Out'
     if (key === 'awaiting-authorization') {
@@ -100,6 +101,10 @@ export function matchesStatFilter(record, filter) {
     }
     if (key === 'not-ready') return record.ready_for_services !== true
     return !record.ready_for_services
+  }
+
+  if (target === 'active-clients') {
+    return isAssessmentActiveClient(record)
   }
 
   return true

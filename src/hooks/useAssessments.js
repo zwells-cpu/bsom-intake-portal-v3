@@ -123,6 +123,10 @@ function sanitizeAssessmentPatch(patch = {}) {
   ASSESSMENT_DB_FIELDS.forEach((field) => {
     if (!Object.prototype.hasOwnProperty.call(patch, field)) return
     const value = patch[field]
+    if (field === 'referral_id') {
+      cleaned[field] = value || null
+      return
+    }
     if (field === 'ready_for_services') {
       cleaned[field] = normalizeBoolean(value) === true
       return
@@ -255,5 +259,47 @@ export function useAssessments() {
     }
   }, [])
 
-  return { assessData, assessLoading, assessError, loadAssessments, saveAssessEdit, deleteAssessment, ensureAssessmentForReferral }
+  const createAssessment = useCallback(async (input) => {
+    try {
+      setAssessError(null)
+      const payload = sanitizeAssessmentPatch({
+        referral_id: null,
+        vineland: 'Not Started',
+        srs2: 'Not Started',
+        vbmapp: 'Not Started',
+        socially_savvy: 'Not Started',
+        parent_interview_status: 'Awaiting Assignment',
+        assessment_status: 'Not Started',
+        direct_obs_status: 'Not Started',
+        direct_obs: 'Not Started',
+        treatment_plan_status: 'Not Started',
+        authorization_status: 'Not Submitted',
+        ready_for_services: false,
+        ...input,
+      })
+
+      const createRes = await fetch(`${API_URL}/assessments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!createRes.ok) throw new Error(await createRes.text())
+
+      const createdJson = await createRes.json().catch(() => null)
+      const created = Array.isArray(createdJson) ? createdJson[0] : createdJson
+
+      const refreshedRes = await fetch(`${API_URL}/assessments`)
+      if (!refreshedRes.ok) throw new Error(await refreshedRes.text())
+      const refreshed = await refreshedRes.json()
+      const sorted = sortAssessments(refreshed)
+      setAssessData(sorted.map(record => normalizeAssessmentRecord(record)))
+
+      return { success: true, data: normalizeAssessmentRecord(created || payload), created: true }
+    } catch (e) {
+      setAssessError('Could not create assessment: ' + e.message)
+      return { success: false, error: e.message }
+    }
+  }, [])
+
+  return { assessData, assessLoading, assessError, loadAssessments, saveAssessEdit, deleteAssessment, ensureAssessmentForReferral, createAssessment }
 }

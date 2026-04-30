@@ -1,7 +1,7 @@
 import { Activity, BarChart3, Clock, FileText, PieChart, UserCheck, Users, UserX } from 'lucide-react'
 import { StagePill } from '../components/Badge'
 import { ClickableStatCard } from '../components/StatFilterControls'
-import { displayStaffName, getAuthorizationStatus, getReferralStage, isActiveReferralWork, isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, normalizeOffice, normalizeParentInterviewStatus, normalizeStaffName, normalizeTreatmentPlanStatus } from '../lib/utils'
+import { displayStaffName, getAuthorizationStatus, getReferralStage, isActiveReferralWork, isAssessmentActiveClient, isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, normalizeOffice, normalizeParentInterviewStatus, normalizeStaffName, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 // ── Shared helpers ──
 function daysSince(dateStr) {
@@ -65,7 +65,7 @@ function SectionHeader({ icon: Icon, children }) {
 export function PipelineOverviewPage({ refs, assessData = [], openModulePage }) {
   const active = refs.filter(r => isActiveReferralWork(r, assessData))
   const nr     = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
-  const activeClients = assessData.filter(record => Boolean(record.active_client_date)).length
+  const activeClients = assessData.filter(record => isAssessmentActiveClient(record)).length
   const awaitingPA = assessData.filter(record => ['Pending Submission', 'Submitted / In Review'].includes(getAuthorizationStatus(record))).length
   const txInProgress = assessData.filter(record => normalizeTreatmentPlanStatus(record.treatment_plan_status) === 'In Progress').length
 
@@ -95,7 +95,7 @@ export function PipelineOverviewPage({ refs, assessData = [], openModulePage }) 
 
       <div className="stats-row" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', marginBottom: 24 }}>
         <ClickableStatCard value={active.length} label="Active Referrals" color="#6366f1" icon={Users} onClick={() => openModulePage('intake', 'all', { target: 'all-referrals', key: 'active-referrals', label: 'Active Referrals' })} />
-        <ClickableStatCard value={activeClients} label="Active Clients" color="#22c55e" icon={UserCheck} sublabel="receiving services" onClick={() => openModulePage('assessment', 'readysvc', { target: 'ready-for-services', key: 'active-clients', label: 'Active Clients' })} />
+        <ClickableStatCard value={activeClients} label="Active Clients" color="#22c55e" icon={UserCheck} sublabel="receiving services" onClick={() => openModulePage('assessment', 'activeclients')} />
         <ClickableStatCard value={awaitingPA} label="Awaiting PA" color="#f59e0b" icon={Clock} sublabel="submitted to insurance" onClick={() => openModulePage('assessment', 'tracker', { target: 'assessment-tracker', key: 'awaiting-pa', label: 'Assessment Tracker: Awaiting PA' })} />
         <ClickableStatCard value={txInProgress} label="Treatment Plans In Progress" color="#a5b4fc" icon={FileText} sublabel="from assessments" onClick={() => openModulePage('assessment', 'txplan', { target: 'treatment-plans', key: 'In Progress', label: 'Treatment Plans: In Progress' })} />
         <ClickableStatCard value={nr.length} label="Non-Responsive" color="#ef4444" icon={UserX} sublabel="or referred out" onClick={() => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'non-responsive-only', label: 'Non-Responsive' })} />
@@ -375,6 +375,7 @@ export function ConversionRatePage({ refs, assessData = [] }) {
   const nr     = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
   const all    = [...active, ...nr]
   const total  = all.length
+  const activeClientCount = assessData.filter(record => isAssessmentActiveClient(record)).length
 
   const FUNNEL = [
     { label: 'Referral Received',         count: total,                                                                                                      color: '#6366f1' },
@@ -382,7 +383,7 @@ export function ConversionRatePage({ refs, assessData = [] }) {
     { label: 'Insurance Verified',         count: active.filter(r => isInsuranceVerified(r.insurance_verified)).length,                             color: '#f59e0b' },
     { label: 'Parent Interview Completed', count: active.filter(r => normalizeParentInterviewStatus(r.parent_interview_status || r.permission_assessment) === 'Completed').length, color: '#fb923c' },
     { label: 'Assessment Completed',       count: active.filter(r => normalizeAutismDx(r.autism_diagnosis) === 'Received').length,                    color: '#fb923c' },
-    { label: 'Active Client',              count: active.filter(r => Boolean(r.active_client_date)).length,                                                   color: '#22c55e' },
+    { label: 'Active Client',              count: activeClientCount,                                                                                         color: '#22c55e' },
   ]
 
   let maxDrop = -1, maxDropIdx = 0

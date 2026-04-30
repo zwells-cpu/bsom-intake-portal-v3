@@ -9,6 +9,7 @@ import {
   TREATMENT_PLAN_STATUSES,
   formatDate,
   getAssessmentLifecycleStatus,
+  isAssessmentActiveClient,
   normalizeAuthorizationStatus,
   normalizeAssessmentComponentStatus,
   normalizeParentInterviewStatus,
@@ -131,7 +132,7 @@ function getEditableAssessmentPatch(record = {}, assignedBcba = '') {
   }
 }
 
-export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, bcbaOptions = [], officeOptions: liveOfficeOptions = [] }) {
+export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, onReopen, canReopen = false, bcbaOptions = [], officeOptions: liveOfficeOptions = [] }) {
   const [form, setForm] = useState(assessment)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -144,6 +145,7 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, b
   const recordId = form?.assessment_id ?? form?.id ?? null
   const clinic = form?.clinic || form?.office || ''
   const lifecycleStatus = getAssessmentLifecycleStatus(form)
+  const isActiveClient = isAssessmentActiveClient(form)
   const officeOptions = includeCurrentOption(optionValues(liveOfficeOptions.length ? liveOfficeOptions : normalizeOptions(OFFICES)), clinic)
   const currentBcba = cleanLookupValue(form?.assigned_bcba)
   const bcbaValues = useMemo(() => getBcbaValues(bcbaOptions), [bcbaOptions])
@@ -206,6 +208,14 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, b
       ready_for_services: false,
       active_client_date: null,
     })
+    if (res?.success) onClose()
+    setSaving(false)
+  }
+
+  const handleReopenIntake = async () => {
+    if (!recordId || !onReopen) return
+    setSaving(true)
+    const res = await onReopen(recordId)
     if (res?.success) onClose()
     setSaving(false)
   }
@@ -337,7 +347,17 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, b
         <div className="modal-foot">
           <div />
           <div className="modal-actions">
-            {lifecycleStatus !== 'Referred Out' ? (
+            {canReopen && isActiveClient ? (
+              <button
+                className="btn-ghost"
+                onClick={handleReopenIntake}
+                disabled={saving || deleting || !recordId}
+                style={{ color: '#22c55e', borderColor: '#22c55e40' }}
+              >
+                Reopen Intake
+              </button>
+            ) : null}
+            {lifecycleStatus !== 'Referred Out' && !isActiveClient ? (
               <button
                 className="btn-ghost"
                 onClick={handleMarkReferredOut}
@@ -347,17 +367,21 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, b
                 Mark Referred Out
               </button>
             ) : null}
-            <button
-              className="btn-danger"
-              onClick={handleDeleteRequest}
-              disabled={saving || deleting || !recordId}
-            >
-              {deleting ? 'Deleting...' : 'Delete'}
-            </button>
+            {!isActiveClient ? (
+              <button
+                className="btn-danger"
+                onClick={handleDeleteRequest}
+                disabled={saving || deleting || !recordId}
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            ) : null}
             <button className="btn-ghost" onClick={onClose}>Cancel</button>
-            <button className="btn-save" onClick={handleSave} disabled={saving || deleting || !recordId}>
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
+            {!isActiveClient ? (
+              <button className="btn-save" onClick={handleSave} disabled={saving || deleting || !recordId}>
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            ) : null}
           </div>
         </div>
       </div>

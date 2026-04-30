@@ -64,6 +64,8 @@ export const ACTIVITY_FIELD_LABELS = {
   authorization_approved_date: 'Authorization approved date',
   ready_for_services: 'Ready for services',
   active_client_date: 'Active client date',
+  lifecycle_status: 'Lifecycle status',
+  workflow_status: 'Workflow status',
   notes: 'Notes',
   other_services: 'Other services',
 }
@@ -85,6 +87,7 @@ const ACTION_LABELS = {
   parent_interview_ready_enabled: 'Ready for Interview',
   parent_interview_ready_disabled: 'Interview Put On Hold',
   assessment_created_from_referral: 'Moved to Assessment',
+  assessment_manually_created: 'Assessment Added',
   client_profile_viewed: 'Profile Viewed',
   assessment_updated: 'Assessment Updated',
   assessment_deleted: 'Assessment Removed',
@@ -93,6 +96,8 @@ const ACTION_LABELS = {
   parent_interview_updated: 'Parent Interview Updated',
   bcba_assigned: 'BCBA Assigned',
   ready_for_services_updated: 'Services Readiness Updated',
+  moved_to_active_client: 'Moved to Active Client',
+  intake_reopened: 'Intake Reopened',
   user_signed_in: 'User Signed In',
   user_signed_out: 'User Signed Out',
 }
@@ -230,6 +235,12 @@ function fallbackSummary(log) {
       return `${clientName} assessment was removed.`
     case 'assessment_created_from_referral':
       return `${clientName} moved from referral intake to initial assessment workflow.`
+    case 'assessment_manually_created':
+      return `${clientName} was manually added to the Initial Assessment Board.`
+    case 'moved_to_active_client':
+      return `${clientName} was moved to active client status and closed from intake.`
+    case 'intake_reopened':
+      return `${clientName} intake was reopened from active client status.`
     case 'user_signed_in':
       return 'User signed in.'
     case 'user_signed_out':

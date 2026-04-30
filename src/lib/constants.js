@@ -70,6 +70,7 @@ export const MODULE_NAV = {
     { id: 'progress', icon: TrendingUp, label: 'Assessment Progress' },
     { id: 'txplan', icon: FileText, label: 'Treatment Plan Status' },
     { id: 'readysvc', icon: BadgeCheck, label: 'Ready for Services' },
+    { id: 'activeclients', icon: UserCheck, label: 'Active Clients' },
   ],
   operations: [
     { id: 'pipeline', icon: LayoutDashboard, label: 'Pipeline Overview' },
@@ -88,9 +89,10 @@ export const TX_STATUSES = ['Not Started', 'In Progress', 'Completed', 'Finalize
 
 export const PA_COLORS = {
   Approved: '#22c55e',
-  'Partially Approved': '#0f766e',
+  'Partially Approved': '#0891b2',
   'Approved/Discharged': '#64748b',
   'No PA Needed': '#22c55e',
+  'Not Submitted': '#64748b',
   'Pending Submission': '#f59e0b',
   'Submitted / In Review': '#6366f1',
   Pending: '#f59e0b',
@@ -103,9 +105,9 @@ export const PA_COLORS = {
 
 export const PA_BADGE_STYLES = {
   'Partially Approved': {
-    color: '#0f766e',
-    background: '#0f766e18',
-    border: '#0f766e30',
+    color: '#0891b2',
+    background: '#0891b218',
+    border: '#0891b235',
   },
 }
 

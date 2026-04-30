@@ -184,7 +184,7 @@ function stageColor(status) {
   const s = String(status || '').toLowerCase()
   if (['completed', 'finalized', 'approved', 'active client'].includes(s)) return 'var(--green)'
   if (['ready', 'ready for services'].includes(s)) return '#3b82f6'
-  if (s === 'partially approved') return '#0f766e'
+  if (s === 'partially approved') return '#0891b2'
   if (s === 'no show') return 'var(--red)'
   if (['in progress', 'submitted', 'scheduled', 'pending submission', 'submitted / in review'].includes(s)) return 'var(--yellow)'
   return 'var(--dim)'

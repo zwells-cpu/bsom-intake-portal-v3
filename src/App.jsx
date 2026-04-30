@@ -13,10 +13,11 @@ import { Sidebar } from './components/Sidebar'
 import { ThemeToggle } from './components/ThemeToggle'
 import { ReferralModal } from './components/ReferralModal'
 import { AssessmentDetailModal } from './components/AssessmentDetailModal'
+import { NewAssessmentModal } from './components/NewAssessmentModal'
 
 import { NewReferralPage } from './pages/NewReferralPage'
 import { createActivityLog } from './lib/activityLogs'
-import { getAssessmentRecordId, isActiveReferralWork, isReferralTransitioned, needsInsuranceVerification } from './lib/utils'
+import { getAssessmentRecordId, isActiveReferralWork, isAssessmentActiveClient, isReferralTransitioned, needsInsuranceVerification } from './lib/utils'
 import { API_BASE } from './lib/api'
 import { formatProfileAccessLabel, formatRoleLabel, isAdmin, normalizeProfile } from './lib/profileUtils'
 
@@ -36,6 +37,7 @@ const BCBAAssignmentsPage = lazy(() => import('./pages/AssessmentPages').then(mo
 const AssessmentProgressPage = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.AssessmentProgressPage })))
 const TreatmentPlansPage = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.TreatmentPlansPage })))
 const ReadyForServicesPage = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.ReadyForServicesPage })))
+const ActiveClientsPage = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.ActiveClientsPage })))
 const PipelineOverviewPage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.PipelineOverviewPage })))
 const ReferralAgingPage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.ReferralAgingPage })))
 const ClinicVolumePage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.ClinicVolumePage })))
@@ -145,7 +147,7 @@ function readSavedModalId(key) {
 export default function App() {
   const { theme, setTheme } = useTheme()
   const { refs, loading, error, saving, saved, setError, load, saveReferral, updateReferral, deleteReferral, setStatus, toggleParentInterview } = useReferrals()
-  const { assessData, assessLoading, loadAssessments, saveAssessEdit, deleteAssessment, ensureAssessmentForReferral } = useAssessments()
+  const { assessData, assessLoading, loadAssessments, saveAssessEdit, deleteAssessment, ensureAssessmentForReferral, createAssessment } = useAssessments()
   const { bcbaOptions, officeOptions, insuranceOptions, referralSourceOptions, reloadLookups } = useLookups()
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -163,6 +165,7 @@ export default function App() {
   const [signOutPending, setSignOutPending] = useState(false)
   const [activityRefreshKey, setActivityRefreshKey] = useState(0)
   const [workflowToast, setWorkflowToast] = useState(null)
+  const [newAssessmentOpen, setNewAssessmentOpen] = useState(false)
 
   const [screen, setScreen] = useState(() => readSavedNav()?.screen ?? 'home')
   const [module, setModule] = useState(() => readSavedNav()?.module ?? null)
@@ -353,6 +356,7 @@ export default function App() {
   const noIns = useMemo(() => active.filter(r => needsInsuranceVerification(r.insurance_verified)).length, [active])
   const operationsRefs = useMemo(() => refs, [refs])
   const operationsAssessData = useMemo(() => assessData, [assessData])
+  const activeAssessmentQueueData = useMemo(() => assessData.filter(record => !isAssessmentActiveClient(record)), [assessData])
 
   const selectedRef = selId ? refs.find(r => r.id === selId) : null
   const selectedAssess = selAssessId
@@ -563,11 +567,29 @@ export default function App() {
 
   const handleUpdateAssessment = async (id, patch) => {
     const before = assessData.find(r => String(getAssessmentRecordId(r) || '') === String(id))
+    const wasActiveClient = isAssessmentActiveClient(before)
     const res = await saveAssessEdit(id, patch)
 
     if (res?.success && res?.data) {
+      const isActiveClient = isAssessmentActiveClient(res.data)
       const changedFields = Object.keys(patch || {})
-      const criticalFields = ['authorization_status', 'assessment_status', 'treatment_plan_status', 'parent_interview_status', 'ready_for_services', 'assigned_bcba']
+      if (isActiveClient && !wasActiveClient) {
+        await writeAssessmentActivity({
+          action: 'moved_to_active_client',
+          record: res.data,
+          description: `${formatAssessmentName(res.data)} was moved to active client status and closed from intake.`,
+          details_json: {
+            changed_fields: changedFields,
+            lifecycle_status: 'active_client',
+            workflow_status: 'closed',
+            active_client_date: res.data.active_client_date || null,
+          },
+        })
+        showWorkflowToast('Client moved to Active Clients.')
+        return res
+      }
+
+      const criticalFields = ['authorization_status', 'assessment_status', 'treatment_plan_status', 'parent_interview_status', 'ready_for_services', 'active_client_date', 'assigned_bcba']
       const beforeVals = {}
       const afterVals  = {}
       criticalFields.forEach(f => {
@@ -586,6 +608,60 @@ export default function App() {
           ...(Object.keys(beforeVals).length ? { before: beforeVals, after: afterVals } : {}),
         },
       })
+    }
+
+    return res
+  }
+
+  const handleCreateAssessment = async (form) => {
+    const res = await createAssessment(form)
+
+    if (res?.success && res?.data) {
+      await writeAssessmentActivity({
+        action: 'assessment_manually_created',
+        record: res.data,
+        description: `${formatAssessmentName(res.data)} was manually added to the Initial Assessment Board.`,
+        details_json: {
+          referral_id: null,
+          manual_entry: true,
+          source_workflow: 'manual_initial_assessment_board',
+        },
+      })
+      showWorkflowToast('Initial assessment added.')
+    } else if (res?.error) {
+      setError(`Could not create assessment: ${res.error}`)
+    }
+
+    return res
+  }
+
+  const handleReopenAssessment = async (id) => {
+    const before = assessData.find(r => String(getAssessmentRecordId(r) || '') === String(id))
+    const res = await saveAssessEdit(id, {
+      ready_for_services: false,
+      active_client_date: null,
+    })
+
+    if (res?.success && res?.data) {
+      await writeAssessmentActivity({
+        action: 'intake_reopened',
+        record: res.data,
+        description: `${formatAssessmentName(res.data)} intake was reopened from active client status.`,
+        details_json: {
+          changed_fields: ['ready_for_services', 'active_client_date'],
+          before: {
+            ready_for_services: before?.ready_for_services ?? null,
+            active_client_date: before?.active_client_date ?? null,
+          },
+          after: {
+            ready_for_services: res.data.ready_for_services ?? null,
+            active_client_date: res.data.active_client_date ?? null,
+          },
+          lifecycle_status: 'in_assessment',
+          workflow_status: 'open',
+        },
+      })
+      showWorkflowToast('Intake reopened.')
     }
 
     return res
@@ -1040,7 +1116,7 @@ export default function App() {
           activeCount={active.length}
           pendingDocsCount={pending.length}
           readyForInterviewCount={readyForInterview.length}
-          assessmentsCount={assessData.length}
+          assessmentsCount={activeAssessmentQueueData.length}
           statsLoading={loading}
           supportUserContext={supportUserContext}
           topRightContent={(
@@ -1106,12 +1182,13 @@ export default function App() {
     }
 
     if (module === 'assessment') {
-      if (subpage === 'tracker') return <AssessmentTracker assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'interviews') return <ParentInterviewsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'bcba') return <BCBAAssignmentsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} bcbaOptions={bcbaOptions} officeOptions={officeOptions} onRefreshLookups={reloadLookups} />
-      if (subpage === 'progress') return <AssessmentProgressPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'txplan') return <TreatmentPlansPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'tracker') return <AssessmentTracker assessData={activeAssessmentQueueData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} onNewAssessment={() => setNewAssessmentOpen(true)} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'interviews') return <ParentInterviewsPage assessData={activeAssessmentQueueData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'bcba') return <BCBAAssignmentsPage assessData={activeAssessmentQueueData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} bcbaOptions={bcbaOptions} officeOptions={officeOptions} onRefreshLookups={reloadLookups} />
+      if (subpage === 'progress') return <AssessmentProgressPage assessData={activeAssessmentQueueData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'txplan') return <TreatmentPlansPage assessData={activeAssessmentQueueData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'readysvc') return <ReadyForServicesPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (subpage === 'activeclients') return <ActiveClientsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} />
     }
 
     if (module === 'operations') {
@@ -1235,8 +1312,20 @@ export default function App() {
           onClose={() => setSelAssessId(null)}
           onSave={handleUpdateAssessment}
           onDelete={(id) => deleteRecord('assessment', id)}
+          onReopen={handleReopenAssessment}
+          canReopen={isAdmin(profile)}
           bcbaOptions={bcbaOptions}
           officeOptions={officeOptions}
+        />
+      )}
+
+      {newAssessmentOpen && (
+        <NewAssessmentModal
+          onClose={() => setNewAssessmentOpen(false)}
+          onSave={handleCreateAssessment}
+          bcbaOptions={bcbaOptions}
+          officeOptions={officeOptions}
+          insuranceOptions={insuranceOptions}
         />
       )}
 
