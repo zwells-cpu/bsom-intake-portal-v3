@@ -1,4 +1,5 @@
 import { MODULES } from '../lib/constants'
+import { LaunchWeekSupportCard } from './LaunchWeekSupportCard'
 import { ThemeToggle } from './ThemeToggle'
 import {
   Activity,
@@ -77,6 +78,7 @@ export function HomePage({
   assessmentsCount = 0,
   statsLoading = false,
   onEnterSubpage,
+  supportUserContext,
 }) {
   const handleSidebarNav = (item) => {
     if (item.id === 'home') return
@@ -120,17 +122,7 @@ export function HomePage({
           })}
         </nav>
 
-        <div className="hp-sidebar-quick">
-          <div className="hp-sidebar-section-label">Quick Actions</div>
-          <button className="hp-sidebar-action hp-sidebar-action--primary" onClick={onAddReferral}>
-            <FilePlus2 size={14} />
-            <span>Add New Referral</span>
-          </button>
-          <button className="hp-sidebar-action hp-sidebar-action--secondary" onClick={onScheduleParentInterview}>
-            <MessagesSquare size={14} />
-            <span>Parent Interview</span>
-          </button>
-        </div>
+        <LaunchWeekSupportCard className="hp-sidebar-support" userContext={supportUserContext} />
 
         <div className="hp-sidebar-notice">
           <Lock size={11} />

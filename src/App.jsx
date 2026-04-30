@@ -408,6 +408,11 @@ export default function App() {
   const displayName = profile?.full_name || session?.user?.email || 'Signed-in user'
   const displayRole = profile ? formatRoleLabel(profile.role) : 'Role pending'
   const accessLabel = profile ? formatProfileAccessLabel(profile) : 'Role pending'
+  const supportUserContext = {
+    user_id: session?.user?.id || null,
+    user_email: session?.user?.email || null,
+    user_role: profile?.role || null,
+  }
   const formatReferralName = (record) => {
     if (!record) return 'Referral'
     const fullName = `${record.first_name || ''} ${record.last_name || ''}`.trim()
@@ -1005,6 +1010,7 @@ export default function App() {
           readyForInterviewCount={readyForInterview.length}
           assessmentsCount={assessData.length}
           statsLoading={loading}
+          supportUserContext={supportUserContext}
           topRightContent={(
             <div className="home-account-card">
               <div style={{ minWidth: 0 }}>
@@ -1102,6 +1108,7 @@ export default function App() {
           pendingCount={pending.length}
           nrCount={nr.length}
           unverifiedCount={noIns}
+          supportUserContext={supportUserContext}
         />
 
         <div className="content">
