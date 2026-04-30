@@ -20,6 +20,12 @@ export const ACTIVITY_LOG_LAUNCH_DATE =
 
 const ACTIVITY_LOG_LAUNCH_TIME = Date.parse(ACTIVITY_LOG_LAUNCH_DATE)
 
+function cleanActorName(value) {
+  const text = String(value || '').trim()
+  if (!text || text.toLowerCase() === 'unknown staff member') return ''
+  return text
+}
+
 export function filterActivityLogsForLaunch(logs = []) {
   if (!Array.isArray(logs)) return []
   if (!Number.isFinite(ACTIVITY_LOG_LAUNCH_TIME)) return logs
@@ -100,6 +106,7 @@ const ACTION_LABELS = {
   intake_reopened: 'Intake Reopened',
   user_signed_in: 'User Signed In',
   user_signed_out: 'User Signed Out',
+  session_timeout: 'Session Timeout',
 }
 
 const FIELD_CHIP_LABELS = {
@@ -245,6 +252,8 @@ function fallbackSummary(log) {
       return 'User signed in.'
     case 'user_signed_out':
       return 'User signed out.'
+    case 'session_timeout':
+      return 'Session ended due to inactivity.'
     default:
       return `${formatActivityActionLabel(log?.action)} completed.`
   }
@@ -283,7 +292,7 @@ export function formatActivityLogDisplay(log = {}) {
  * Send an audit event to the backend.
  *
  * Accepted fields (all optional except `action`):
- *   user_id, user_email, user_role — actor context
+ *   user_id, user_email, user_role, user_name — actor context
  *   action                         — snake_case event name (required)
  *   entity_type                    — 'referral' | 'assessment' | null
  *   entity_id                      — UUID string
@@ -298,30 +307,53 @@ export async function createActivityLog(entry = {}) {
   const action = String(entry.action || '').trim()
   if (!action) return null
 
+  const preferredName =
+    cleanActorName(entry.user_name) ||
+    cleanActorName(entry.display_name) ||
+    cleanActorName(entry.actor)
+  const actorName =
+    (preferredName && preferredName !== 'Signed-in user' ? preferredName : cleanActorName(entry.user_email)) ||
+    preferredName ||
+    'Signed-in user'
+
+  const detailsJson = (
+    entry.details_json && typeof entry.details_json === 'object'
+      ? entry.details_json
+      : entry.metadata && typeof entry.metadata === 'object'
+        ? entry.metadata
+        : {}
+  )
+
   const payload = {
     user_id:      entry.user_id      || null,
     user_email:   entry.user_email   || null,
     user_role:    entry.user_role    || null,
+    user_name:    actorName,
     action,
     entity_type:  entry.entity_type  || null,
     entity_id:    entry.entity_id    || null,
     entity_label: entry.entity_label || entry.client_name || null,
     description:  entry.description  || null,
-    details_json: (
-      entry.details_json && typeof entry.details_json === 'object'
-        ? entry.details_json
-        : entry.metadata && typeof entry.metadata === 'object'
-          ? entry.metadata
-          : {}
-    ),
+    details_json: {
+      actor_name: actorName,
+      ...detailsJson,
+    },
   }
 
   try {
-    const res = await fetch(`${API_BASE}/api/audit-logs`, {
+    const postPayload = (body) => fetch(`${API_BASE}/api/audit-logs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
     })
+
+    let res = await postPayload(payload)
+
+    if (!res.ok && payload.user_name && (res.status === 400 || res.status === 422)) {
+      const legacyPayload = { ...payload }
+      delete legacyPayload.user_name
+      res = await postPayload(legacyPayload)
+    }
 
     if (!res.ok) {
       const text = await res.text()

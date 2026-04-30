@@ -33,14 +33,27 @@ function formatEntityType(type) {
   return String(type).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
-function buildActorLine(log) {
-  if (log.user_email) {
-    return log.user_role
-      ? `${log.user_email} (${log.user_role})`
-      : log.user_email
-  }
+function cleanActorName(value) {
+  const text = String(value || '').trim()
+  if (!text || text.toLowerCase() === 'unknown staff member') return ''
+  return text
+}
 
-  return log.actor || 'Unknown staff member'
+function buildActorLine(log) {
+  const details = log.details_json && typeof log.details_json === 'object' ? log.details_json : {}
+  const preferredName =
+    cleanActorName(log.user_name) ||
+    cleanActorName(log.display_name) ||
+    cleanActorName(log.full_name) ||
+    cleanActorName(log.actor) ||
+    cleanActorName(details.actor_name) ||
+    cleanActorName(details.user_name)
+  const actorName =
+    (preferredName && preferredName !== 'Signed-in user' ? preferredName : cleanActorName(log.user_email)) ||
+    preferredName ||
+    'Signed-in user'
+
+  return log.user_role ? `${actorName} (${log.user_role})` : actorName
 }
 
 export function ActivityLogTechnicalDetails({ log }) {

@@ -419,10 +419,14 @@ export default function App() {
   const displayName = profile?.full_name || session?.user?.email || 'Signed-in user'
   const displayRole = profile ? formatRoleLabel(profile.role) : 'Role pending'
   const accessLabel = profile ? formatProfileAccessLabel(profile) : 'Role pending'
-  const supportUserContext = {
+  const activityActorContext = {
     user_id: session?.user?.id || null,
     user_email: session?.user?.email || null,
     user_role: profile?.role || null,
+    user_name: displayName,
+  }
+  const supportUserContext = {
+    ...activityActorContext,
   }
   const formatReferralName = (record) => {
     if (!record) return 'Referral'
@@ -440,9 +444,7 @@ export default function App() {
     if (!session?.user?.id || !record) return
 
     await safeCreateActivityLog({
-      user_id:      session.user.id,
-      user_email:   session.user.email   || null,
-      user_role:    profile?.role        || null,
+      ...activityActorContext,
       action,
       entity_type:  'referral',
       entity_id:    String(record.id ?? ''),
@@ -456,9 +458,7 @@ export default function App() {
     if (!session?.user?.id || !record) return
 
     await safeCreateActivityLog({
-      user_id:      session.user.id,
-      user_email:   session.user.email || null,
-      user_role:    profile?.role      || null,
+      ...activityActorContext,
       action,
       entity_type:  'assessment',
       entity_id:    String(getAssessmentRecordId(record) ?? ''),
@@ -795,6 +795,7 @@ export default function App() {
         user_id:    loginData.user.id,
         user_email: loginData.user.email || null,
         user_role:  null,
+        user_name:  loginData.user.email || 'Signed-in user',
         action:     'user_signed_in',
         description: 'User signed in.',
         details_json: {},
@@ -851,9 +852,7 @@ export default function App() {
 
     if (session?.user?.id) {
       await safeCreateActivityLog({
-        user_id:     session.user.id,
-        user_email:  session.user.email || null,
-        user_role:   profile?.role      || null,
+        ...activityActorContext,
         action:      reason === 'idle' ? 'session_timeout' : 'user_signed_out',
         description: reason === 'idle' ? 'Session ended due to inactivity.' : 'User signed out.',
         details_json: { reason },
