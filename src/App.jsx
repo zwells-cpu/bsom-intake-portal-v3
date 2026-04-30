@@ -467,6 +467,52 @@ export default function App() {
       details_json: { clinic: record.clinic || record.office || '', ...details_json },
     })
   }
+
+  const isInitialAssessmentTransition = (recordOrPatch = {}) => {
+    const values = [
+      recordOrPatch.ready_for_parent_interview === true ? 'ready_for_parent_interview' : '',
+      recordOrPatch.current_stage,
+      recordOrPatch.stage,
+      recordOrPatch.status,
+    ]
+
+    return values.some(value => {
+      const normalized = String(value || '').trim().toLowerCase()
+      return normalized === 'ready_for_parent_interview'
+        || normalized === 'moved to initial assessment'
+        || normalized === 'initial assessment'
+    })
+  }
+
+  const ensureInitialAssessmentTransition = async (referral, { source = 'referral_update' } = {}) => {
+    if (!referral) return { success: false, error: 'Referral is missing.' }
+
+    const assessmentResult = await ensureAssessmentForReferral(referral)
+
+    if (!assessmentResult?.success) {
+      setError(`Referral was updated, but the assessment record could not be created: ${assessmentResult?.error || 'Unknown error'}`)
+      return assessmentResult
+    }
+
+    await Promise.all([load(), requestLoadAssessments()])
+
+    if (assessmentResult.created) {
+      await writeAssessmentActivity({
+        action: 'assessment_created_from_referral',
+        record: assessmentResult.data,
+        description: `${formatReferralName(referral)} was moved to the Initial Assessment Board.`,
+        details_json: {
+          referral_id: referral.id || referral.referral_id || '',
+          source_workflow: 'referral_intake',
+          destination_workflow: 'initial_assessment',
+          transition_source: source,
+        },
+      })
+      showWorkflowToast('Client moved to Initial Assessment Board.')
+    }
+
+    return assessmentResult
+  }
   const handleUploadClientDocument = async ({ referral, documentType, file }) => {
     if (!file) return { success: false, error: 'Please select a file to upload.' }
 
@@ -527,6 +573,7 @@ export default function App() {
 
     if (res?.success && res?.data) {
       const changedFields = Object.keys(patch || {})
+      const shouldCreateAssessment = isInitialAssessmentTransition(patch) || isInitialAssessmentTransition(res.data)
 
       if (changedFields.length === 1 && changedFields[0] === 'insurance_verified') {
         await writeReferralActivity({
@@ -559,6 +606,10 @@ export default function App() {
             ...(Object.keys(beforeVals).length ? { before: beforeVals, after: afterVals } : {}),
           },
         })
+      }
+
+      if (shouldCreateAssessment) {
+        await ensureInitialAssessmentTransition(res.data, { source: 'referral_update' })
       }
     }
 
@@ -682,6 +733,10 @@ export default function App() {
           after:  { status },
         },
       })
+
+      if (isInitialAssessmentTransition({ status }) || isInitialAssessmentTransition(res.data)) {
+        await ensureInitialAssessmentTransition(res.data, { source: 'referral_status' })
+      }
     }
 
     return res
@@ -691,29 +746,8 @@ export default function App() {
     const res = await toggleParentInterview(id, val)
 
     if (res?.success && res?.data) {
-      let assessmentResult = null
-
       if (val === true) {
-        assessmentResult = await ensureAssessmentForReferral(res.data)
-
-        if (!assessmentResult?.success) {
-          setError(`Referral was marked ready, but the assessment record could not be created: ${assessmentResult?.error || 'Unknown error'}`)
-        } else {
-          showWorkflowToast('Client moved to Initial Assessment Board.')
-
-          if (assessmentResult.created) {
-            await writeAssessmentActivity({
-              action: 'assessment_created_from_referral',
-              record: assessmentResult.data,
-              description: `${formatReferralName(res.data)} moved from referral intake to initial assessment workflow.`,
-              details_json: {
-                referral_id: res.data.id || res.data.referral_id || '',
-                source_workflow: 'referral_intake',
-                destination_workflow: 'initial_assessment',
-              },
-            })
-          }
-        }
+        await ensureInitialAssessmentTransition(res.data, { source: 'ready_for_parent_interview' })
       }
 
       await writeReferralActivity({
