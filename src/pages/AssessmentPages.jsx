@@ -80,6 +80,13 @@ function getAssessmentProgressPercent(record) {
 
 const ALL_PA = ['All', ...AUTHORIZATION_STATUSES]
 const TX_STATUSES = TREATMENT_PLAN_STATUSES
+const PA_FILTER_LABELS = {
+  'Pending Submission': 'Pending',
+  'Submitted / In Review': 'In Review',
+  'Partially Approved': 'Partial',
+  'Approved / Discharged': 'Discharged',
+  'Approved/Discharged': 'Discharged',
+}
 
 function renderClientCell(record, secondaryText) {
   return (
@@ -146,14 +153,14 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, o
   const denied = filtered.filter(record => ['Denied', 'Appeal Pending'].includes(record.authorization_status)).length
   return (
     <>
-      <div className="pg-hdr" style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <div className="pg-hdr assessment-board-header">
         <div className="pg-hdr-title">Initial Assessment Board</div>
-        <button type="button" className="btn-save" onClick={onNewAssessment} style={{ fontSize: 12, padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        <button type="button" className="btn-save assessment-board-new-btn" onClick={onNewAssessment}>
           <FilePlus2 size={16} />
           New Initial Assessment
         </button>
       </div>
-      <div className="stats-row" style={{ marginBottom: 20, gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))' }}>
+      <div className="stats-row assessment-kpi-row">
         <ClickableStatCard value={filtered.length} label="Total Clients" color="#6366f1" sublabel="showing" active={activeFilter?.key === 'all'} onClick={() => toggleFilter('all', 'Assessment Tracker: All Clients')} />
         <ClickableStatCard value={approved} label="PA Approved" color="#22c55e" sublabel="full approval" active={activeFilter?.key === 'pa-approved'} onClick={() => toggleFilter('pa-approved', 'Assessment Tracker: PA Approved')} />
         <ClickableStatCard value={partiallyApproved} label="Partially Approved" color="#0891b2" active={activeFilter?.key === 'partially-approved'} onClick={() => toggleFilter('partially-approved', 'Assessment Tracker: Partially Approved')} />
@@ -162,7 +169,7 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, o
       </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered assessment records" />
 
-      <div className="filter-row">
+      <div className="filter-row assessment-primary-controls">
         <div className="search-wrap">
           <input className="search-input" placeholder="Search client or caregiver..." value={search} onChange={event => setSearch(event.target.value)} />
         </div>
@@ -173,11 +180,13 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, o
         </div>
       </div>
 
-      <div className="filter-row" style={{ marginTop: -8, marginBottom: 16 }}>
-        <span className="filter-label">Prior Authorization:</span>
-        <div className="filter-btns">
+      <div className="assessment-secondary-filter-panel">
+        <div className="filter-label">Prior Authorization</div>
+        <div className="filter-btns assessment-pa-chips">
           {ALL_PA.map(status => (
-            <button key={status} className={`filter-btn ${paFilter === status ? 'active' : ''}`} onClick={() => setPaFilter(status)} style={{ fontSize: 11 }}>{status}</button>
+            <button key={status} className={`filter-btn assessment-pa-chip ${paFilter === status ? 'active' : ''}`} onClick={() => setPaFilter(status)}>
+              {PA_FILTER_LABELS[status] || status}
+            </button>
           ))}
         </div>
       </div>
