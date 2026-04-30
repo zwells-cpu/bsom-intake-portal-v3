@@ -1,10 +1,19 @@
 import { normalizeAuthorizationStatus, sc } from '../lib/utils'
+import { LIFECYCLE_BADGE_STYLES, PA_BADGE_STYLES, PA_COLORS } from '../lib/constants'
 
 export function Badge({ value }) {
   if (!value || value === '--') {
     return (
       <span className="bdg" style={{ background: '#64748b15', color: '#64748b', border: '1px solid #64748b25' }}>
         --
+      </span>
+    )
+  }
+  const semanticStyle = PA_BADGE_STYLES[value] || LIFECYCLE_BADGE_STYLES[value]
+  if (semanticStyle) {
+    return (
+      <span className="bdg" style={{ background: semanticStyle.background, color: semanticStyle.color, border: `1px solid ${semanticStyle.border}`, letterSpacing: '0.01em' }}>
+        {value}
       </span>
     )
   }
@@ -68,16 +77,15 @@ export function StagePill({ stage }) {
 }
 
 export function PaStatusBadge({ status }) {
-  const PA_COLORS = {
-    'Approved': '#22c55e', 'Approved/Discharged': '#64748b', 'No PA Needed': '#22c55e',
-    'Pending Submission': '#f59e0b', 'Submitted / In Review': '#6366f1',
-    'Pending': '#f59e0b', 'In Review': '#6366f1', 'Reauthorization Needed': '#f59e0b',
-    'Appeal Pending': '#fb923c', 'Denied': '#ef4444', 'Referred Out': '#64748b',
-  }
   const s = normalizeAuthorizationStatus(status) || 'Pending Submission'
   const c = PA_COLORS[s] || '#64748b'
+  const style = PA_BADGE_STYLES[s] || {
+    color: c,
+    background: `${c}20`,
+    border: `${c}35`,
+  }
   return (
-    <span className="bdg" style={{ background: `${c}20`, color: c, border: `1px solid ${c}35` }}>
+    <span className="bdg" style={{ background: style.background, color: style.color, border: `1px solid ${style.border}` }}>
       {s}
     </span>
   )

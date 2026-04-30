@@ -1,4 +1,4 @@
-import { getAssessmentLifecycleStatus, getAssessmentWorkflowStatus, getAuthorizationStatus, getReferralStage, isAuthorizationApproved, normalizeAutismDx, normalizeParentInterviewStatus, normalizeTreatmentPlanStatus } from './utils'
+import { POSITIVE_AUTHORIZATION_STATUSES, getAssessmentLifecycleStatus, getAssessmentWorkflowStatus, getAuthorizationStatus, getReferralStage, isAuthorizationApproved, normalizeAutismDx, normalizeParentInterviewStatus, normalizeTreatmentPlanStatus } from './utils'
 
 export function isStatFilterTarget(filter, target) {
   return filter?.target === target ? filter : null
@@ -52,7 +52,7 @@ export function matchesStatFilter(record, filter) {
   if (target === 'assessment-tracker') {
     const pa = getAuthorizationStatus(record)
     const stage = getAssessmentWorkflowStatus(record)
-    if (key === 'pa-approved') return ['Approved', 'No PA Needed', 'Approved/Discharged'].includes(pa)
+    if (key === 'pa-approved') return POSITIVE_AUTHORIZATION_STATUSES.includes(pa)
     if (key === 'in-progress') return stage === 'In Progress'
     if (key === 'denied-appealed') return ['Denied', 'Appeal Pending'].includes(pa)
     if (key === 'awaiting-pa') return ['Pending Submission', 'Submitted / In Review'].includes(pa)

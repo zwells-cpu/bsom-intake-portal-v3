@@ -3,10 +3,14 @@ import { STAGE_COLORS, STAGE_ICONS, PA_COLORS, PA_ICONS } from './constants'
 export const PARENT_INTERVIEW_STATUSES = ['Not Started', 'Scheduled', 'In Progress', 'Completed', 'No Show']
 export const ASSESSMENT_COMPONENT_STATUSES = ['Not Started', 'Scheduled', 'In Progress', 'Completed']
 export const TREATMENT_PLAN_STATUSES = ['Not Started', 'In Progress', 'Completed', 'Finalized']
+export const AUTHORIZATION_STATUSES = ['Not Submitted', 'Pending Submission', 'Submitted / In Review', 'Approved', 'Partially Approved', 'Reauthorization Needed', 'Appeal Pending', 'Denied', 'No PA Needed', 'Approved/Discharged', 'Referred Out']
+export const POSITIVE_AUTHORIZATION_STATUSES = ['Approved', 'Partially Approved', 'No PA Needed', 'Approved/Discharged']
 
 // ── Status color ──
 export function sc(v) {
   if (!v || v === 'N/A' || v === '--') return '#94a3b8'
+  const normalized = String(v || '').trim()
+  if (PA_COLORS[normalized]) return PA_COLORS[normalized]
   const u = v.toUpperCase()
   if (u.includes('PROVIDER REFERRAL')) return '#3b82f6'
   if (u.includes('NOT RECEIVED')) return '#ef4444'
@@ -304,7 +308,7 @@ export function getAssessmentLifecycleStatus(record) {
 
 export function isAuthorizationApproved(record) {
   const status = getAuthorizationStatus(record)
-  return ['Approved', 'No PA Needed', 'Approved/Discharged'].includes(status)
+  return POSITIVE_AUTHORIZATION_STATUSES.includes(status)
 }
 
 export function normalizeInsuranceVerifiedStatus(value) {

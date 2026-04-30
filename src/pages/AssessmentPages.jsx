@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react'
 import { PaStatusBadge } from '../components/Badge'
 import { NotifyModal } from '../components/NotifyModal'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
+import { LIFECYCLE_BADGE_STYLES } from '../lib/constants'
 import { cleanLookupValue, createBcbaStaff, deactivateBcbaStaff, getBcbaStaffRecords, normalizeLookupValue, optionValues, updateBcbaStaff } from '../lib/lookups'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
 import {
+  AUTHORIZATION_STATUSES,
+  POSITIVE_AUTHORIZATION_STATUSES,
   TREATMENT_PLAN_STATUSES,
   formatDate,
   formatDisplayDate,
@@ -73,7 +76,7 @@ function getAssessmentProgressPercent(record) {
   return `${completedCount * 25}%`
 }
 
-const ALL_PA = ['All', 'Approved', 'Submitted / In Review', 'Pending Submission', 'Reauthorization Needed', 'Appeal Pending', 'Denied', 'No PA Needed', 'Approved/Discharged', 'Referred Out']
+const ALL_PA = ['All', ...AUTHORIZATION_STATUSES]
 const TX_STATUSES = TREATMENT_PLAN_STATUSES
 
 function renderClientCell(record, secondaryText) {
@@ -90,14 +93,13 @@ function txColor(status) {
 }
 
 function lifecycleBadge(status) {
-  const color = {
-    'In Assessment': '#f59e0b',
-    'Ready for Services': '#22c55e',
-    'Active Client': '#16a34a',
-    'Referred Out': '#8b5cf6',
-  }[status] || '#64748b'
+  const style = LIFECYCLE_BADGE_STYLES[status] || {
+    color: '#64748b',
+    background: '#64748b20',
+    border: '#64748b35',
+  }
 
-  return <span className="bdg" style={{ background: `${color}20`, color, border: `1px solid ${color}35` }}>{status}</span>
+  return <span className="bdg" style={{ background: style.background, color: style.color, border: `1px solid ${style.border}` }}>{status}</span>
 }
 
 function getAssessmentPageFilter(statFilter, onSetStatFilter, target) {
@@ -136,7 +138,7 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
       && matchesStatFilter(record, activeFilter)
   })
 
-  const approved = filtered.filter(record => ['Approved', 'No PA Needed', 'Approved/Discharged'].includes(record.authorization_status)).length
+  const approved = filtered.filter(record => POSITIVE_AUTHORIZATION_STATUSES.includes(record.authorization_status)).length
   const inProgress = filtered.filter(record => getAssessmentWorkflowStatus(record) === 'In Progress').length
   const denied = filtered.filter(record => ['Denied', 'Appeal Pending'].includes(record.authorization_status)).length
   return (
@@ -146,7 +148,7 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, s
       </div>
       <div className="stats-row stats-4" style={{ marginBottom: 20 }}>
         <ClickableStatCard value={filtered.length} label="Total Clients" color="#6366f1" sublabel="showing" active={activeFilter?.key === 'all'} onClick={() => toggleFilter('all', 'Assessment Tracker: All Clients')} />
-        <ClickableStatCard value={approved} label="PA Approved" color="#22c55e" sublabel="incl. no PA needed" active={activeFilter?.key === 'pa-approved'} onClick={() => toggleFilter('pa-approved', 'Assessment Tracker: PA Approved')} />
+        <ClickableStatCard value={approved} label="PA Approved" color="#22c55e" sublabel="incl. partial/no PA" active={activeFilter?.key === 'pa-approved'} onClick={() => toggleFilter('pa-approved', 'Assessment Tracker: PA Approved')} />
         <ClickableStatCard value={inProgress} label="In Progress" color="#f59e0b" active={activeFilter?.key === 'in-progress'} onClick={() => toggleFilter('in-progress', 'Assessment Tracker: In Progress')} />
         <ClickableStatCard value={denied} label="Denied / Appealed" color="#ef4444" active={activeFilter?.key === 'denied-appealed'} onClick={() => toggleFilter('denied-appealed', 'Assessment Tracker: Denied / Appealed')} />
       </div>
@@ -892,7 +894,7 @@ export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess, 
                   <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
                   <td>{sBdg(getAssessmentWorkflowStatus(record))}</td>
                   <td>{sBdg(record.treatment_plan_status || 'Not Started')}</td>
-                  <td>{sBdg(getAuthorizationStatus(record) || 'Not Submitted')}</td>
+                  <td><PaStatusBadge status={getAuthorizationStatus(record) || 'Not Submitted'} /></td>
                   <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--muted)' }}>{formatDisplayDate(record.treatment_plan_started_date)}</td>
                   <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.treatment_plan_completed_date ? '#22c55e' : 'var(--dim)' }}>{formatDisplayDate(record.treatment_plan_completed_date)}</td>
                   <td style={{ color: 'var(--accent)' }}>→</td>
@@ -931,7 +933,7 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
         <div className="pg-hdr-sub">Clients who have completed all pre-service requirements</div>
       </div>
       <div className="stats-row stats-4" style={{ marginBottom: 22 }}>
-        <ClickableStatCard value={ready.length} label="Ready for Services" color="#22c55e" active={activeFilter?.key === 'ready'} onClick={() => toggleFilter('ready', 'Ready for Services')} />
+        <ClickableStatCard value={ready.length} label="Ready for Services" color="#3b82f6" active={activeFilter?.key === 'ready'} onClick={() => toggleFilter('ready', 'Ready for Services')} />
         <ClickableStatCard value={almostAuth.length} label="Awaiting Authorization" color="#f59e0b" active={activeFilter?.key === 'awaiting-authorization'} onClick={() => toggleFilter('awaiting-authorization', 'Ready for Services: Awaiting Authorization')} />
         <ClickableStatCard value={notReady.length} label="Not Ready" color="#ef4444" active={activeFilter?.key === 'not-ready'} onClick={() => toggleFilter('not-ready', 'Ready for Services: Not Ready')} />
         <ClickableStatCard value={referredOut.length} label="Referred Out" color="#8b5cf6" active={activeFilter?.key === 'referred-out'} onClick={() => toggleFilter('referred-out', 'Ready for Services: Referred Out')} />
@@ -940,7 +942,7 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
 
       {readyRows.length > 0 && (
         <>
-          <div style={{ marginBottom: 14, fontSize: 13, fontWeight: 700, color: '#22c55e' }}>Ready for Services ({readyRows.length})</div>
+          <div style={{ marginBottom: 14, fontSize: 13, fontWeight: 700, color: '#3b82f6' }}>Ready for Services ({readyRows.length})</div>
           <div className="card" style={{ marginBottom: 20 }}>
             <div className="table-wrap">
               <table>
@@ -954,7 +956,7 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
                       style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
                     >
                       <td>
-                        <div style={{ fontWeight: 700, color: '#22c55e' }}>{record.client_name}</div>
+                        <div style={{ fontWeight: 700, color: '#3b82f6' }}>{record.client_name}</div>
                         <div style={{ fontSize: 11, color: 'var(--dim)' }}>{record.clinic || ''}</div>
                       </td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>

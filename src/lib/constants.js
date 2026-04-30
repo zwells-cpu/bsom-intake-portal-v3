@@ -88,6 +88,7 @@ export const TX_STATUSES = ['Not Started', 'In Progress', 'Completed', 'Finalize
 
 export const PA_COLORS = {
   Approved: '#22c55e',
+  'Partially Approved': '#0f766e',
   'Approved/Discharged': '#64748b',
   'No PA Needed': '#22c55e',
   'Pending Submission': '#f59e0b',
@@ -100,8 +101,40 @@ export const PA_COLORS = {
   'Referred Out': '#64748b',
 }
 
+export const PA_BADGE_STYLES = {
+  'Partially Approved': {
+    color: '#0f766e',
+    background: '#0f766e18',
+    border: '#0f766e30',
+  },
+}
+
+export const LIFECYCLE_BADGE_STYLES = {
+  'In Assessment': {
+    color: '#f59e0b',
+    background: '#f59e0b20',
+    border: '#f59e0b35',
+  },
+  'Ready for Services': {
+    color: '#3b82f6',
+    background: '#3b82f618',
+    border: '#3b82f630',
+  },
+  'Active Client': {
+    color: '#22c55e',
+    background: '#22c55e20',
+    border: '#22c55e35',
+  },
+  'Referred Out': {
+    color: '#8b5cf6',
+    background: '#8b5cf620',
+    border: '#8b5cf635',
+  },
+}
+
 export const PA_ICONS = {
   Approved: '',
+  'Partially Approved': '',
   'Approved/Discharged': '',
   'No PA Needed': '',
   'Pending Submission': '',

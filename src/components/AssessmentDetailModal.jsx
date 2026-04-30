@@ -4,6 +4,7 @@ import { OFFICES } from '../lib/constants'
 import { cleanLookupValue, includeCurrentOption, normalizeOptions, optionValues } from '../lib/lookups'
 import {
   ASSESSMENT_COMPONENT_STATUSES,
+  AUTHORIZATION_STATUSES,
   PARENT_INTERVIEW_STATUSES,
   TREATMENT_PLAN_STATUSES,
   formatDate,
@@ -14,8 +15,6 @@ import {
   normalizeTreatmentPlanStatus,
   statusColor,
 } from '../lib/utils'
-
-const AUTHORIZATION_STATUSES = ['Not Submitted', 'Pending Submission', 'Submitted / In Review', 'Approved', 'Reauthorization Needed', 'Appeal Pending', 'Denied', 'No PA Needed', 'Approved/Discharged', 'Referred Out']
 
 function asBoolString(value) {
   return value === true || value === 'true' ? 'true' : 'false'

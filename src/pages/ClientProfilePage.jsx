@@ -140,7 +140,7 @@ export function ClientProfilePage({ referralId, onBack, canShowTechnicalDetails 
                     <td style={{ color: stageColor(normalizeParentInterviewStatus(a.parent_interview_status)), fontSize: 12, fontWeight: 700 }}>{normalizeParentInterviewStatus(a.parent_interview_status)}</td>
                     <td style={{ color: stageColor(normalizeTreatmentPlanStatus(a.treatment_plan_status)), fontSize: 12, fontWeight: 700 }}>{normalizeTreatmentPlanStatus(a.treatment_plan_status)}</td>
                     <td style={{ color: stageColor(normalizeAuthorizationStatus(a.authorization_status)), fontSize: 12, fontWeight: 700 }}>{normalizeAuthorizationStatus(a.authorization_status) || '--'}</td>
-                    <td style={{ color: a.ready_for_services ? 'var(--green)' : 'var(--dim)', fontSize: 12, fontWeight: 700 }}>
+                    <td style={{ color: a.ready_for_services ? '#3b82f6' : 'var(--dim)', fontSize: 12, fontWeight: 700 }}>
                       {a.ready_for_services ? 'Yes' : 'No'}
                     </td>
                   </tr>
@@ -182,7 +182,9 @@ function InfoRow({ label, value }) {
 
 function stageColor(status) {
   const s = String(status || '').toLowerCase()
-  if (['completed', 'finalized', 'ready', 'approved'].includes(s)) return 'var(--green)'
+  if (['completed', 'finalized', 'approved', 'active client'].includes(s)) return 'var(--green)'
+  if (['ready', 'ready for services'].includes(s)) return '#3b82f6'
+  if (s === 'partially approved') return '#0f766e'
   if (s === 'no show') return 'var(--red)'
   if (['in progress', 'submitted', 'scheduled', 'pending submission', 'submitted / in review'].includes(s)) return 'var(--yellow)'
   return 'var(--dim)'
