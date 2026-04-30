@@ -85,7 +85,7 @@ export function useReferrals() {
       })
       if (!res.ok) throw new Error(await res.text())
       const data = await res.json()
-      const normalizedRecord = normalizeReferralRecord(data || mergedRecord)
+      const normalizedRecord = normalizeReferralRecord({ ...mergedRecord, ...(data || {}) })
       setRefs(prev => replaceRecordById(prev, normalizedRecord, getReferralId))
       return { success: true, data: normalizedRecord }
     } catch (e) {

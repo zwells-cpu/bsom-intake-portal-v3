@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "backfill:initial-assessments": "node scripts/backfill-initial-assessments.mjs"
+    "backfill:initial-assessments": "node scripts/backfill-initial-assessments.mjs",
+    "repair:promoted-assessment-mapping": "node scripts/repair-promoted-assessment-mapping.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.103.3",

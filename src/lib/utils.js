@@ -117,7 +117,7 @@ export function hasLinkedAssessment(record, assessments = []) {
 }
 
 export function isReferralTransitioned(record, assessments = []) {
-  return hasLinkedAssessment(record, assessments)
+  return record?.ready_for_parent_interview === true || hasLinkedAssessment(record, assessments)
 }
 
 export function isActiveReferralWork(record, assessments = []) {

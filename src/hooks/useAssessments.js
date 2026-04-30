@@ -118,6 +118,28 @@ function buildAssessmentFromReferral(referral = {}) {
   }
 }
 
+async function fetchFullReferral(referralId) {
+  if (!referralId) return null
+
+  const res = await fetch(`${API_URL}/referrals/${referralId}`)
+  if (!res.ok) return null
+  return res.json()
+}
+
+function hasReferralMappingFields(referral = {}) {
+  return Boolean(
+    referral.first_name
+    || referral.last_name
+    || referral.client_name
+    || referral.office
+    || referral.clinic
+    || referral.insurance
+    || referral.caregiver
+    || referral.caregiver_phone
+    || referral.caregiver_email
+  )
+}
+
 function sanitizeAssessmentPatch(patch = {}) {
   const cleaned = {}
   ASSESSMENT_DB_FIELDS.forEach((field) => {
@@ -224,6 +246,10 @@ export function useAssessments() {
       const referralId = referral?.id || referral?.referral_id
       if (!referralId) throw new Error('Referral is missing an ID.')
 
+      const fullReferral = hasReferralMappingFields(referral)
+        ? referral
+        : { ...referral, ...(await fetchFullReferral(referralId) || {}) }
+
       const allRes = await fetch(`${API_URL}/assessments`)
       if (!allRes.ok) throw new Error(await allRes.text())
       const all = await allRes.json()
@@ -235,7 +261,7 @@ export function useAssessments() {
         return { success: true, data: normalizeAssessmentRecord(existing), created: false }
       }
 
-      const payload = sanitizeAssessmentPatch(buildAssessmentFromReferral(referral))
+      const payload = sanitizeAssessmentPatch(buildAssessmentFromReferral(fullReferral))
       const createRes = await fetch(`${API_URL}/assessments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

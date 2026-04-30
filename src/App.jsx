@@ -484,17 +484,46 @@ export default function App() {
     })
   }
 
+  const writePromotionActivity = async ({ referral, assessment }) => {
+    if (!referral || !assessment) return
+
+    const assessmentId = getAssessmentRecordId(assessment)
+    const timestamp = new Date().toISOString()
+    await writeReferralActivity({
+      action: 'referral_promoted_to_initial_assessment',
+      record: referral,
+      description: `${formatReferralName(referral)} was moved to the Initial Assessment Board.`,
+      details_json: {
+        referral_id: referral.id || referral.referral_id || '',
+        assessment_id: assessmentId || null,
+        moved_by: {
+          user_id: session?.user?.id || null,
+          user_email: session?.user?.email || null,
+        },
+        office: referral.office || assessment.clinic || assessment.office || '',
+        clinic: assessment.clinic || referral.office || '',
+        timestamp,
+      },
+    })
+  }
+
   const ensureInitialAssessmentTransition = async (referral, { source = 'referral_update' } = {}) => {
     if (!referral) return { success: false, error: 'Referral is missing.' }
 
     const assessmentResult = await ensureAssessmentForReferral(referral)
 
     if (!assessmentResult?.success) {
+      await Promise.all([load(), requestLoadAssessments()])
       setError(`Referral was updated, but the assessment record could not be created: ${assessmentResult?.error || 'Unknown error'}`)
       return assessmentResult
     }
 
     await Promise.all([load(), requestLoadAssessments()])
+
+    await writePromotionActivity({
+      referral,
+      assessment: assessmentResult.data,
+    })
 
     if (assessmentResult.created) {
       await writeAssessmentActivity({
@@ -573,7 +602,8 @@ export default function App() {
 
     if (res?.success && res?.data) {
       const changedFields = Object.keys(patch || {})
-      const shouldCreateAssessment = isInitialAssessmentTransition(patch) || isInitialAssessmentTransition(res.data)
+      const wasInitialAssessment = isInitialAssessmentTransition(before)
+      const shouldCreateAssessment = !wasInitialAssessment && (isInitialAssessmentTransition(patch) || isInitialAssessmentTransition(res.data))
 
       if (changedFields.length === 1 && changedFields[0] === 'insurance_verified') {
         await writeReferralActivity({
@@ -734,7 +764,7 @@ export default function App() {
         },
       })
 
-      if (isInitialAssessmentTransition({ status }) || isInitialAssessmentTransition(res.data)) {
+      if (!isInitialAssessmentTransition(before) && (isInitialAssessmentTransition({ status }) || isInitialAssessmentTransition(res.data))) {
         await ensureInitialAssessmentTransition(res.data, { source: 'referral_status' })
       }
     }
@@ -746,8 +776,13 @@ export default function App() {
     const res = await toggleParentInterview(id, val)
 
     if (res?.success && res?.data) {
+      let assessmentResult = null
+
       if (val === true) {
-        await ensureInitialAssessmentTransition(res.data, { source: 'ready_for_parent_interview' })
+        assessmentResult = await ensureInitialAssessmentTransition(res.data, { source: 'ready_for_parent_interview' })
+        if (assessmentResult?.success && !assessmentResult.created) {
+          showWorkflowToast('Client moved to Initial Assessment Board.')
+        }
       }
 
       await writeReferralActivity({

@@ -26,7 +26,13 @@ function normalizeText(value) {
 function isMovedToInitialAssessment(referral = {}) {
   if (referral.ready_for_parent_interview === true) return true
 
-  return [referral.current_stage, referral.stage, referral.status].some((value) => {
+  return [
+    referral.current_stage,
+    referral.stage,
+    referral.status,
+    referral.lifecycle_status,
+    referral.referral_status,
+  ].some((value) => {
     const normalized = normalizeText(value).toLowerCase()
     return normalized === 'moved to initial assessment'
       || normalized === 'initial assessment'
@@ -34,7 +40,7 @@ function isMovedToInitialAssessment(referral = {}) {
 }
 
 function getReferralId(referral = {}) {
-  return referral.id || referral.referral_id || null
+  return referral.id || null
 }
 
 function getClientName(referral = {}) {
@@ -109,12 +115,16 @@ async function main() {
 
   const candidates = (Array.isArray(referrals) ? referrals : [])
     .filter(isMovedToInitialAssessment)
-    .filter(referral => getReferralId(referral))
 
-  const missing = candidates.filter(referral => !existingReferralIds.has(String(getReferralId(referral))))
+  const missingId = candidates.filter(referral => !getReferralId(referral))
+  const withIds = candidates.filter(referral => getReferralId(referral))
+  const existing = withIds.filter(referral => existingReferralIds.has(String(getReferralId(referral))))
+  const missing = withIds.filter(referral => !existingReferralIds.has(String(getReferralId(referral))))
 
   console.log(`Mode: ${commit ? 'COMMIT' : 'DRY RUN'}`)
-  console.log(`Transitioned referrals found: ${candidates.length}`)
+  console.log(`Checked transitioned referrals: ${candidates.length}`)
+  console.log(`Skipped without referral.id: ${missingId.length}`)
+  console.log(`Skipped existing linked assessments: ${existing.length}`)
   console.log(`Missing linked assessments: ${missing.length}`)
 
   if (!commit) {
@@ -123,9 +133,11 @@ async function main() {
   }
 
   let created = 0
+  let skippedMissingFields = 0
   for (const referral of missing) {
     const payload = buildAssessmentFromReferral(referral)
     if (!payload.referral_id || !payload.client_name) {
+      skippedMissingFields += 1
       console.log(`Skipped referral ${payload.referral_id || '(missing id)'} because required assessment fields were missing.`)
       continue
     }
@@ -139,6 +151,7 @@ async function main() {
     created += 1
   }
 
+  console.log(`Skipped missing required fields: ${skippedMissingFields}`)
   console.log(`Assessment records created: ${created}`)
 }
 
