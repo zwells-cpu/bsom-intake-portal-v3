@@ -1,12 +1,16 @@
 import { Badge, OfficePill, ProgressRing } from '../components/Badge'
-import { ClickableStatCard } from '../components/StatFilterControls'
 import { ActivityLogList, RecentActivityCard } from '../components/dashboard/RecentActivityCard'
 import { useActivityLogs } from '../hooks/useActivityLogs'
-import { formatDisplayDate, isActiveReferralWork, isInsuranceVerified, isReferralTransitioned, needsInsuranceVerification, normalizeAutismDx, pct } from '../lib/utils'
+import { formatDisplayDate, isActiveReferralWork, isReferralTransitioned, needsInsuranceVerification, pct } from '../lib/utils'
+import { ChevronRight, ClipboardList, Clock, ShieldCheck, UserRoundX } from 'lucide-react'
 
-export function DashboardPage({ refs, assessData = [], setSelectedId, openModulePage, activityRefreshKey = 0 }) {
-  const { logs, loading: activityLoading } = useActivityLogs(8, activityRefreshKey)
-  const recentLogs = logs.slice(0, 5)
+export function DashboardPage({ refs, assessData = [], setSelectedId, openModulePage, activityRefreshKey = 0, profileRole = '' }) {
+  const { logs, loading: activityLoading } = useActivityLogs(20, activityRefreshKey)
+  const overviewActivityExclusions = new Set(['user_signed_in', 'user_signed_out', 'session_timeout'])
+  const recentLogs = logs.filter((log) => !overviewActivityExclusions.has(log.action)).slice(0, 4)
+  const role = String(profileRole || '').toLowerCase()
+  const isIntakeView = role === 'intake'
+  const canShowOversight = role === 'admin'
   const active = refs.filter((r) => isActiveReferralWork(r, assessData))
   const nr = refs.filter((r) => r.status === 'non-responsive' || r.status === 'referred-out')
   const signed = active.filter((r) => (r.intake_paperwork || '').toLowerCase().includes('signed'))
@@ -19,128 +23,187 @@ export function DashboardPage({ refs, assessData = [], setSelectedId, openModule
     const ageInDays = Math.floor((Date.now() - new Date(received).getTime()) / 86400000)
     return Number.isFinite(ageInDays) && ageInDays >= 14
   }).length
-  const avgPct = active.length ? Math.round(active.reduce((sum, r) => sum + pct(r), 0) / active.length) : 0
   const recent = active.slice(0, 5)
+  const openReferral = (id) => {
+    setSelectedId(id)
+    openModulePage('intake', 'all')
+  }
 
-  const alerts = []
-  if (pending.length) alerts.push({ color: '#f59e0b', text: `${pending.length} client${pending.length > 1 ? 's' : ''} with pending paperwork`, action: () => openModulePage('intake', 'pending', { target: 'pending-docs', key: 'total-pending', label: 'Pending Documents' }), label: 'View Intake' })
-  if (nr.length) alerts.push({ color: '#ef4444', text: `${nr.length} non-responsive or referred out`, action: () => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'all', label: 'Non-Responsive / Referred Out' }), label: 'View List' })
-  if (noIns.length) alerts.push({ color: '#a5b4fc', text: `${noIns.length} unverified insurance records`, action: () => openModulePage('intake', 'insurance', { target: 'insurance-verification', key: 'unverified', label: 'Unverified Insurance' }), label: 'Verify Now' })
-
-  const needsAttentionItems = [
-    { label: 'Pending Documents', value: pending.length, color: '#f59e0b', action: () => openModulePage('intake', 'pending', { target: 'pending-docs', key: 'total-pending', label: 'Pending Documents' }) },
-    { label: 'Unverified Insurance', value: noIns.length, color: '#a5b4fc', action: () => openModulePage('intake', 'insurance', { target: 'insurance-verification', key: 'unverified', label: 'Unverified Insurance' }) },
-    { label: 'Moved to Initial', value: transitioned, color: '#f59e0b', action: () => openModulePage('intake', 'all', { target: 'all-referrals', key: 'transitioned-to-initial', label: 'Moved to Initial Assessment' }) },
-    { label: 'Aging 14+ Days', value: aging14, color: '#fb923c', action: () => openModulePage('operations', 'aging', { target: 'referral-aging', key: 'aging-14-plus', label: 'Aging 14+ Days' }) },
-  ]
+  const priorityQueueItems = [
+    {
+      label: 'Paperwork Still Needed',
+      value: pending.length,
+      actionLabel: 'Help families finish paperwork',
+      helper: 'Start here when forms are missing, incomplete, or still waiting to be returned.',
+      cta: 'Review paperwork',
+      tone: 'yellow',
+      icon: ClipboardList,
+      action: () => openModulePage('intake', 'pending', { target: 'pending-docs', key: 'total-pending', label: 'Pending Documents' }),
+    },
+    {
+      label: 'Insurance Needs Verification',
+      value: noIns.length,
+      actionLabel: 'Confirm coverage details',
+      helper: 'Review families whose insurance has not been confirmed yet.',
+      cta: 'Verify insurance',
+      tone: 'blue',
+      icon: ShieldCheck,
+      intakePriority: 2,
+      defaultPriority: 2,
+      action: () => openModulePage('intake', 'insurance', { target: 'insurance-verification', key: 'unverified', label: 'Unverified Insurance' }),
+    },
+    {
+      label: 'Stalled Over 14 Days',
+      value: aging14,
+      actionLabel: 'Check what is holding things up',
+      helper: 'Review referrals that have been waiting for two weeks or longer.',
+      cta: 'Review stalled referrals',
+      tone: 'orange',
+      icon: Clock,
+      intakePriority: 4,
+      defaultPriority: 3,
+      action: () => openModulePage('operations', 'aging', { target: 'referral-aging', key: 'aging-14-plus', label: 'Aging 14+ Days' }),
+    },
+    {
+      label: 'Needs Follow-Up or Referred Out',
+      value: nr.length,
+      actionLabel: 'Close the loop with families',
+      helper: 'Follow up with families we have not reached or confirm referrals sent elsewhere.',
+      cta: 'Review follow-ups',
+      tone: 'red',
+      icon: UserRoundX,
+      intakePriority: 3,
+      defaultPriority: 4,
+      action: () => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'all', label: 'Non-Responsive / Referred Out' }),
+    },
+  ].map((item, index) => ({
+    intakePriority: index + 1,
+    defaultPriority: index + 1,
+    ...item,
+  })).sort((a, b) => (isIntakeView ? a.intakePriority - b.intakePriority : a.defaultPriority - b.defaultPriority))
 
   return (
     <>
-      <div className="stats-row stats-4" style={{ marginBottom: 20 }}>
-        <ClickableStatCard value={active.length} label="Active Referrals" color="#6366f1" onClick={() => openModulePage('intake', 'all', { target: 'all-referrals', key: 'active-referrals', label: 'Active Referrals' })} />
-        <ClickableStatCard value={signed.length} label="Fully Signed" color="#22c55e" onClick={() => openModulePage('intake', 'all', { target: 'all-referrals', key: 'paperwork-signed', label: 'Fully Signed Referrals' })} />
-        <ClickableStatCard value={pending.length} label="Pending Docs" color="#f59e0b" onClick={() => openModulePage('intake', 'pending', { target: 'pending-docs', key: 'total-pending', label: 'Pending Documents' })} />
-        <ClickableStatCard value={nr.length} label="Non-Responsive" color="#fb923c" onClick={() => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'all', label: 'Non-Responsive / Referred Out' })} />
-      </div>
-
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--dim)', marginBottom: 10 }}>
-          Needs Attention
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 12 }}>
-          {needsAttentionItems.map((item) => (
-            <button
-              key={item.label}
-              className="stat-box stat-box-clickable"
-              onClick={item.action}
-              style={{ padding: '14px 18px', borderTop: `3px solid ${item.color}` }}
-            >
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
-                <span style={{ fontSize: 22, fontWeight: 800, fontFamily: "'DM Mono',monospace", color: item.color }}>{item.value}</span>
-                <span style={{ fontSize: 10, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Open</span>
-              </div>
-              <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{item.label}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 20, marginBottom: 20 }}>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Alerts</div>
-          {alerts.length ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {alerts.map((alert, index) => (
-                <div
-                  key={index}
-                  style={{
-                    background: `${alert.color}12`,
-                    border: `1px solid ${alert.color}30`,
-                    borderRadius: 10,
-                    padding: '12px 16px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: 12,
-                  }}
-                >
-                  <span style={{ color: alert.color, fontWeight: 700, fontSize: 13 }}>{alert.text}</span>
-                  <button className="btn-sm" onClick={alert.action} style={{ fontSize: 11, flexShrink: 0 }}>{alert.label}</button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ color: 'var(--dim)', fontSize: 13, padding: 20, textAlign: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10 }}>
-              No alerts. Everything looks good.
-            </div>
-          )}
-        </div>
-
-        <RecentActivityCard logs={recentLogs} loading={activityLoading} onViewAll={() => openModulePage('dashboard', 'activity')} />
-      </div>
-
-      <div className="dashboard-progress-grid">
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Overall Progress</div>
-          <div className="card card-pad" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontSize: 12, color: 'var(--muted)' }}>Average completion</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#6366f1' }}>{avgPct}%</span>
-              </div>
-              <div style={{ background: 'var(--surface2)', borderRadius: 4, height: 8 }}>
-                <div style={{ width: `${avgPct}%`, height: 8, borderRadius: 4, background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', transition: 'width 0.6s' }} />
-              </div>
-            </div>
-            <div className="info-row"><span className="info-label">Paperwork signed</span><span style={{ color: '#22c55e', fontWeight: 700 }}>{signed.length} / {active.length}</span></div>
-            <div className="info-row"><span className="info-label">Insurance verified</span><span style={{ color: '#f59e0b', fontWeight: 700 }}>{active.filter((r) => isInsuranceVerified(r.insurance_verified)).length} / {active.length}</span></div>
-            <div className="info-row" style={{ border: 'none' }}><span className="info-label">Autism DX received</span><span style={{ color: '#a5b4fc', fontWeight: 700 }}>{active.filter((r) => normalizeAutismDx(r.autism_diagnosis) === 'Received').length} / {active.length}</span></div>
+      <section className="priority-queue" aria-labelledby="priority-queue-title">
+        <div className="priority-queue-header">
+          <div>
+            <div className="priority-queue-eyebrow">Today</div>
+            <h2 id="priority-queue-title" className="priority-queue-title">Today's Priority Queue</h2>
+            <p className="priority-queue-subtitle">Start with the items most likely to move a family forward today.</p>
+          </div>
+          <div className="priority-queue-summary" aria-label="Intake summary">
+            <span>{active.length} active intakes</span>
+            <span>{signed.length} paperwork signed</span>
+            <span>{transitioned} ready for initial assessment</span>
           </div>
         </div>
 
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Recently Added</div>
-          <div className="card">
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Client</th><th>Office</th><th>Personnel</th><th>Paperwork</th><th>Progress</th><th /></tr></thead>
+        <div className="priority-queue-list">
+          {priorityQueueItems.map((item, index) => {
+            const Icon = item.icon
+            return (
+              <article key={item.label} className={`priority-card priority-card-${item.tone}`}>
+                <div className="priority-card-head">
+                  <div className="priority-card-icon" aria-hidden="true">
+                    <Icon size={28} strokeWidth={1.9} />
+                  </div>
+                  <div className="priority-card-count">
+                    <span>{item.value}</span>
+                    <small>to review</small>
+                  </div>
+                </div>
+                <div className="priority-card-main">
+                  <div className="priority-card-label">Priority {index + 1}</div>
+                  <div className="priority-card-action">{item.label}</div>
+                  <div className="priority-card-task">{item.actionLabel}</div>
+                  <p className="priority-card-helper">{item.helper}</p>
+                  <button className="btn-sm priority-card-button" type="button" onClick={item.action}>
+                    {item.cta}
+                  </button>
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      </section>
+
+      <div className={`dashboard-operations-grid${canShowOversight ? ' dashboard-operations-grid-admin' : ''}`}>
+        <section className="intake-work-queue">
+          <div className="work-queue-header">
+            <div>
+              <div className="work-queue-eyebrow">Operational Workspace</div>
+              <div className="work-queue-title">Current Intake Work Queue</div>
+              <div className="work-queue-subtitle">Active families intake staff may need to review next.</div>
+            </div>
+            <button
+              type="button"
+              className="btn-sm work-queue-view-all"
+              onClick={() => openModulePage('intake', 'all', { target: 'all-referrals', key: 'active-referrals', label: 'Active Referrals' })}
+            >
+              View All Intakes
+              <ChevronRight size={15} strokeWidth={2.1} />
+            </button>
+          </div>
+          <div className="card work-queue-card">
+            <div className="table-wrap work-queue-table-wrap">
+              <table className="work-queue-table">
+                <thead>
+                  <tr>
+                    <th>Client</th>
+                    <th>Office</th>
+                    <th>Assigned Staff</th>
+                    <th>Paperwork Status</th>
+                    <th>Insurance Status</th>
+                    <th>Intake Progress</th>
+                    <th>Next Step</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {recent.map((r) => (
-                    <tr key={r.id} className="row-hover" onClick={() => { setSelectedId(r.id); openModulePage('intake', 'all') }}>
-                      <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.date_received ? formatDisplayDate(r.date_received) : ''}</div></td>
+                    <tr key={r.id} className="row-hover" onClick={() => openReferral(r.id)}>
+                      <td>
+                        <div className="work-queue-client-name">{r.first_name} {r.last_name}</div>
+                        <div className="work-queue-client-date">{r.date_received ? formatDisplayDate(r.date_received) : ''}</div>
+                      </td>
                       <td><OfficePill office={r.office} previousOffice={r.previous_office} /></td>
-                      <td style={{ fontSize: 12, color: 'var(--text)' }}>{r.intake_personnel || '--'}</td>
-                      <td><Badge value={r.intake_paperwork} /></td>
-                      <td><ProgressRing value={pct(r)} /></td>
-                      <td style={{ color: 'var(--accent)' }}>{'\u2192'}</td>
+                      <td className="work-queue-personnel">{r.intake_personnel || '--'}</td>
+                      <td className="work-queue-status-cell"><Badge value={r.intake_paperwork} /></td>
+                      <td className="work-queue-status-cell"><Badge value={r.insurance_verified} /></td>
+                      <td className="work-queue-progress-cell"><ProgressRing value={pct(r)} /></td>
+                      <td>
+                        <button
+                          type="button"
+                          className="work-queue-action"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            openReferral(r.id)
+                          }}
+                        >
+                          Open Client
+                          <ChevronRight size={14} strokeWidth={2.2} />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
-        </div>
+        </section>
+
+        {canShowOversight ? (
+          <RecentActivityCard
+            logs={recentLogs}
+            loading={activityLoading}
+            onViewAll={() => openModulePage('dashboard', 'activity')}
+            title="Latest Updates"
+            emptyText="No family updates yet. New intake and assessment updates will appear here."
+            skeletonCount={4}
+            className="latest-activity-panel"
+          />
+        ) : null}
       </div>
+
     </>
   )
 }

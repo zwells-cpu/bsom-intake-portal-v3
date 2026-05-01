@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/react'
 import { supabase } from './lib/supabase'
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
+import { RefreshCw } from 'lucide-react'
 import { useTheme } from './hooks/useTheme'
 import { useIdleTimeout } from './hooks/useIdleTimeout'
 import { useReferrals } from './hooks/useReferrals'
@@ -1232,6 +1233,7 @@ export default function App() {
           setSelectedId={setSelId}
           openModulePage={openModulePage}
           activityRefreshKey={activityRefreshKey}
+          profileRole={profile?.role}
         />
       )
     }
@@ -1307,19 +1309,15 @@ export default function App() {
                   <div style={{ fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</div>
                 </div>
               </div>
-              <span className="badge-pill">{active.length} Active</span>
-              {pending.length > 0 && (
-                <span style={{ background: '#f59e0b18', color: '#f59e0b', border: '1px solid #f59e0b30', borderRadius: 20, padding: '3px 12px', fontSize: '11.5px', fontWeight: 700 }}>
-                  {pending.length} Pending Docs
-                </span>
-              )}
+              <span className="badge-pill">{active.length} Active Referrals</span>
               <button
-                className="btn-sm"
+                className="btn-sm topbar-refresh-btn"
                 onClick={() => {
                   load()
                   if (module === 'assessment' || module === 'operations') requestLoadAssessments()
                 }}
               >
+                <RefreshCw size={14} strokeWidth={2} />
                 Refresh
               </button>
             </div>

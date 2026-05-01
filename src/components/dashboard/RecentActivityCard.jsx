@@ -1,4 +1,5 @@
 import { formatActivityLogDisplay } from '../../lib/activityLogs'
+import { ClipboardCheck, FileText, ShieldCheck, User, UserRoundX } from 'lucide-react'
 
 function formatRelativeTime(value) {
   if (!value) return 'Just now'
@@ -54,6 +55,19 @@ function buildActorLine(log) {
     'Signed-in user'
 
   return log.user_role ? `${actorName} (${log.user_role})` : actorName
+}
+
+function getActivityVisual(log) {
+  const action = String(log?.action || '').toLowerCase()
+  const entityType = String(log?.entity_type || '').toLowerCase()
+  const changedFields = Array.isArray(log?.details_json?.changed_fields) ? log.details_json.changed_fields.join(' ').toLowerCase() : ''
+
+  if (action.includes('user') || action.includes('session')) return { Icon: User, tone: 'user' }
+  if (action.includes('document') || changedFields.includes('paperwork') || changedFields.includes('diagnosis')) return { Icon: FileText, tone: 'document' }
+  if (action.includes('insurance') || changedFields.includes('insurance')) return { Icon: ShieldCheck, tone: 'insurance' }
+  if (action.includes('non') || action.includes('referred') || action.includes('follow') || changedFields.includes('non')) return { Icon: UserRoundX, tone: 'followup' }
+  if (entityType === 'assessment' || action.includes('assessment') || action.includes('interview') || action.includes('authorization') || action.includes('treatment') || action.includes('bcba')) return { Icon: ClipboardCheck, tone: 'assessment' }
+  return { Icon: ClipboardCheck, tone: 'default' }
 }
 
 export function ActivityLogTechnicalDetails({ log }) {
@@ -157,35 +171,74 @@ function ActivityLogSkeleton({ count }) {
   ))
 }
 
-export function RecentActivityCard({ logs, loading, onViewAll }) {
-  return (
-    <div>
-      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Recent Activity</div>
+function LatestActivityEvent({ log, index }) {
+  const display = formatActivityLogDisplay(log)
+  const { Icon, tone } = getActivityVisual(log)
+  const title = display.entityName || display.actionLabel
+  const summary = display.entityName ? display.summary || display.actionLabel : display.summary
 
-      <div className="card card-pad" style={{ minHeight: 254, display: 'flex', flexDirection: 'column', gap: 12 }}>
+  return (
+    <div className={`latest-event latest-event-${tone}`} key={`${log.created_at || 'log'}-${log.entity_id || index}-${index}`}>
+      <div className="latest-event-icon" aria-hidden="true">
+        <Icon size={16} strokeWidth={2} />
+      </div>
+      <div className="latest-event-body">
+        <div className="latest-event-title">{title}</div>
+        {summary ? <div className="latest-event-summary">{summary}</div> : null}
+      </div>
+      <div className="latest-event-time" title={formatFullTimestamp(log.created_at)}>
+        {formatRelativeTime(log.created_at)}
+      </div>
+    </div>
+  )
+}
+
+export function RecentActivityCard({
+  logs,
+  loading,
+  onViewAll,
+  title = 'Recent Activity',
+  emptyText = 'No recent activity yet.',
+  skeletonCount = 4,
+  className = '',
+}) {
+  return (
+    <div className={className}>
+      <div className="latest-activity-header">
+        <div>
+          <div className="latest-activity-title">{title}</div>
+          <div className="latest-activity-subtitle">A quick view of recent client movement.</div>
+        </div>
+        {onViewAll ? (
+          <button
+            type="button"
+            className="latest-activity-link"
+            onClick={onViewAll}
+          >
+            View all activity
+          </button>
+        ) : null}
+      </div>
+
+      <div className="card latest-activity-card">
         {loading ? (
-          <ActivityLogSkeleton count={4} />
+          <ActivityLogSkeleton count={skeletonCount} />
         ) : logs.length === 0 ? (
-          <div style={{ flex: 1, display: 'grid', placeItems: 'center', textAlign: 'center', color: 'var(--dim)', fontSize: 13 }}>
-            No recent activity yet.
+          <div className="latest-activity-empty">
+            {emptyText}
           </div>
         ) : (
           <>
             {logs.map((log, index) => (
-              <ActivityLogItem key={`${log.created_at || 'log'}-${log.entity_id || index}-${index}`} log={log} index={index} compact />
+              <LatestActivityEvent key={`${log.created_at || 'log'}-${log.entity_id || index}-${index}`} log={log} index={index} />
             ))}
-            {onViewAll ? (
-              <button
-                type="button"
-                className="btn-sm"
-                onClick={onViewAll}
-                style={{ alignSelf: 'flex-start', marginTop: 2, paddingInline: 0, border: 'none', background: 'transparent', color: 'var(--muted)' }}
-              >
-                View All Activity {'->'}
-              </button>
-            ) : null}
           </>
         )}
+        {onViewAll && logs.length > 0 ? (
+          <button type="button" className="latest-activity-footer-link" onClick={onViewAll}>
+            View all activity
+          </button>
+        ) : null}
       </div>
     </div>
   )
