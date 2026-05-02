@@ -255,7 +255,6 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, o
   const stalledAssessments = filtered.filter(isAssessmentStalled)
   const waitingOnBcba = filtered.filter(record => Boolean(record.assigned_bcba) && isReadyForBcbaReview(record))
   const missingDocuments = filtered.filter(isMissingAssessmentDocuments)
-  const completedRows = filtered.filter(record => getAssessmentWorkflowStatus(record) === 'Completed').slice(0, 6)
   const actionBuckets = [
     {
       key: 'ready-interview',
@@ -419,33 +418,6 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, o
         </aside>
       </div>
 
-      {completedRows.length > 0 && (
-        <section className="assessment-completed-section">
-          <div className="work-queue-header">
-            <div>
-              <div className="work-queue-eyebrow">Recently Completed</div>
-              <div className="work-queue-title">Completed Assessment Movement</div>
-              <div className="work-queue-subtitle">Secondary view of completed assessment records in the current filter.</div>
-            </div>
-          </div>
-          <div className="assessment-completed-list">
-            {completedRows.map(record => (
-              <button
-                key={record.assessment_id || record.client_name}
-                type="button"
-                className="assessment-completed-row"
-                onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
-              >
-                <span>
-                  <strong>{record.client_name || '--'}</strong>
-                  <small>{record.clinic || '--'} / {record.assigned_bcba || 'Unassigned'}</small>
-                </span>
-                {lifecycleBadge(getAssessmentLifecycleStatus(record))}
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
     </>
   )
 }
