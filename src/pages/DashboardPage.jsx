@@ -4,7 +4,7 @@ import { useActivityLogs } from '../hooks/useActivityLogs'
 import { formatDisplayDate, isActiveReferralWork, needsInsuranceVerification, pct } from '../lib/utils'
 import { ChevronRight, ClipboardList, Clock, ShieldCheck, UserRoundX } from 'lucide-react'
 
-export function DashboardPage({ refs, assessData = [], setSelectedId, openModulePage, activityRefreshKey = 0, profileRole = '' }) {
+export function DashboardPage({ refs, assessData = [], setSelectedId, openModulePage, activityRefreshKey = 0, profileRole = '', canAccessOperations = false }) {
   const { logs, loading: activityLoading } = useActivityLogs(20, activityRefreshKey)
   const overviewActivityExclusions = new Set(['user_signed_in', 'user_signed_out', 'session_timeout'])
   const recentLogs = logs.filter((log) => !overviewActivityExclusions.has(log.action)).slice(0, 4)
@@ -48,7 +48,7 @@ export function DashboardPage({ refs, assessData = [], setSelectedId, openModule
       defaultPriority: 2,
       action: () => openModulePage('intake', 'insurance', { target: 'insurance-verification', key: 'unverified', label: 'Unverified Insurance' }),
     },
-    {
+    ...(canAccessOperations ? [{
       label: 'Stalled Over 14 Days',
       value: aging14,
       actionLabel: 'Check what is holding things up',
@@ -58,7 +58,7 @@ export function DashboardPage({ refs, assessData = [], setSelectedId, openModule
       intakePriority: 4,
       defaultPriority: 3,
       action: () => openModulePage('operations', 'aging', { target: 'referral-aging', key: 'aging-14-plus', label: 'Aging 14+ Days' }),
-    },
+    }] : []),
     {
       label: 'Needs Follow-Up or Referred Out',
       value: nr.length,

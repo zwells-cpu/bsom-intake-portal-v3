@@ -1,9 +1,9 @@
 import { MODULES, MODULE_NAV } from '../lib/constants'
 import { LaunchWeekSupportCard } from './LaunchWeekSupportCard'
 
-export function Sidebar({ module, subpage, setSubpage, goHome, pendingCount, unverifiedCount, supportUserContext }) {
+export function Sidebar({ module, subpage, setSubpage, goHome, pendingCount, unverifiedCount, supportUserContext, canViewActivityLog = false, canAccessOperations = false }) {
   const m = MODULES.find(x => x.id === module)
-  const navItems = MODULE_NAV[module] || []
+  const navItems = (MODULE_NAV[module] || []).filter(n => !(n.id === 'activity' && !canViewActivityLog))
 
   const badgeFor = (id) => {
     if (id === 'pending') return pendingCount > 0 ? pendingCount : null
@@ -42,7 +42,7 @@ export function Sidebar({ module, subpage, setSubpage, goHome, pendingCount, unv
         })}
 
         <div className="nav-section-label" style={{ marginTop: 16 }}>Modules</div>
-        {MODULES.filter(x => x.id !== module).map(x => (
+        {MODULES.filter(x => x.id !== module && (x.id !== 'operations' || canAccessOperations)).map(x => (
           <div
             key={x.id}
             className="nav-item"

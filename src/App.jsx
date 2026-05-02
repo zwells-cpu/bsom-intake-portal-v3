@@ -1278,6 +1278,7 @@ export default function App() {
   const m = MODULES.find(x => x.id === module)
   const navItems = MODULE_NAV[module] || []
   const canViewActivityLog = profile?.role === 'admin'
+  const canAccessOperationsModule = canAccessOperations(profile)
   const assessmentSubpageFallbacks = { txplan: 'bcba', activeclients: 'readysvc' }
   const intakeSubpageFallbacks = { intakedash: 'all', profile: 'all' }
   const normalizedSubpage = module === 'assessment'
@@ -1309,8 +1310,14 @@ export default function App() {
           openModulePage={openModulePage}
           activityRefreshKey={activityRefreshKey}
           profileRole={profile?.role}
+          canAccessOperations={canAccessOperationsModule}
         />
       )
+    }
+
+    if (module === 'about') {
+      if (subpage === 'portal') return <AboutPortalPage />
+      if (subpage === 'locations') return <LocationsPage />
     }
 
     if (module === 'intake') {
@@ -1319,11 +1326,6 @@ export default function App() {
       if (activeSubpage === 'pending') return <PendingDocsPage refs={refs} assessData={assessData} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (activeSubpage === 'insurance') return <InsuranceVerifPage refs={refs} assessData={assessData} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (activeSubpage === 'nr') return <NonResponsivePage refs={refs} onRestore={(id) => handleSetReferralStatus(id, 'active')} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
-    }
-
-    if (module === 'about') {
-      if (subpage === 'portal') return <AboutPortalPage />
-      if (subpage === 'locations') return <LocationsPage />
     }
 
     if (module === 'assessment') {
@@ -1375,6 +1377,8 @@ export default function App() {
           pendingCount={pending.length}
           unverifiedCount={noIns}
           supportUserContext={supportUserContext}
+          canViewActivityLog={canViewActivityLog}
+          canAccessOperations={canAccessOperationsModule}
         />
 
         <div className="content">

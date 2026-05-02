@@ -4015,12 +4015,12 @@ tr{ transition:background 0.15s ease, transform 0.08s ease; }
 }
 
 /* ── Hero ── */
-.hp-hero{ margin-bottom:32px; }
+.hp-hero{ margin-bottom:24px; }
 .hp-eyebrow{
   font-size:11px;font-weight:700;
   letter-spacing:0.16em;text-transform:uppercase;
   color:var(--accent);opacity:0.85;
-  margin-bottom:9px;
+  margin-bottom:8px;
 }
 .hp-title{
   font-size:clamp(1.8rem,3vw,2.6rem);
@@ -4037,65 +4037,84 @@ tr{ transition:background 0.15s ease, transform 0.08s ease; }
   font-size:11px;font-weight:700;
   letter-spacing:0.1em;text-transform:uppercase;
   color:var(--muted);
-  margin-bottom:14px;
+  margin-bottom:8px;
   padding-bottom:10px;
   border-bottom:1px solid var(--border);
+}
+.hp-modules-helper{
+  font-size:13px;color:var(--muted);
+  line-height:1.7;max-width:640px;margin-bottom:16px;
 }
 .hp-module-grid{
   display:grid;
   grid-template-columns:repeat(3,1fr);
-  gap:16px;
+  gap:18px;
 }
 .hp-module-card{
   background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:16px;
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:18px;
   padding:26px 24px;
   cursor:pointer;
-  transition:transform 0.18s ease,border-color 0.18s ease,box-shadow 0.18s ease;
+  transition:transform 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,background-color 0.2s ease;
   position:relative;overflow:hidden;
-  box-shadow:var(--shadow);
+  box-shadow:0 10px 30px rgba(0,0,0,0.10);
   display:flex;flex-direction:column;
 }
 .hp-module-card::before{
   content:"";position:absolute;inset:0;
-  background:linear-gradient(135deg,color-mix(in srgb,var(--card-color,#6366f1) 7%,transparent),transparent 55%);
+  background:linear-gradient(135deg,color-mix(in srgb,var(--card-color,#6366f1) 8%,transparent),transparent 60%);
+  opacity:0.18;
   pointer-events:none;
 }
-.hp-module-card:hover{
+.hp-module-card:hover,
+.hp-module-card:focus-within{
   border-color:var(--card-color,var(--accent));
-  transform:translateY(-3px);
-  box-shadow:0 14px 32px rgba(0,0,0,0.18);
+  transform:translateY(-2px);
+  box-shadow:0 18px 45px rgba(0,0,0,0.14);
+}
+.hp-module-card:focus-visible{
+  outline:2px solid var(--card-color,var(--accent));
+  outline-offset:4px;
+}
+.hp-module-card--secondary{
+  border-color:rgba(255,255,255,0.07);
+  background:rgba(255,255,255,0.02);
 }
 .hp-module-card--actions{ cursor:default; }
-.hp-module-card--actions:hover{ transform:none; }
+.hp-module-card--actions:hover{ transform:none; box-shadow:0 10px 20px rgba(0,0,0,0.08); }
 .hp-module-icon{
   display:inline-flex;align-items:center;justify-content:center;
-  width:42px;height:42px;border-radius:12px;
-  background:color-mix(in srgb,var(--card-color,var(--accent)) 10%,transparent);
-  color:color-mix(in srgb,var(--card-color,var(--accent)) 80%,var(--text));
+  width:44px;height:44px;border-radius:14px;
+  background:color-mix(in srgb,var(--card-color,var(--accent)) 14%,transparent);
+  color:color-mix(in srgb,var(--card-color,var(--accent)) 78%,var(--text));
   margin-bottom:14px;flex-shrink:0;
 }
 .hp-module-name{
   font-weight:800;font-size:15px;
   letter-spacing:-0.01em;color:var(--text);
-  margin-bottom:6px;
+  margin-bottom:8px;
+}
+.hp-module-card--secondary .hp-module-name{
+  color:var(--text);
 }
 .hp-module-desc{
-  font-size:12px;color:var(--muted);
-  line-height:1.55;flex:1;
+  font-size:12.5px;color:var(--muted);
+  line-height:1.7;flex:1;
+  margin-bottom:10px;
 }
 .hp-module-cta{
-  display:flex;align-items:center;gap:5px;
+  display:flex;align-items:center;gap:6px;
   font-size:11.5px;font-weight:700;
-  color:color-mix(in srgb,var(--card-color,var(--accent)) 85%,var(--muted));
-  margin-top:16px;opacity:0;
-  transition:opacity 0.18s;
+  color:color-mix(in srgb,var(--card-color,var(--accent)) 90%,var(--muted));
+  margin-top:16px;opacity:0.9;
+  transition:color 0.2s,transform 0.2s,opacity 0.2s;
 }
-.hp-module-card:hover .hp-module-cta{ opacity:1; }
+.hp-module-card:hover .hp-module-cta{ opacity:1; transform:translateX(2px); }
+.hp-module-card--actions .hp-module-cta{ opacity:1; }
 .hp-quick-actions{
   display:flex;flex-direction:column;gap:10px;
-  margin-top:16px;
+  margin-top:18px;
 }
 
 /* ── Light mode overrides ── */

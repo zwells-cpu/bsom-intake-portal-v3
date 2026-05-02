@@ -1,7 +1,7 @@
 import { MODULES } from '../lib/constants'
 import { LaunchWeekSupportCard } from './LaunchWeekSupportCard'
 import { ThemeToggle } from './ThemeToggle'
-import { canAccessOperations } from '../lib/profileUtils'
+import { canAccessOperations, isAdmin } from '../lib/profileUtils'
 import {
   Activity,
   ArrowRight,
@@ -25,6 +25,14 @@ function getGreeting(name) {
   return `Good evening, ${firstName} 👋`
 }
 
+const MODULE_SUBTITLES = {
+  dashboard: 'At-a-glance intake metrics, alerts, and action-ready insights.',
+  intake: 'Manage referrals, update status, and keep families moving.',
+  assessment: 'Track assessments, interviews, and service readiness.',
+  operations: 'Monitor referral aging, volume, and intake performance.',
+  about: 'Office locations, portal details, and internal resources.',
+}
+
 const SIDEBAR_NAV = [
   { id: 'home',       label: 'Home',                 icon: Home },
   { id: 'dashboard',  label: 'Dashboard',            icon: LayoutDashboard, module: 'dashboard' },
@@ -32,7 +40,7 @@ const SIDEBAR_NAV = [
   { id: 'assessment', label: 'Initial Assessments',  icon: ClipboardPenLine,module: 'assessment' },
   { id: 'operations', label: 'Operational Insights', icon: TrendingUp,      module: 'operations', requiresAccess: 'operations' },
   { id: 'about',      label: 'About',                icon: Info,            module: 'about' },
-  { id: 'activity',   label: 'Activity Log',         icon: Activity,        module: 'dashboard', subpage: 'activity' },
+  { id: 'activity',   label: 'Activity Log',         icon: Activity,        module: 'dashboard', subpage: 'activity', requiresAccess: 'activity' },
 ]
 
 const MODULE_ICON = {
@@ -82,7 +90,11 @@ export function HomePage({
 
         <nav className="hp-sidebar-nav">
           <div className="hp-sidebar-section-label">Navigate</div>
-          {SIDEBAR_NAV.filter(item => !item.requiresAccess || (item.requiresAccess === 'operations' && canAccessOperations(profile))).map(item => {
+          {SIDEBAR_NAV.filter(item =>
+            !item.requiresAccess
+            || (item.requiresAccess === 'operations' && canAccessOperations(profile))
+            || (item.requiresAccess === 'activity' && isAdmin(profile))
+          ).map(item => {
             const Icon = item.icon
             return (
               <div
@@ -128,14 +140,16 @@ export function HomePage({
           {/* Portal modules */}
           <div className="hp-modules">
             <div className="hp-modules-heading">Portal Modules</div>
-            <div className="hp-module-grid">
+          <div className="hp-modules-helper">Choose a workspace to continue intake operations.</div>
+          <div className="hp-module-grid">
 
               {MODULES.filter(m => m.id !== 'operations' || canAccessOperations(profile)).map(m => {
                 const Icon = MODULE_ICON[m.id]
+                const isSecondary = m.id === 'about'
                 return (
                   <div
                     key={m.id}
-                    className="hp-module-card"
+                    className={`hp-module-card${isSecondary ? ' hp-module-card--secondary' : ''}`}
                     style={{ '--card-color': m.color }}
                     onClick={() => onEnterModule(m.id)}
                   >
@@ -143,9 +157,9 @@ export function HomePage({
                       {Icon && <Icon size={20} />}
                     </div>
                     <div className="hp-module-name">{m.name}</div>
-                    <div className="hp-module-desc">{m.desc}</div>
+                    <div className="hp-module-desc">{MODULE_SUBTITLES[m.id] || m.desc}</div>
                     <div className="hp-module-cta">
-                      Open module <ArrowRight size={12} />
+                      Open <ArrowRight size={12} />
                     </div>
                   </div>
                 )
@@ -153,7 +167,7 @@ export function HomePage({
 
               {/* Quick Actions card */}
               <div
-                className="hp-module-card hp-module-card--actions"
+                className="hp-module-card hp-module-card--actions hp-module-card--secondary"
                 style={{ '--card-color': 'var(--accent)' }}
               >
                 <div className="hp-module-icon">
@@ -161,7 +175,7 @@ export function HomePage({
                 </div>
                 <div className="hp-module-name">Quick Actions</div>
                 <div className="hp-module-desc">
-                  Jump straight into the most common intake tasks without leaving the home screen.
+                  Add a referral or schedule a parent interview from one place.
                 </div>
                 <div className="hp-quick-actions">
                   <button
