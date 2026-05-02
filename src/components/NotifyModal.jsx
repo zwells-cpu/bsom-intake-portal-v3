@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Mail, MessageSquare } from 'lucide-react'
 import { API_BASE } from '../lib/api'
 
 export function NotifyModal({ referral, onClose }) {
@@ -54,72 +55,79 @@ export function NotifyModal({ referral, onClose }) {
 
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
-        <div className="modal-head">
+      <div className="modal notify-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-head notify-modal-head">
           <div>
             <div className="modal-title">Send Notification</div>
-            <div className="modal-sub">{referral.first_name} {referral.last_name}</div>
+            <div className="modal-sub">Choose how to contact this family.</div>
           </div>
-          <button className="close-btn" onClick={onClose}>x</button>
+          <button className="close-btn notify-close-btn" onClick={onClose}>×</button>
         </div>
 
-        <div style={{ padding: '16px 20px', display: 'grid', gap: 12 }}>
-          {!hasEmail && (
-            <div style={{ background: '#f59e0b18', border: '1px solid #f59e0b44', borderRadius: 10, padding: '10px 14px', color: '#f59e0b', fontSize: 13, fontWeight: 600 }}>
-              No caregiver email on file for this referral.
-            </div>
-          )}
+        <div className="notify-modal-body">
+          <div className="notify-status-grid">
+            {!hasEmail && (
+              <div className="notify-status-card notify-status-card--warning">
+                No caregiver email on file for this referral.
+              </div>
+            )}
 
-          {!hasPhone && (
-            <div style={{ background: '#f59e0b18', border: '1px solid #f59e0b44', borderRadius: 10, padding: '10px 14px', color: '#f59e0b', fontSize: 13, fontWeight: 600 }}>
-              No caregiver phone on file for this referral.
-            </div>
-          )}
+            {!hasPhone && (
+              <div className="notify-status-card notify-status-card--warning">
+                No caregiver phone on file for this referral.
+              </div>
+            )}
 
-          {status === 'success' && (
-            <div style={{ background: '#16a34a12', border: '1px solid #16a34a33', borderRadius: 10, padding: '10px 14px', color: '#16a34a', fontSize: 13, fontWeight: 600 }}>
-              ✅ Email notification sent successfully.
-            </div>
-          )}
+            {status === 'success' && (
+              <div className="notify-status-card notify-status-card--success">
+                ✅ Email notification sent successfully.
+              </div>
+            )}
 
-          {status === 'error' && (
-            <div style={{ background: '#ef444418', border: '1px solid #ef444433', borderRadius: 10, padding: '10px 14px', color: '#ef4444', fontSize: 13, fontWeight: 600 }}>
-              ❌ {errorMsg}
-            </div>
-          )}
+            {status === 'error' && (
+              <div className="notify-status-card notify-status-card--error">
+                ❌ {errorMsg}
+              </div>
+            )}
 
-          {smsStatus === 'success' && (
-            <div style={{ background: '#16a34a12', border: '1px solid #16a34a33', borderRadius: 10, padding: '10px 14px', color: '#16a34a', fontSize: 13, fontWeight: 600 }}>
-              ✅ SMS notification sent successfully.
-            </div>
-          )}
+            {smsStatus === 'success' && (
+              <div className="notify-status-card notify-status-card--success">
+                ✅ SMS notification sent successfully.
+              </div>
+            )}
 
-          {smsStatus === 'error' && (
-            <div style={{ background: '#ef444418', border: '1px solid #ef444433', borderRadius: 10, padding: '10px 14px', color: '#ef4444', fontSize: 13, fontWeight: 600 }}>
-              ❌ {smsErrorMsg}
-            </div>
-          )}
+            {smsStatus === 'error' && (
+              <div className="notify-status-card notify-status-card--error">
+                ❌ {smsErrorMsg}
+              </div>
+            )}
+          </div>
 
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div className="notification-action-grid">
             <button
-              className="btn-sm"
-              disabled={!hasEmail || status === 'sending' || status === 'success'}
+              type="button"
+              className={`notification-action-card${!hasEmail || status === 'sending' || status === 'success' ? ' is-disabled' : ''}`}
               onClick={handleQuickEmail}
-              style={{ flex: 1, padding: '10px 16px', fontSize: 13 }}
+              disabled={!hasEmail || status === 'sending' || status === 'success'}
             >
-              {status === 'sending' ? 'Sending...' : 'Quick Email'}
+              <div className="notification-action-icon"><Mail size={18} /></div>
+              <div>
+                <div className="notification-action-label">Quick Email</div>
+                <div className="notification-action-helper">Send a quick email now</div>
+              </div>
             </button>
 
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <button
-                className="btn-sm"
-                disabled
-                style={{ width: '100%', padding: '10px 16px', fontSize: 13, opacity: 0.45, cursor: 'not-allowed' }}
-              >
-                Quick Text
-              </button>
-              <span style={{ fontSize: 11, color: '#6b7280', fontWeight: 500 }}>SMS coming soon</span>
-            </div>
+            <button
+              type="button"
+              className="notification-action-card is-disabled"
+              disabled
+            >
+              <div className="notification-action-icon"><MessageSquare size={18} /></div>
+              <div>
+                <div className="notification-action-label">Quick Text</div>
+                <div className="notification-action-helper">Coming soon</div>
+              </div>
+            </button>
           </div>
         </div>
 

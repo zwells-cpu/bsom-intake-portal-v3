@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import {
   AlertCircle,
   ArrowRight,
+  ArrowRightCircle,
+  BriefcaseMedical,
   CalendarCheck,
   CalendarClock,
   CheckCircle,
@@ -13,7 +15,11 @@ import {
   FilePlus2,
   PhoneCall,
   ClockAlert,
+  Send,
+  ShieldCheck,
+  UserMinus,
   UserPlus,
+  Users,
 } from 'lucide-react'
 import { PaStatusBadge } from '../components/Badge'
 import { NotifyModal } from '../components/NotifyModal'
@@ -751,8 +757,40 @@ function ManageBcbasContent({ officeOptions = [], onRefreshLookups }) {
 
   return (
     <>
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--muted)', marginBottom: '12px', letterSpacing: '0.5px' }}>NEW BCBA</div>
+        <div className="card" style={{ padding: '20px', borderRadius: '12px', background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'end' }}>
+            <div>
+              <div className="label" style={{ marginBottom: '6px', fontSize: '13px', fontWeight: 600 }}>BCBA Name</div>
+              <input className="edit-input" value={form.full_name} onChange={event => setForm(prev => ({ ...prev, full_name: event.target.value }))} placeholder="Full name" style={{ width: '100%' }} />
+            </div>
+            <div>
+              <div className="label" style={{ marginBottom: '6px', fontSize: '13px', fontWeight: 600 }}>Email</div>
+              <input className="edit-input" type="email" value={form.email} onChange={event => setForm(prev => ({ ...prev, email: event.target.value }))} placeholder="Optional" style={{ width: '100%' }} />
+            </div>
+            <div>
+              <div className="label" style={{ marginBottom: '6px', fontSize: '13px', fontWeight: 600 }}>Office</div>
+              {officeValues.length ? (
+                <select className="edit-select" value={form.office} onChange={event => setForm(prev => ({ ...prev, office: event.target.value }))} style={{ width: '100%' }}>
+                  <option value="">Optional</option>
+                  {officeValues.map(office => <option key={office} value={office}>{office}</option>)}
+                </select>
+              ) : (
+                <input className="edit-input" value={form.office} onChange={event => setForm(prev => ({ ...prev, office: event.target.value }))} placeholder="Optional" style={{ width: '100%' }} />
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+              <button className="btn-save" type="submit" disabled={saving || !cleanLookupValue(form.full_name)} style={{ width: '100%', padding: '10px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: 600 }}>
+                {saving ? 'Saving...' : editingId ? 'Save BCBA' : 'Add BCBA'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, alignItems: 'center', marginBottom: 16 }}>
-        {editingId ? <button type="button" className="btn-ghost" onClick={resetForm}>Cancel Edit</button> : null}
+        {editingId ? <button type="button" className="btn-ghost" onClick={resetForm} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '13px' }}>Cancel Edit</button> : null}
       </div>
 
       {loadError ? (
@@ -775,61 +813,50 @@ function ManageBcbasContent({ officeOptions = [], onRefreshLookups }) {
         </div>
       ) : null}
 
-      <form onSubmit={handleSubmit} className="responsive-review-grid" style={{ gap: 12, marginBottom: 16 }}>
-        <div>
-          <div className="label">BCBA Name</div>
-          <input className="edit-input" value={form.full_name} onChange={event => setForm(prev => ({ ...prev, full_name: event.target.value }))} placeholder="Full name" />
-        </div>
-        <div>
-          <div className="label">Email</div>
-          <input className="edit-input" type="email" value={form.email} onChange={event => setForm(prev => ({ ...prev, email: event.target.value }))} placeholder="Optional" />
-        </div>
-        <div>
-          <div className="label">Office</div>
-          {officeValues.length ? (
-            <select className="edit-select" value={form.office} onChange={event => setForm(prev => ({ ...prev, office: event.target.value }))}>
-              <option value="">Optional</option>
-              {officeValues.map(office => <option key={office} value={office}>{office}</option>)}
-            </select>
-          ) : (
-            <input className="edit-input" value={form.office} onChange={event => setForm(prev => ({ ...prev, office: event.target.value }))} placeholder="Optional" />
-          )}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-          <button className="btn-save" type="submit" disabled={saving || !cleanLookupValue(form.full_name)} style={{ width: '100%' }}>
-            {saving ? 'Saving...' : editingId ? 'Save BCBA' : 'Add BCBA'}
-          </button>
-        </div>
-      </form>
-
-      <div className="table-wrap">
-        <table>
-          <thead><tr><th>Name</th><th>Email</th><th>Office</th><th>Status</th><th /></tr></thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={5} style={{ padding: 28, textAlign: 'center', color: 'var(--dim)' }}>Loading BCBAs...</td></tr>
-            ) : loadError ? (
-              <tr><td colSpan={5} style={{ padding: 28, textAlign: 'center', color: 'var(--red)' }}>Failed to load BCBAs.</td></tr>
-            ) : staff.length === 0 ? (
-              <tr><td colSpan={5} style={{ padding: 28, textAlign: 'center', color: 'var(--dim)' }}>No BCBAs found.</td></tr>
-            ) : staff.map(record => (
-              <tr key={record.id || record.full_name}>
-                <td style={{ fontWeight: 800 }}>{cleanLookupValue(record.full_name)}</td>
-                <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.email || '--'}</td>
-                <td><span className="office-pill">{record.office || '--'}</span></td>
-                <td>{record.is_active === false ? <span className="bdg" style={{ background: '#64748b20', color: '#94a3b8', border: '1px solid #64748b35' }}>Inactive</span> : <span className="bdg" style={{ background: '#22c55e20', color: '#22c55e', border: '1px solid #22c55e35' }}>Active</span>}</td>
-                <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  <button type="button" className="btn-ghost" onClick={() => startEdit(record)} style={{ padding: '6px 10px', fontSize: 12, marginRight: 8 }}>Edit</button>
-                  {record.is_active !== false ? (
-                    <button type="button" className="btn-ghost" onClick={() => handleDeactivate(record)} disabled={busyId === record.id} style={{ padding: '6px 10px', fontSize: 12, color: '#ef4444', borderColor: '#ef444440' }}>
-                      {busyId === record.id ? 'Deactivating...' : 'Deactivate'}
-                    </button>
-                  ) : null}
-                </td>
+      <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--muted)', marginBottom: '12px', letterSpacing: '0.5px' }}>ACTIVE ROSTER</div>
+      <div className="card" style={{ borderRadius: '12px', background: 'var(--surface)', border: '1px solid var(--border)', overflow: 'hidden' }}>
+        <div className="table-wrap">
+          <table>
+            <thead style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
+              <tr>
+                <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: 'var(--text)', textAlign: 'left' }}>Name</th>
+                <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: 'var(--text)', textAlign: 'left' }}>Email</th>
+                <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: 'var(--text)', textAlign: 'left' }}>Office</th>
+                <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: 'var(--text)', textAlign: 'left' }}>Status</th>
+                <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: 'var(--text)', textAlign: 'right' }}>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={5} style={{ padding: 28, textAlign: 'center', color: 'var(--dim)' }}>Loading BCBAs...</td></tr>
+              ) : loadError ? (
+                <tr><td colSpan={5} style={{ padding: 28, textAlign: 'center', color: 'var(--red)' }}>Failed to load BCBAs.</td></tr>
+              ) : staff.length === 0 ? (
+                <tr><td colSpan={5} style={{ padding: 28, textAlign: 'center', color: 'var(--dim)' }}>No active BCBAs configured yet.</td></tr>
+              ) : staff.map(record => (
+                <tr key={record.id || record.full_name} style={{ borderBottom: '1px solid var(--border2)' }}>
+                  <td style={{ padding: '16px', fontWeight: 600, fontSize: '14px' }}>{cleanLookupValue(record.full_name)}</td>
+                  <td style={{ padding: '16px', fontSize: '13px', color: 'var(--muted)' }}>{record.email || '--'}</td>
+                  <td style={{ padding: '16px' }}><span className="office-pill">{record.office || '--'}</span></td>
+                  <td style={{ padding: '16px' }}>
+                    {record.is_active === false ? 
+                      <span className="bdg" style={{ background: '#64748b20', color: '#94a3b8', border: '1px solid #64748b35', borderRadius: '16px', padding: '4px 8px', fontSize: '11px', fontWeight: 600 }}>Inactive</span> : 
+                      <span className="bdg" style={{ background: '#22c55e15', color: '#16a34a', border: '1px solid #22c55e30', borderRadius: '16px', padding: '4px 8px', fontSize: '11px', fontWeight: 600 }}>Active</span>
+                    }
+                  </td>
+                  <td style={{ padding: '16px', textAlign: 'right' }}>
+                    <button type="button" className="btn-ghost" onClick={() => startEdit(record)} style={{ padding: '6px 12px', fontSize: '12px', marginRight: '8px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)' }}>Edit</button>
+                    {record.is_active !== false ? (
+                      <button type="button" className="btn-ghost" onClick={() => handleDeactivate(record)} disabled={busyId === record.id} style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '6px', border: '1px solid #ef444430', background: '#fef2f2', color: '#dc2626' }}>
+                        {busyId === record.id ? 'Deactivating...' : 'Deactivate'}
+                      </button>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </>
   )
@@ -860,16 +887,18 @@ function ManageBcbasModal({ isOpen, onClose, officeOptions = [], onRefreshLookup
           maxHeight: '88vh',
           display: 'flex',
           flexDirection: 'column',
+          borderRadius: '16px',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
         }}
       >
-        <div className="modal-head">
+        <div className="modal-head" style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
           <div>
-            <div className="modal-title">Manage BCBAs</div>
-            <div className="modal-sub">Add, edit, or deactivate BCBA dropdown options.</div>
+            <div className="modal-title" style={{ fontSize: '20px', fontWeight: 700, marginBottom: '4px' }}>Manage BCBAs</div>
+            <div className="modal-sub" style={{ fontSize: '14px', color: 'var(--muted)' }}>Add, update, or deactivate BCBA assignment options.</div>
           </div>
-          <button className="close-btn" onClick={onClose}>x</button>
+          <button className="close-btn" onClick={onClose} style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
         </div>
-        <div className="modal-body" style={{ display: 'block', overflowY: 'auto' }}>
+        <div className="modal-body" style={{ padding: '24px 32px', overflowY: 'auto', background: 'var(--surface)' }}>
           <ManageBcbasContent officeOptions={officeOptions} onRefreshLookups={onRefreshLookups} />
         </div>
       </div>
@@ -960,7 +989,7 @@ export function BCBAAssignmentsPage({
         ? `Unassigned Clients (${tableRows.length})`
         : activeFilter?.key === 'assigned'
           ? `Assigned Clients (${tableRows.length})`
-          : `All Clients (${tableRows.length})`
+          : `BCBA Waitlist Queue (${tableRows.length})`
 
   return (
     <>
@@ -969,14 +998,14 @@ export function BCBAAssignmentsPage({
           <div className="pg-hdr-title">BCBA Waitlist</div>
           <div className="pg-hdr-sub">Track assigned BCBAs, treatment plan progress, and authorization readiness.</div>
         </div>
-        <button type="button" className="btn-ghost" onClick={() => setManageBcbasOpen(true)} style={{ fontSize: 12, padding: '8px 12px' }}>
+        <button type="button" onClick={() => setManageBcbasOpen(true)} style={{ fontSize: 12, padding: '8px 16px', borderRadius: '20px', background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer' }}>
           Manage BCBAs
         </button>
       </div>
       <div className="stats-row stats-3" style={{ marginBottom: 22 }}>
-        <ClickableStatCard value={assessData.length} label="Total Clients" color="#6366f1" active={activeFilter?.key === 'all'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('all', 'BCBA Waitlist: All Clients') }} />
-        <ClickableStatCard value={unassigned.length} label="Unassigned" color="#ef4444" active={activeFilter?.key === 'unassigned'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('unassigned', 'BCBA Waitlist: Unassigned') }} />
-        <ClickableStatCard value={Object.keys(byBCBA).length} label="Active BCBAs" color="#22c55e" active={activeFilter?.key === 'assigned'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('assigned', 'BCBA Waitlist: Assigned to BCBA') }} />
+        <ClickableStatCard value={assessData.length} label="Total Clients" color="#6366f1" active={activeFilter?.key === 'all'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('all', 'BCBA Waitlist: All Clients') }} icon={Users} sublabel="All assessment records" />
+        <ClickableStatCard value={unassigned.length} label="Unassigned" color="#ef4444" active={activeFilter?.key === 'unassigned'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('unassigned', 'BCBA Waitlist: Unassigned') }} icon={UserMinus} sublabel="Awaiting BCBA assignment" />
+        <ClickableStatCard value={Object.keys(byBCBA).length} label="Active BCBAs" color="#22c55e" active={activeFilter?.key === 'assigned'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('assigned', 'BCBA Waitlist: Assigned to BCBA') }} icon={BriefcaseMedical} sublabel="Currently assigned clients" />
       </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered BCBA waitlist" />
 
@@ -996,13 +1025,14 @@ export function BCBAAssignmentsPage({
       ) : null}
 
       {bcbaCards.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 16, marginBottom: 22 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 12, marginBottom: 22 }}>
           {bcbaCards.map(([bcbaKey, stats]) => {
             const isSelected = selectedBcbaKey === bcbaKey
+            const completionPercent = stats.total ? Math.round((stats.completed / stats.total) * 100) : 0
             return (
             <div
               key={bcbaKey}
-              className="card card-pad"
+              className="card"
               role="button"
               tabIndex={0}
               aria-pressed={isSelected}
@@ -1014,21 +1044,32 @@ export function BCBAAssignmentsPage({
                 background: isSelected ? 'color-mix(in srgb, var(--accent) 9%, var(--surface))' : 'var(--surface)',
                 boxShadow: isSelected ? '0 0 0 1px #6366f145, 0 12px 28px rgba(99,102,241,0.12)' : 'var(--shadow)',
                 transition: 'border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease',
+                padding: '16px',
+                borderRadius: '20px',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <div style={{ fontWeight: 800, fontSize: 15 }}>{stats.name}</div>
-                <span className="bdg" style={{ background: '#6366f120', color: '#a5b4fc', border: '1px solid #6366f130' }}>{stats.total} clients</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>{stats.name}</div>
+                <span className="bdg" style={{ background: '#6366f120', color: '#a5b4fc', border: '1px solid #6366f130', fontSize: 11 }}>{stats.total} clients</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div className="info-row"><span className="info-label">Plan Completed</span><span style={{ color: '#22c55e', fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{stats.completed}</span></div>
-                <div className="info-row"><span className="info-label">Plan In Progress</span><span style={{ color: '#f59e0b', fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{stats.inProgress}</span></div>
-                <div className="info-row" style={{ border: 'none' }}><span className="info-label">Plan Not Started</span><span style={{ color: '#ef4444', fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{stats.notStarted}</span></div>
+              <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#22c55e', fontFamily: "'DM Mono',monospace" }}>{stats.completed}</div>
+                  <div style={{ fontSize: 10, color: 'var(--dim)' }}>Completed</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#f59e0b', fontFamily: "'DM Mono',monospace" }}>{stats.inProgress}</div>
+                  <div style={{ fontSize: 10, color: 'var(--dim)' }}>In Progress</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#ef4444', fontFamily: "'DM Mono',monospace" }}>{stats.notStarted}</div>
+                  <div style={{ fontSize: 10, color: 'var(--dim)' }}>Not Started</div>
+                </div>
               </div>
-              <div style={{ marginTop: 12, background: 'var(--surface2)', borderRadius: 4, height: 6 }}>
-                <div style={{ width: `${stats.total ? Math.round((stats.completed / stats.total) * 100) : 0}%`, height: 6, borderRadius: 4, background: '#22c55e', transition: 'width 0.5s' }} />
+              <div style={{ background: 'var(--surface2)', borderRadius: 4, height: 6, marginBottom: 8 }}>
+                <div style={{ width: `${completionPercent}%`, height: 6, borderRadius: 4, background: '#22c55e', transition: 'width 0.5s' }} />
               </div>
-              <div style={{ fontSize: 10, color: 'var(--dim)', marginTop: 4, textAlign: 'right' }}>{stats.total ? Math.round((stats.completed / stats.total) * 100) : 0}% plans complete</div>
+              <div style={{ fontSize: 11, color: 'var(--dim)', textAlign: 'center' }}>{completionPercent}% plans complete</div>
             </div>
             )
           })}
@@ -1053,7 +1094,7 @@ export function BCBAAssignmentsPage({
       <div className="card">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Client</th><th>Office</th><th>Assigned BCBA</th><th>Treatment Plan Status</th><th>Authorization Status</th><th>Treatment Plan Started</th><th>Treatment Plan Completed</th><th /></tr></thead>
+            <thead><tr><th>Client</th><th>Office</th><th>Assigned BCBA</th><th>Treatment Plan Status</th><th>Authorization Status</th><th>Treatment Plan Started</th><th>Treatment Plan Completed</th><th>Next Step</th></tr></thead>
             <tbody>
               {tableRows.length === 0 ? (
                 <tr><td colSpan={8} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>{selectedBcbaKey ? 'No clients assigned to this BCBA yet.' : 'No assessment records match the current filter.'}</td></tr>
@@ -1071,7 +1112,35 @@ export function BCBAAssignmentsPage({
                   <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
                   <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.treatment_plan_started_date ? 'var(--muted)' : 'var(--dim)' }}>{formatDisplayDate(record.treatment_plan_started_date)}</td>
                   <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.treatment_plan_completed_date ? '#22c55e' : 'var(--dim)' }}>{formatDisplayDate(record.treatment_plan_completed_date)}</td>
-                  <td style={{ color: 'var(--accent)' }}>→</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn-sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (getAssessmentRecordId(record)) onSelectAssess(record)
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 10px',
+                        borderRadius: '16px',
+                        background: 'var(--surface2)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text)',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        transition: 'background 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = 'var(--accent)'}
+                      onMouseLeave={(e) => e.target.style.background = 'var(--surface2)'}
+                    >
+                      Open Client
+                      <ChevronRight size={12} />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -1091,70 +1160,185 @@ export function BCBAAssignmentsPage({
 
 export function AssessmentProgressPage({ assessData, assessLoading, onSelectAssess, statFilter, onSetStatFilter, onClearStatFilter }) {
   const [notifyRecord, setNotifyRecord] = useState(null)
+  const [search, setSearch] = useState('')
+  const [office, setOffice] = useState('ALL')
+  const [progressFilter, setProgressFilter] = useState('All')
 
-  if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
+  if (assessLoading) return <div className="loader-wrap"><div className="spinner" /><div style={{ color: 'var(--muted)', marginTop: 12 }}>Loading assessment progress...</div></div>
 
   const notStarted = assessData.filter(record => getAssessmentWorkflowStatus(record) === 'Not Started')
   const inProgress = assessData.filter(record => getAssessmentWorkflowStatus(record) === 'In Progress')
   const completed = assessData.filter(record => getAssessmentWorkflowStatus(record) === 'Completed')
   const { activeFilter, toggleFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'assessment-progress')
-  const filteredRows = assessData.filter(record => matchesStatFilter(record, activeFilter))
+  const filteredRows = assessData
+    .filter(record => matchesStatFilter(record, activeFilter))
+    .filter(record => {
+      const query = (search || '').toLowerCase()
+      const name = (record.client_name || '').toLowerCase()
+      const caregiver = (record.caregiver || '').toLowerCase()
+      if (query && !(name.includes(query) || caregiver.includes(query))) return false
+      if (office !== 'ALL' && ((record.clinic || record.office || '').toUpperCase() !== office)) return false
+      if (progressFilter !== 'All' && getAssessmentWorkflowStatus(record) !== progressFilter) return false
+      return true
+    })
+
+  const officeOptions = ['ALL', 'MERIDIAN', 'FOREST', 'FLOWOOD', 'DAY TREATMENT']
+  const progressOptions = ['All', 'Not Started', 'In Progress', 'Completed']
 
   return (
     <>
       <div className="pg-hdr">
-        <div className="pg-hdr-title">Assessment Progress</div>
-        <div className="pg-hdr-sub">Track Vineland, SRS-2, VBMAPP, and Socially Savvy assessments</div>
-      </div>
-      <div className="stats-row stats-3" style={{ marginBottom: 22 }}>
-        <ClickableStatCard value={notStarted.length} label="Not Started" color="#ef4444" active={activeFilter?.key === 'not-started'} onClick={() => toggleFilter('not-started', 'Assessment Progress: Not Started')} />
-        <ClickableStatCard value={inProgress.length} label="In Progress" color="#f59e0b" active={activeFilter?.key === 'in-progress'} onClick={() => toggleFilter('in-progress', 'Assessment Progress: In Progress')} />
-        <ClickableStatCard value={completed.length} label="Completed" color="#22c55e" active={activeFilter?.key === 'completed'} onClick={() => toggleFilter('completed', 'Assessment Progress: Completed')} />
-      </div>
-      <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered assessment progress records" />
-      <div className="card">
-        <div className="table-wrap">
-          <table>
-            <thead><tr><th>Client</th><th>BCBA</th><th>Vineland</th><th>SRS-2</th><th>VBMAPP</th><th>Socially Savvy</th><th>Complete</th><th>Status</th><th /></tr></thead>
-            <tbody>
-              {filteredRows.length === 0 ? (
-                <tr><td colSpan={9} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No assessment records match the current filter.</td></tr>
-              ) : filteredRows.map(record => {
-                const progressFields = getAssessmentProgressFields(record)
-                const completionPercent = getAssessmentProgressPercent(record)
-
-                return (
-                  <tr
-                    key={record.assessment_id || record.client_name}
-                    className="row-hover"
-                    onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
-                    style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
-                  >
-                  <td>{renderClientCell(record, record.clinic)}</td>
-                  <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || <span style={{ color: '#ef4444', fontStyle: 'italic', fontSize: 11 }}>Unassigned</span>}</td>
-                  <td>{assessVal(progressFields.vineland)}</td>
-                  <td>{assessVal(progressFields.srs2)}</td>
-                  <td>{assessVal(progressFields.vbmapp)}</td>
-                  <td>{assessVal(progressFields.sociallySavvy)}</td>
-                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: completionPercent === '100%' ? '#22c55e' : 'var(--dim)' }}>{completionPercent}</td>
-                  <td>{paStatus(record.pa_status || getAuthorizationStatus(record))}</td>
-                  <td style={{ textAlign: 'right' }}>
-                    <button
-                      type="button"
-                      className="btn-ghost"
-                      onClick={(e) => { e.stopPropagation(); setNotifyRecord(record) }}
-                      style={{ padding: '5px 10px', fontSize: 11 }}
-                    >
-                      Notify
-                    </button>
-                  </td>
-                </tr>
-                )
-              })}
-            </tbody>
-          </table>
+        <div>
+          <div className="pg-hdr-title">Assessment Progress</div>
+          <div className="pg-hdr-sub">Track assessment component completion and notify families when action is needed.</div>
         </div>
       </div>
+      <div className="stats-row stats-3" style={{ marginBottom: 22 }}>
+        <ClickableStatCard
+          value={notStarted.length}
+          label="Not Started"
+          color="#ef4444"
+          icon={CircleDashed}
+          sublabel="Assessment work not begun"
+          active={activeFilter?.key === 'not-started'}
+          onClick={() => toggleFilter('not-started', 'Assessment Progress: Not Started')}
+        />
+        <ClickableStatCard
+          value={inProgress.length}
+          label="In Progress"
+          color="#f59e0b"
+          icon={Clock}
+          sublabel="Active assessment progress"
+          active={activeFilter?.key === 'in-progress'}
+          onClick={() => toggleFilter('in-progress', 'Assessment Progress: In Progress')}
+        />
+        <ClickableStatCard
+          value={completed.length}
+          label="Completed"
+          color="#22c55e"
+          icon={CheckCircle}
+          sublabel="Fully completed assessments"
+          active={activeFilter?.key === 'completed'}
+          onClick={() => toggleFilter('completed', 'Assessment Progress: Completed')}
+        />
+      </div>
+      <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered assessment progress records" />
+
+      <div className="filter-row assessment-primary-controls" style={{ marginBottom: 22 }}>
+        <div className="search-wrap assessment-search-group">
+          <input
+            className="search-input"
+            placeholder="Search client or caregiver..."
+            value={search}
+            onChange={event => setSearch(event.target.value)}
+          />
+        </div>
+        <div className="filter-divider"></div>
+        <div className="filter-btns assessment-clinic-filter-group">
+          {officeOptions.map(option => (
+            <button
+              key={option}
+              type="button"
+              className={`filter-btn ${office === option ? 'active' : ''}`}
+              onClick={() => setOffice(option)}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+        <div className="filter-divider"></div>
+        <div className="assessment-pa-select-group" style={{ minWidth: 180 }}>
+          <span className="filter-label">Progress</span>
+          <select
+            className="input-field"
+            value={progressFilter}
+            onChange={event => setProgressFilter(event.target.value)}
+            aria-label="Assessment Progress"
+            style={{ background: 'transparent', border: 'none', padding: 0, minWidth: 120, boxShadow: 'none' }}
+          >
+            {progressOptions.map(option => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <section className="assessment-work-queue">
+        <div className="card assessment-work-queue-card">
+          <div className="work-queue-header" style={{ marginBottom: 16 }}>
+            <div>
+              <div className="work-queue-eyebrow">Assessment Completion Queue</div>
+              <div className="work-queue-title">Assessment Completion Queue</div>
+              <div className="work-queue-subtitle">{filteredRows.length} clients in view.</div>
+            </div>
+          </div>
+          <SyncedHorizontalScrollTable>
+            <table className="work-queue-table assessment-work-table">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>BCBA</th>
+                  <th>Vineland</th>
+                  <th>SRS-2</th>
+                  <th>VBMAPP</th>
+                  <th>Socially Savvy</th>
+                  <th>Complete</th>
+                  <th>Status</th>
+                  <th>Next Step</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRows.length === 0 ? (
+                  <tr><td colSpan={9} className="assessment-empty-row">No assessment records match the current filter.</td></tr>
+                ) : filteredRows.map(record => {
+                  const progressFields = getAssessmentProgressFields(record)
+                  const completionPercent = getAssessmentProgressPercent(record)
+                  const canOpen = Boolean(getAssessmentRecordId(record))
+
+                  return (
+                    <tr
+                      key={record.assessment_id || record.client_name}
+                      className={canOpen ? 'row-hover' : ''}
+                      onClick={() => canOpen && onSelectAssess(record)}
+                      style={{ cursor: canOpen ? 'pointer' : 'default' }}
+                    >
+                      <td>{renderClientCell(record, record.clinic)}</td>
+                      <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || <span style={{ color: '#ef4444', fontStyle: 'italic', fontSize: 11 }}>Unassigned</span>}</td>
+                      <td>{assessVal(progressFields.vineland)}</td>
+                      <td>{assessVal(progressFields.srs2)}</td>
+                      <td>{assessVal(progressFields.vbmapp)}</td>
+                      <td>{assessVal(progressFields.sociallySavvy)}</td>
+                      <td>
+                        <div className="assessment-progress-indicator">
+                          <div className="assessment-progress-bar">
+                            <div style={{ width: completionPercent }} />
+                          </div>
+                          <span>{completionPercent}</span>
+                        </div>
+                      </td>
+                      <td>{paStatus(record.pa_status || getAuthorizationStatus(record))}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button
+                          type="button"
+                          className="btn-ghost assessment-notify-btn"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            setNotifyRecord(record)
+                          }}
+                        >
+                          <Send size={14} />
+                          Notify Parent
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </SyncedHorizontalScrollTable>
+        </div>
+      </section>
+
       {notifyRecord && <NotifyModal referral={notifyRecord} onClose={() => setNotifyRecord(null)} />}
     </>
   )
@@ -1244,62 +1428,24 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
     && getAssessmentLifecycleStatus(record) !== 'Referred Out'
     && !activeClientSet.has(record)
   )
-  const notReady = assessData.filter(record => !record.ready_for_services && !almostAuth.includes(record) && getAssessmentLifecycleStatus(record) !== 'Referred Out' && !activeClientSet.has(record))
   const { activeFilter, toggleFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'ready-for-services')
-  const readyRows = ready.filter(record => matchesStatFilter(record, activeFilter))
-  const almostAuthRows = almostAuth.filter(record => matchesStatFilter(record, activeFilter))
-  const notReadyRows = notReady.filter(record => matchesStatFilter(record, activeFilter))
-  const referredOutRows = referredOut.filter(record => matchesStatFilter(record, activeFilter))
-  const activeRows = activeClients.filter(record => matchesStatFilter(record, activeFilter))
+  const readyRows = ready
+  const almostAuthRows = almostAuth
+  const referredOutRows = referredOut
 
   return (
     <>
       <div className="pg-hdr">
         <div className="pg-hdr-title">Ready for Services</div>
-        <div className="pg-hdr-sub">Clients who have completed all pre-service requirements</div>
+        <div className="pg-hdr-sub">Clients cleared for service activation and final handoff.</div>
       </div>
-      <div className="stats-row" style={{ marginBottom: 22, gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))' }}>
-        <ClickableStatCard value={ready.length} label="Ready for Services" color="#22c55e" active={activeFilter?.key === 'ready'} onClick={() => toggleFilter('ready', 'Ready for Services')} />
-        <ClickableStatCard value={almostAuth.length} label="Awaiting Authorization" color="#f59e0b" active={activeFilter?.key === 'awaiting-authorization'} onClick={() => toggleFilter('awaiting-authorization', 'Ready for Services: Awaiting Authorization')} />
-        <ClickableStatCard value={notReady.length} label="Not Ready" color="#ef4444" active={activeFilter?.key === 'not-ready'} onClick={() => toggleFilter('not-ready', 'Ready for Services: Not Ready')} />
-        <ClickableStatCard value={activeClients.length} label="Active Clients" color="#22c55e" active={activeFilter?.key === 'active-clients'} onClick={() => toggleFilter('active-clients', 'Ready for Services: Active Clients')} />
-        <ClickableStatCard value={referredOut.length} label="Referred Out" color="#8b5cf6" active={activeFilter?.key === 'referred-out'} onClick={() => toggleFilter('referred-out', 'Ready for Services: Referred Out')} />
-      </div>
-      <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered service-readiness records" />
-
-      {activeRows.length > 0 && activeFilter?.key === 'active-clients' && (
-        <>
-          <div style={{ marginBottom: 14, fontSize: 13, fontWeight: 700, color: '#22c55e' }}>Active Clients ({activeRows.length})</div>
-          <div className="card" style={{ marginBottom: 20 }}>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Client</th><th>BCBA</th><th>Authorization</th><th>Active Date</th><th>Lifecycle</th><th>Open</th></tr></thead>
-                <tbody>
-                  {activeRows.map(record => (
-                    <tr
-                      key={record.assessment_id || record.client_name}
-                      className="row-hover"
-                      onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
-                      style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
-                    >
-                      <td>{renderClientCell(record, record.clinic)}</td>
-                      <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
-                      <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
-                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: '#22c55e' }}>{formatDate(record.active_client_date)}</td>
-                      <td>{lifecycleBadge(getAssessmentLifecycleStatus(record))}</td>
-                      <td style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 12 }}>Open</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
 
       {readyRows.length > 0 && (
         <>
-          <div style={{ marginBottom: 14, fontSize: 13, fontWeight: 700, color: '#22c55e' }}>Ready for Services ({readyRows.length})</div>
+          <div style={{ marginBottom: 8 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#22c55e', marginBottom: 4 }}>Queue</div>
+            <div style={{ fontSize: 13, color: 'var(--muted)' }}>Final review before client handoff into active services.</div>
+          </div>
           <div className="card" style={{ marginBottom: 20 }}>
             <div className="table-wrap">
               <table>
@@ -1318,10 +1464,26 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
                       </td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
                       <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
-                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: '#a5b4fc' }}>{formatDate(record.authorization_approved_date || record.pa_decision_date)}</td>
-                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.active_client_date ? '#22c55e' : '#fb923c' }}>{formatDate(record.active_client_date || 'Pending')}</td>
-                      <td style={{ fontSize: 11, color: 'var(--dim)', maxWidth: 160 }}>{record.notes || '--'}</td>
-                      <td style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 12 }}>Open</td>
+                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: '#a5b4fc' }}>{formatDate(record.authorization_approved_date || record.pa_decision_date) || '—'}</td>
+                      <td>
+                        {record.active_client_date ? (
+                          <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: '#22c55e' }}>{formatDate(record.active_client_date)}</span>
+                        ) : (
+                          <span className="verification-pill verification-pill-awaiting">Pending</span>
+                        )}
+                      </td>
+                      <td style={{ fontSize: 11, color: 'var(--dim)', maxWidth: 160 }}>{record.notes || '—'}</td>
+                      <td>
+                        <button
+                          className="btn-sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            getAssessmentRecordId(record) && onSelectAssess(record)
+                          }}
+                        >
+                          Open
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -1398,36 +1560,6 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
         </div>
       )}
 
-      {notReadyRows.length > 0 && activeFilter?.key === 'not-ready' && (
-        <>
-          <div style={{ marginBottom: 14, fontSize: 13, fontWeight: 700, color: '#ef4444' }}>Not Ready ({notReadyRows.length})</div>
-          <div className="card">
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Client</th><th>BCBA</th><th>Assessment Progress</th><th>Treatment Plan</th><th>Authorization</th><th>Notes</th><th /></tr></thead>
-                <tbody>
-                  {notReadyRows.map(record => (
-                    <tr
-                      key={record.assessment_id || record.client_name}
-                      className="row-hover"
-                      onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
-                      style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
-                    >
-                      <td>{renderClientCell(record, record.clinic)}</td>
-                      <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
-                      <td>{sBdg(getAssessmentWorkflowStatus(record))}</td>
-                      <td>{sBdg(record.treatment_plan_status || 'Not Started')}</td>
-                      <td><PaStatusBadge status={getAuthorizationStatus(record) || 'Not Submitted'} /></td>
-                      <td style={{ fontSize: 11, color: 'var(--dim)', maxWidth: 180 }}>{record.notes || '--'}</td>
-                      <td style={{ color: 'var(--accent)' }}>→</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
     </>
   )
 }
