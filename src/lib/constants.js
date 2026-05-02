@@ -13,7 +13,6 @@ import {
   MessagesSquare,
   ShieldCheck,
   TrendingUp,
-  UserCheck,
   Users,
   UserX,
 } from 'lucide-react'
@@ -59,7 +58,6 @@ export const MODULE_NAV = {
     { id: 'pending', icon: FileClock, label: 'Pending Documents' },
     { id: 'insurance', icon: ShieldCheck, label: 'Insurance Verification' },
     { id: 'nr', icon: UserX, label: 'Non-Responsive' },
-    { id: 'profile', icon: UserCheck, label: 'Client Profile' },
   ],
   assessment: [
     { id: 'tracker', icon: ClipboardPenLine, label: 'Initial Assessment Board' },
@@ -69,7 +67,6 @@ export const MODULE_NAV = {
     { id: 'readysvc', icon: BadgeCheck, label: 'Ready for Services' },
   ],
   operations: [
-    { id: 'pipeline', icon: LayoutDashboard, label: 'Pipeline Overview' },
     { id: 'aging', icon: Clock, label: 'Referral Aging' },
     { id: 'volume', icon: BarChart3, label: 'Clinic Volume' },
     { id: 'conversion', icon: TrendingUp, label: 'Conversion Rate' },

@@ -37,7 +37,7 @@ function getNextBlocker(r, assessData) {
   return { label: 'No blocker', color: '#64748b' }
 }
 
-export function AllReferralsPage({ refs, assessData = [], onSelectRef, onOpenProfile, statFilter, onSetStatFilter, onClearStatFilter }) {
+export function AllReferralsPage({ refs, assessData = [], onSelectRef, statFilter, onSetStatFilter, onClearStatFilter }) {
   const active = refs.filter(r => r.status === 'active')
   const activeWork = active.filter(r => isActiveReferralWork(r, assessData))
   const transitioned = active.filter(r => isReferralTransitioned(r, assessData))
@@ -321,9 +321,9 @@ export function AllReferralsPage({ refs, assessData = [], onSelectRef, onOpenPro
                       <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
                         <button
                           className="btn-action-primary"
-                          onClick={e => { e.stopPropagation(); onOpenProfile(r.id) }}
+                          onClick={e => { e.stopPropagation(); onSelectRef(r.id) }}
                         >
-                          Open Profile
+                          Open
                         </button>
                         <button
                           className="btn-action-secondary"

@@ -1,6 +1,7 @@
 import { MODULES } from '../lib/constants'
 import { LaunchWeekSupportCard } from './LaunchWeekSupportCard'
 import { ThemeToggle } from './ThemeToggle'
+import { canAccessOperations } from '../lib/profileUtils'
 import {
   Activity,
   ArrowRight,
@@ -29,7 +30,7 @@ const SIDEBAR_NAV = [
   { id: 'dashboard',  label: 'Dashboard',            icon: LayoutDashboard, module: 'dashboard' },
   { id: 'intake',     label: 'Intake',               icon: ClipboardList,   module: 'intake' },
   { id: 'assessment', label: 'Initial Assessments',  icon: ClipboardPenLine,module: 'assessment' },
-  { id: 'operations', label: 'Operational Insights', icon: TrendingUp,      module: 'operations' },
+  { id: 'operations', label: 'Operational Insights', icon: TrendingUp,      module: 'operations', requiresAccess: 'operations' },
   { id: 'about',      label: 'About',                icon: Info,            module: 'about' },
   { id: 'activity',   label: 'Activity Log',         icon: Activity,        module: 'dashboard', subpage: 'activity' },
 ]
@@ -52,6 +53,7 @@ export function HomePage({
   displayName = '',
   onEnterSubpage,
   supportUserContext,
+  profile,
 }) {
   const handleSidebarNav = (item) => {
     if (item.id === 'home') return
@@ -80,7 +82,7 @@ export function HomePage({
 
         <nav className="hp-sidebar-nav">
           <div className="hp-sidebar-section-label">Navigate</div>
-          {SIDEBAR_NAV.map(item => {
+          {SIDEBAR_NAV.filter(item => !item.requiresAccess || (item.requiresAccess === 'operations' && canAccessOperations(profile))).map(item => {
             const Icon = item.icon
             return (
               <div
@@ -128,7 +130,7 @@ export function HomePage({
             <div className="hp-modules-heading">Portal Modules</div>
             <div className="hp-module-grid">
 
-              {MODULES.map(m => {
+              {MODULES.filter(m => m.id !== 'operations' || canAccessOperations(profile)).map(m => {
                 const Icon = MODULE_ICON[m.id]
                 return (
                   <div

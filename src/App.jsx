@@ -20,11 +20,10 @@ import { NewReferralPage } from './pages/NewReferralPage'
 import { createActivityLog } from './lib/activityLogs'
 import { getAssessmentRecordId, isActiveReferralWork, isAssessmentActiveClient, isReferralTransitioned, needsInsuranceVerification } from './lib/utils'
 import { API_BASE } from './lib/api'
-import { formatProfileAccessLabel, formatRoleLabel, isAdmin, normalizeProfile } from './lib/profileUtils'
+import { formatProfileAccessLabel, formatRoleLabel, isAdmin, normalizeProfile, canAccessOperations } from './lib/profileUtils'
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then(module => ({ default: module.DashboardPage })))
 const ActivityLogPage = lazy(() => import('./pages/DashboardPage').then(module => ({ default: module.ActivityLogPage })))
-const ClientProfilePage = lazy(() => import('./pages/ClientProfilePage').then(module => ({ default: module.ClientProfilePage })))
 const AllReferralsPage = lazy(() => import('./pages/AllReferralsPage').then(module => ({ default: module.AllReferralsPage })))
 const PendingDocsPage = lazy(() => import('./pages/IntakePages').then(module => ({ default: module.PendingDocsPage })))
 const InsuranceVerifPage = lazy(() => import('./pages/IntakePages').then(module => ({ default: module.InsuranceVerifPage })))
@@ -36,7 +35,6 @@ const ParentInterviewsPage = lazy(() => import('./pages/AssessmentPages').then(m
 const BCBAAssignmentsPage = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.BCBAAssignmentsPage })))
 const AssessmentProgressPage = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.AssessmentProgressPage })))
 const ReadyForServicesPage = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.ReadyForServicesPage })))
-const PipelineOverviewPage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.PipelineOverviewPage })))
 const ReferralAgingPage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.ReferralAgingPage })))
 const ClinicVolumePage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.ClinicVolumePage })))
 const ConversionRatePage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.ConversionRatePage })))
@@ -129,7 +127,7 @@ function readSavedNav() {
     if (!raw) return null
     const saved = JSON.parse(raw)
     if (saved?.screen !== 'module' || !saved?.module) return null
-    if (saved.module === 'intake' && saved.subpage === 'intakedash') {
+    if (saved.module === 'intake' && (saved.subpage === 'intakedash' || saved.subpage === 'profile')) {
       return { ...saved, subpage: 'all' }
     }
     return saved
@@ -175,7 +173,6 @@ export default function App() {
   const [selId, setSelId] = useState(() => readSavedModalId(REFERRAL_MODAL_STATE_KEY))
   const [selAssessId, setSelAssessId] = useState(() => readSavedModalId(ASSESSMENT_MODAL_STATE_KEY))
   const [routeFilter, setRouteFilter] = useState(null)
-  const [profileId, setProfileId] = useState(null)
   const assessmentLoadRequestedRef = useRef(false)
   const assessmentModalRestorePendingRef = useRef(Boolean(selAssessId))
 
@@ -282,6 +279,13 @@ export default function App() {
     }
   }, [recoveryMode, session])
 
+  // Navigation safety check: redirect from operations if user lacks access
+  useEffect(() => {
+    if (profile && module === 'operations' && !canAccessOperations(profile)) {
+      goHome()
+    }
+  }, [profile, module])
+
   useEffect(() => {
     const h = (e) => enterModule(e.detail)
     window.addEventListener('enter-module', h)
@@ -334,7 +338,7 @@ export default function App() {
   }
 
   const enterModule = (id) => {
-    const defaults = { dashboard: 'overview', intake: 'all', assessment: 'tracker', operations: 'pipeline', about: 'locations' }
+    const defaults = { dashboard: 'overview', intake: 'all', assessment: 'tracker', operations: 'aging', about: 'locations' }
     openModulePage(id, defaults[id] || 'overview')
   }
 
@@ -876,20 +880,6 @@ export default function App() {
     return res
   }
 
-  const handleOpenProfile = async (id) => {
-    setProfileId(id)
-    setSubpageAndClearFilter('profile')
-    const record = refs.find(r => r.id === id)
-    if (record) {
-      await writeReferralActivity({
-        action: 'client_profile_viewed',
-        record,
-        description: `${formatReferralName(record)} client profile was viewed.`,
-        details_json: {},
-      })
-    }
-  }
-
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoginPending(true)
@@ -1265,6 +1255,7 @@ export default function App() {
           assessmentsCount={activeAssessmentQueueData.length}
           statsLoading={loading}
           supportUserContext={supportUserContext}
+          profile={profile}
           topRightContent={(
             <div className="home-account-card">
               <div style={{ minWidth: 0 }}>
@@ -1288,7 +1279,12 @@ export default function App() {
   const navItems = MODULE_NAV[module] || []
   const canViewActivityLog = profile?.role === 'admin'
   const assessmentSubpageFallbacks = { txplan: 'bcba', activeclients: 'readysvc' }
-  const normalizedSubpage = module === 'assessment' ? (assessmentSubpageFallbacks[subpage] || subpage) : subpage
+  const intakeSubpageFallbacks = { intakedash: 'all', profile: 'all' }
+  const normalizedSubpage = module === 'assessment'
+    ? (assessmentSubpageFallbacks[subpage] || subpage)
+    : module === 'intake'
+      ? (intakeSubpageFallbacks[subpage] || subpage)
+      : subpage
   const activeSubpage = module === 'dashboard' && normalizedSubpage === 'activity' && !canViewActivityLog ? 'overview' : normalizedSubpage
   const currentNavLabel = navItems.find(n => n.id === activeSubpage)?.label || ''
 
@@ -1318,12 +1314,11 @@ export default function App() {
     }
 
     if (module === 'intake') {
-      if (subpage === 'all') return <AllReferralsPage refs={refs} assessData={assessData} onSelectRef={setSelId} onOpenProfile={handleOpenProfile} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'profile') return <ClientProfilePage referralId={profileId} onBack={() => setSubpageAndClearFilter('all')} canShowTechnicalDetails={isAdmin(profile)} />
-      if (subpage === 'new') return <NewReferralPage onSave={handleCreateReferral} saving={saving} officeOptions={officeOptions} insuranceOptions={insuranceOptions} referralSourceOptions={referralSourceOptions} />
-      if (subpage === 'pending') return <PendingDocsPage refs={refs} assessData={assessData} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'insurance') return <InsuranceVerifPage refs={refs} assessData={assessData} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'nr') return <NonResponsivePage refs={refs} onRestore={(id) => handleSetReferralStatus(id, 'active')} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (activeSubpage === 'all') return <AllReferralsPage refs={refs} assessData={assessData} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (activeSubpage === 'new') return <NewReferralPage onSave={handleCreateReferral} saving={saving} officeOptions={officeOptions} insuranceOptions={insuranceOptions} referralSourceOptions={referralSourceOptions} />
+      if (activeSubpage === 'pending') return <PendingDocsPage refs={refs} assessData={assessData} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (activeSubpage === 'insurance') return <InsuranceVerifPage refs={refs} assessData={assessData} onSelectRef={setSelId} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (activeSubpage === 'nr') return <NonResponsivePage refs={refs} onRestore={(id) => handleSetReferralStatus(id, 'active')} statFilter={routeFilter} onClearStatFilter={() => setRouteFilter(null)} />
     }
 
     if (module === 'about') {
@@ -1340,7 +1335,19 @@ export default function App() {
     }
 
     if (module === 'operations') {
-      if (subpage === 'pipeline') return <PipelineOverviewPage refs={operationsRefs} assessData={operationsAssessData} openModulePage={openModulePage} />
+      if (!canAccessOperations(profile)) {
+        return (
+          <div style={{ textAlign: 'center', padding: '80px 40px' }}>
+            <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Access Restricted</div>
+            <div style={{ color: 'var(--muted)', marginBottom: 16 }}>
+              Operational Insights is limited to leadership users.
+            </div>
+            <div style={{ color: 'var(--muted)', fontSize: 14 }}>
+              Please contact an administrator if you need access.
+            </div>
+          </div>
+        )
+      }
       if (subpage === 'aging') return <ReferralAgingPage refs={operationsRefs} assessData={operationsAssessData} onSelectRef={setSelId} />
       if (subpage === 'volume') return <ClinicVolumePage refs={operationsRefs} assessData={operationsAssessData} />
       if (subpage === 'conversion') return <ConversionRatePage refs={operationsRefs} assessData={operationsAssessData} />

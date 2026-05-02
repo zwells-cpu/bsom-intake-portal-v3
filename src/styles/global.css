@@ -2758,6 +2758,74 @@ tr{ transition:background 0.15s ease, transform 0.08s ease; }
 .step-dot.future{ background:var(--surface3); color:var(--dim); }
 .step-line{ flex:1; height:2px; background:var(--border2); }
 .step-line.done{ background:var(--green); }
+.new-referral-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:16px;
+}
+.new-referral-draft-tools{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.new-referral-draft-status{
+  min-height:30px;
+  display:inline-flex;
+  align-items:center;
+  border:1px solid var(--border2);
+  border-radius:8px;
+  padding:6px 10px;
+  background:rgba(15,23,42,0.24);
+  color:var(--muted);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:0;
+  white-space:nowrap;
+}
+.new-referral-draft-status.saved{
+  color:#86efac;
+  border-color:rgba(34,197,94,0.28);
+  background:rgba(34,197,94,0.08);
+}
+.new-referral-draft-status.unsaved{
+  color:#fbbf24;
+  border-color:rgba(245,158,11,0.32);
+  background:rgba(245,158,11,0.08);
+}
+.new-referral-draft-status.restored{
+  color:#a5b4fc;
+  border-color:rgba(99,102,241,0.32);
+  background:rgba(99,102,241,0.1);
+}
+.new-referral-clear-draft{
+  min-height:30px;
+  padding:5px 10px;
+  border-radius:8px;
+  font-size:11px;
+  font-weight:700;
+}
+.new-referral-section{
+  display:grid;
+  gap:18px;
+}
+.new-referral-section-header{
+  border-bottom:1px solid var(--border);
+  padding-bottom:12px;
+}
+.new-referral-section-label{
+  color:var(--text);
+  font-size:13px;
+  font-weight:800;
+}
+.new-referral-section-helper{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.45;
+}
 .form-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
 .responsive-two-col{
   display:grid;
@@ -3747,6 +3815,14 @@ tr{ transition:background 0.15s ease, transform 0.08s ease; }
   }
   .pg-hdr-sub{
     font-size:12px;
+  }
+  .new-referral-header{
+    align-items:stretch;
+    flex-direction:column;
+    gap:12px;
+  }
+  .new-referral-draft-tools{
+    justify-content:flex-start;
   }
   .form-grid,
   .responsive-review-grid{

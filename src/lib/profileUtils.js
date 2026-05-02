@@ -40,6 +40,28 @@ export function isIntake(profileOrRole) {
   return normalizeRole(role) === 'intake'
 }
 
+export function canAccessOperations(profile) {
+  if (!profile) return false
+
+  // Prefer email allowlist if available
+  const email = profile.email || ''
+  const allowedEmails = [
+    'zanteria.wells@bsom.org', // Zanteria Wells
+    'lashannon.pinkston@bsom.org', // LaShannon Pinkston
+    'latonya.spivey@bsom.org', // LaTonya Spivey
+  ]
+  if (email && allowedEmails.includes(email.toLowerCase())) return true
+
+  // Fallback to normalized full_name
+  const fullName = (profile.full_name || '').toLowerCase().trim()
+  const allowedNames = [
+    'zanteria wells',
+    'lashannon pinkston',
+    'latonya spivey',
+  ]
+  return allowedNames.includes(fullName)
+}
+
 export function formatRoleLabel(role) {
   return ROLE_LABELS[normalizeRole(role)]
 }
