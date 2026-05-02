@@ -109,7 +109,7 @@ export function ProgressRing({ value, size = 52 }) {
         strokeLinecap="round"
         transform="rotate(-90 22 22)"
       />
-      <text x="22" y="26" textAnchor="middle" fontSize="10" fontWeight="700" fill={col} fontFamily="DM Mono,monospace">
+      <text x="22" y="26" textAnchor="middle" fontSize="10" fontWeight="800" fill={col} fontFamily="DM Sans,system-ui,sans-serif">
         {value}%
       </text>
     </svg>

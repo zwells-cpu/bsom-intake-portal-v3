@@ -1,7 +1,7 @@
 import { Badge, OfficePill, ProgressRing } from '../components/Badge'
 import { ActivityLogList, RecentActivityCard } from '../components/dashboard/RecentActivityCard'
 import { useActivityLogs } from '../hooks/useActivityLogs'
-import { formatDisplayDate, isActiveReferralWork, isReferralTransitioned, needsInsuranceVerification, pct } from '../lib/utils'
+import { formatDisplayDate, isActiveReferralWork, needsInsuranceVerification, pct } from '../lib/utils'
 import { ChevronRight, ClipboardList, Clock, ShieldCheck, UserRoundX } from 'lucide-react'
 
 export function DashboardPage({ refs, assessData = [], setSelectedId, openModulePage, activityRefreshKey = 0, profileRole = '' }) {
@@ -13,10 +13,8 @@ export function DashboardPage({ refs, assessData = [], setSelectedId, openModule
   const canShowOversight = role === 'admin'
   const active = refs.filter((r) => isActiveReferralWork(r, assessData))
   const nr = refs.filter((r) => r.status === 'non-responsive' || r.status === 'referred-out')
-  const signed = active.filter((r) => (r.intake_paperwork || '').toLowerCase().includes('signed'))
   const pending = active.filter((r) => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
   const noIns = active.filter((r) => needsInsuranceVerification(r.insurance_verified))
-  const transitioned = refs.filter((r) => r.status === 'active' && isReferralTransitioned(r, assessData)).length
   const aging14 = active.filter((r) => {
     const received = r.referral_received_date || r.date_received
     if (!received) return false
@@ -34,7 +32,6 @@ export function DashboardPage({ refs, assessData = [], setSelectedId, openModule
       label: 'Paperwork Still Needed',
       value: pending.length,
       actionLabel: 'Help families finish paperwork',
-      helper: 'Start here when forms are missing, incomplete, or still waiting to be returned.',
       cta: 'Review paperwork',
       tone: 'yellow',
       icon: ClipboardList,
@@ -44,7 +41,6 @@ export function DashboardPage({ refs, assessData = [], setSelectedId, openModule
       label: 'Insurance Needs Verification',
       value: noIns.length,
       actionLabel: 'Confirm coverage details',
-      helper: 'Review families whose insurance has not been confirmed yet.',
       cta: 'Verify insurance',
       tone: 'blue',
       icon: ShieldCheck,
@@ -56,7 +52,6 @@ export function DashboardPage({ refs, assessData = [], setSelectedId, openModule
       label: 'Stalled Over 14 Days',
       value: aging14,
       actionLabel: 'Check what is holding things up',
-      helper: 'Review referrals that have been waiting for two weeks or longer.',
       cta: 'Review stalled referrals',
       tone: 'orange',
       icon: Clock,
@@ -68,7 +63,6 @@ export function DashboardPage({ refs, assessData = [], setSelectedId, openModule
       label: 'Needs Follow-Up or Referred Out',
       value: nr.length,
       actionLabel: 'Close the loop with families',
-      helper: 'Follow up with families we have not reached or confirm referrals sent elsewhere.',
       cta: 'Review follow-ups',
       tone: 'red',
       icon: UserRoundX,
@@ -91,15 +85,10 @@ export function DashboardPage({ refs, assessData = [], setSelectedId, openModule
             <h2 id="priority-queue-title" className="priority-queue-title">Today's Priority Queue</h2>
             <p className="priority-queue-subtitle">Start with the items most likely to move a family forward today.</p>
           </div>
-          <div className="priority-queue-summary" aria-label="Intake summary">
-            <span>{active.length} active intakes</span>
-            <span>{signed.length} paperwork signed</span>
-            <span>{transitioned} ready for initial assessment</span>
-          </div>
         </div>
 
         <div className="priority-queue-list">
-          {priorityQueueItems.map((item, index) => {
+          {priorityQueueItems.map((item) => {
             const Icon = item.icon
             return (
               <article key={item.label} className={`priority-card priority-card-${item.tone}`}>
@@ -113,10 +102,8 @@ export function DashboardPage({ refs, assessData = [], setSelectedId, openModule
                   </div>
                 </div>
                 <div className="priority-card-main">
-                  <div className="priority-card-label">Priority {index + 1}</div>
                   <div className="priority-card-action">{item.label}</div>
                   <div className="priority-card-task">{item.actionLabel}</div>
-                  <p className="priority-card-helper">{item.helper}</p>
                   <button className="btn-sm priority-card-button" type="button" onClick={item.action}>
                     {item.cta}
                   </button>

@@ -26,7 +26,6 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage').then(module => 
 const ActivityLogPage = lazy(() => import('./pages/DashboardPage').then(module => ({ default: module.ActivityLogPage })))
 const ClientProfilePage = lazy(() => import('./pages/ClientProfilePage').then(module => ({ default: module.ClientProfilePage })))
 const AllReferralsPage = lazy(() => import('./pages/AllReferralsPage').then(module => ({ default: module.AllReferralsPage })))
-const IntakeDashboard = lazy(() => import('./pages/IntakePages').then(module => ({ default: module.IntakeDashboard })))
 const PendingDocsPage = lazy(() => import('./pages/IntakePages').then(module => ({ default: module.PendingDocsPage })))
 const InsuranceVerifPage = lazy(() => import('./pages/IntakePages').then(module => ({ default: module.InsuranceVerifPage })))
 const NonResponsivePage = lazy(() => import('./pages/IntakePages').then(module => ({ default: module.NonResponsivePage })))
@@ -129,7 +128,11 @@ function readSavedNav() {
     const raw = sessionStorage.getItem(NAV_STATE_KEY)
     if (!raw) return null
     const saved = JSON.parse(raw)
-    return saved?.screen === 'module' && saved?.module ? saved : null
+    if (saved?.screen !== 'module' || !saved?.module) return null
+    if (saved.module === 'intake' && saved.subpage === 'intakedash') {
+      return { ...saved, subpage: 'all' }
+    }
+    return saved
   } catch {
     return null
   }
@@ -331,7 +334,7 @@ export default function App() {
   }
 
   const enterModule = (id) => {
-    const defaults = { dashboard: 'overview', intake: 'intakedash', assessment: 'tracker', operations: 'pipeline', about: 'locations' }
+    const defaults = { dashboard: 'overview', intake: 'all', assessment: 'tracker', operations: 'pipeline', about: 'locations' }
     openModulePage(id, defaults[id] || 'overview')
   }
 
@@ -540,6 +543,32 @@ export default function App() {
     }
 
     return assessmentResult
+  }
+
+  const showInitialAssessmentTransitionError = (error, context = {}) => {
+    console.warn('Initial assessment transition failed.', {
+      ...context,
+      error,
+    })
+    setError('Could not move this client to the Initial Assessment Board. The referral was not marked ready. Please try again or contact support.')
+  }
+
+  const writeInitialAssessmentTransitionActivity = async ({ referral, assessment, source, created }) => {
+    await writePromotionActivity({ referral, assessment })
+
+    if (created) {
+      await writeAssessmentActivity({
+        action: 'assessment_created_from_referral',
+        record: assessment,
+        description: `${formatReferralName(referral)} was moved to the Initial Assessment Board.`,
+        details_json: {
+          referral_id: referral.id || referral.referral_id || '',
+          source_workflow: 'referral_intake',
+          destination_workflow: 'initial_assessment',
+          transition_source: source,
+        },
+      })
+    }
   }
   const handleUploadClientDocument = async ({ referral, documentType, file }) => {
     if (!file) return { success: false, error: 'Please select a file to upload.' }
@@ -772,25 +801,75 @@ export default function App() {
   }
 
   const handleToggleParentInterview = async (id, val) => {
-    const res = await toggleParentInterview(id, val)
+    const before = refs.find(r => r.id === id)
 
-    if (res?.success && res?.data) {
-      let assessmentResult = null
+    if (val === true) {
+      const assessmentResult = await ensureAssessmentForReferral(before)
 
-      if (val === true) {
-        assessmentResult = await ensureInitialAssessmentTransition(res.data, { source: 'ready_for_parent_interview' })
-        if (assessmentResult?.success && !assessmentResult.created) {
-          showWorkflowToast('Client moved to Initial Assessment Board.')
-        }
+      if (!assessmentResult?.success) {
+        showInitialAssessmentTransitionError(assessmentResult?.error || 'Assessment creation failed.', {
+          referral_id: before?.id || before?.referral_id || id,
+          source: 'ready_for_parent_interview',
+        })
+        await Promise.all([load(), requestLoadAssessments()])
+        return { success: false }
       }
 
+      const res = await toggleParentInterview(id, true)
+
+      if (!res?.success || !res?.data) {
+        if (assessmentResult.created) {
+          const createdAssessmentId = getAssessmentRecordId(assessmentResult.data)
+          if (createdAssessmentId) {
+            const rollbackResult = await deleteAssessment(createdAssessmentId)
+            if (!rollbackResult?.success) {
+              console.warn('Could not roll back assessment after referral transition update failed.', {
+                referral_id: before?.id || before?.referral_id || id,
+                assessment_id: createdAssessmentId,
+              })
+            }
+          }
+        }
+        showInitialAssessmentTransitionError(res?.error || 'Referral update failed after assessment creation.', {
+          referral_id: before?.id || before?.referral_id || id,
+          assessment_id: getAssessmentRecordId(assessmentResult.data),
+          source: 'ready_for_parent_interview',
+        })
+        await Promise.all([load(), requestLoadAssessments()])
+        return res || { success: false }
+      }
+
+      await Promise.all([load(), requestLoadAssessments()])
+
+      await writeInitialAssessmentTransitionActivity({
+        referral: res.data,
+        assessment: assessmentResult.data,
+        source: 'ready_for_parent_interview',
+        created: assessmentResult.created,
+      })
+
       await writeReferralActivity({
-        action: val ? 'parent_interview_ready_enabled' : 'parent_interview_ready_disabled',
+        action: 'parent_interview_ready_enabled',
         record: res.data,
-        description: val
-          ? `${formatReferralName(res.data)} was marked ready for parent interview.`
-          : `${formatReferralName(res.data)} was unmarked from ready for parent interview.`,
-        details_json: { ready_for_parent_interview: val === true },
+        description: `${formatReferralName(res.data)} was marked ready for parent interview.`,
+        details_json: {
+          ready_for_parent_interview: true,
+          assessment_id: getAssessmentRecordId(assessmentResult.data),
+        },
+      })
+
+      showWorkflowToast('Client moved to Initial Assessment Board.')
+      return res
+    }
+
+    const res = await toggleParentInterview(id, false)
+
+    if (res?.success && res?.data) {
+      await writeReferralActivity({
+        action: 'parent_interview_ready_disabled',
+        record: res.data,
+        description: `${formatReferralName(res.data)} was unmarked from ready for parent interview.`,
+        details_json: { ready_for_parent_interview: false },
       })
     }
 
@@ -1239,7 +1318,6 @@ export default function App() {
     }
 
     if (module === 'intake') {
-      if (subpage === 'intakedash') return <IntakeDashboard refs={refs} assessData={assessData} onSelectRef={setSelId} openModulePage={openModulePage} />
       if (subpage === 'all') return <AllReferralsPage refs={refs} assessData={assessData} onSelectRef={setSelId} onOpenProfile={handleOpenProfile} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
       if (subpage === 'profile') return <ClientProfilePage referralId={profileId} onBack={() => setSubpageAndClearFilter('all')} canShowTechnicalDetails={isAdmin(profile)} />
       if (subpage === 'new') return <NewReferralPage onSave={handleCreateReferral} saving={saving} officeOptions={officeOptions} insuranceOptions={insuranceOptions} referralSourceOptions={referralSourceOptions} />
@@ -1288,7 +1366,6 @@ export default function App() {
           setSubpage={setSubpageAndClearFilter}
           goHome={goHome}
           pendingCount={pending.length}
-          nrCount={nr.length}
           unverifiedCount={noIns}
           supportUserContext={supportUserContext}
         />

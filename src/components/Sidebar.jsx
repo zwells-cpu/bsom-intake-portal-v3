@@ -1,14 +1,13 @@
 import { MODULES, MODULE_NAV } from '../lib/constants'
 import { LaunchWeekSupportCard } from './LaunchWeekSupportCard'
 
-export function Sidebar({ module, subpage, setSubpage, goHome, pendingCount, nrCount, unverifiedCount, supportUserContext }) {
+export function Sidebar({ module, subpage, setSubpage, goHome, pendingCount, unverifiedCount, supportUserContext }) {
   const m = MODULES.find(x => x.id === module)
   const navItems = MODULE_NAV[module] || []
 
   const badgeFor = (id) => {
     if (id === 'pending') return pendingCount > 0 ? pendingCount : null
     if (id === 'insurance') return unverifiedCount > 0 ? unverifiedCount : null
-    if (id === 'nr') return nrCount > 0 ? nrCount : null
     return null
   }
 

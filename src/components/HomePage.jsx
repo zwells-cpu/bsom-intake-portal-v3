@@ -6,7 +6,6 @@ import {
   ArrowRight,
   ClipboardList,
   ClipboardPenLine,
-  FileClock,
   FilePlus2,
   Home,
   Info,
@@ -14,7 +13,6 @@ import {
   Lock,
   MessagesSquare,
   TrendingUp,
-  Users,
   Zap,
 } from 'lucide-react'
 
@@ -44,26 +42,6 @@ const MODULE_ICON = {
   about:      Info,
 }
 
-function KPICard({ icon: Icon, label, value, color, loading }) {
-  return (
-    <div className="hp-kpi-card">
-      <div
-        className="hp-kpi-icon"
-        style={{
-          background: `color-mix(in srgb, ${color} 14%, transparent)`,
-          color,
-        }}
-      >
-        <Icon size={16} />
-      </div>
-      <div className="hp-kpi-value">
-        {loading ? <span className="hp-kpi-skeleton" /> : value}
-      </div>
-      <div className="hp-kpi-label">{label}</div>
-    </div>
-  )
-}
-
 export function HomePage({
   onEnterModule,
   onAddReferral,
@@ -72,11 +50,6 @@ export function HomePage({
   setTheme,
   topRightContent = null,
   displayName = '',
-  activeCount = 0,
-  pendingDocsCount = 0,
-  readyForInterviewCount = 0,
-  assessmentsCount = 0,
-  statsLoading = false,
   onEnterSubpage,
   supportUserContext,
 }) {
@@ -148,38 +121,6 @@ export function HomePage({
             {displayName && (
               <p className="hp-greeting">{getGreeting(displayName)}</p>
             )}
-          </div>
-
-          {/* KPI row */}
-          <div className="hp-kpi-row">
-            <KPICard
-              icon={Users}
-              label="Active Referrals"
-              value={activeCount}
-              color="var(--accent)"
-              loading={statsLoading}
-            />
-            <KPICard
-              icon={FileClock}
-              label="Pending Documents"
-              value={pendingDocsCount}
-              color="var(--yellow)"
-              loading={statsLoading}
-            />
-            <KPICard
-              icon={MessagesSquare}
-              label="Moved to Initial"
-              value={readyForInterviewCount}
-              color="var(--green)"
-              loading={statsLoading}
-            />
-            <KPICard
-              icon={ClipboardPenLine}
-              label="Assessments In Progress"
-              value={assessmentsCount}
-              color="var(--orange)"
-              loading={statsLoading}
-            />
           </div>
 
           {/* Portal modules */}

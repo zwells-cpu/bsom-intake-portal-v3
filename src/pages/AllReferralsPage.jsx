@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertCircle, CalendarCheck, FileText, ArrowUpRight, Bell } from 'lucide-react'
+import { Bell, ChevronDown, ListFilter } from 'lucide-react'
 import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
 import { ActiveFilterBanner } from '../components/StatFilterControls'
 import { NotifyModal } from '../components/NotifyModal'
@@ -134,16 +134,6 @@ export function AllReferralsPage({ refs, assessData = [], onSelectRef, onOpenPro
   }).length
   const kpiTransitioned = transitioned.length
 
-  const handleKpiClick = id => {
-    if (id === 'transitioned') {
-      setLocalStageFilter('all')
-      toggleTransitionedFilter()
-    } else {
-      if (showingTransitioned && onClearStatFilter) onClearStatFilter()
-      setLocalStageFilter(id)
-    }
-  }
-
   const handleQueueTab = id => {
     if (id === 'transitioned') {
       setLocalStageFilter('all')
@@ -154,47 +144,6 @@ export function AllReferralsPage({ refs, assessData = [], onSelectRef, onOpenPro
     }
   }
 
-  const activeKpiId = showingTransitioned ? 'transitioned' : (localStageFilter === 'all' || localStageFilter === 'new-referral' ? null : localStageFilter)
-
-  const kpiCards = [
-    {
-      id: 'needs-followup',
-      label: 'Needs Follow-Up',
-      count: kpiNeedsFollowUp,
-      helper: 'Active referrals with open blockers',
-      color: '#ef4444',
-      bg: '#ef444418',
-      icon: <AlertCircle size={18} />,
-    },
-    {
-      id: 'ready-for-interview',
-      label: 'Ready for Interview',
-      count: kpiReadyForInterview,
-      helper: 'All requirements met, awaiting interview',
-      color: '#22c55e',
-      bg: '#22c55e18',
-      icon: <CalendarCheck size={18} />,
-    },
-    {
-      id: 'pending-paperwork',
-      label: 'Pending Paperwork',
-      count: kpiPendingPaperwork,
-      helper: 'Intake paperwork not yet completed',
-      color: '#f59e0b',
-      bg: '#f59e0b18',
-      icon: <FileText size={18} />,
-    },
-    {
-      id: 'transitioned',
-      label: 'Moved to Initial Assessment',
-      count: kpiTransitioned,
-      helper: 'Transitioned from referral queue',
-      color: '#8b5cf6',
-      bg: '#8b5cf618',
-      icon: <ArrowUpRight size={18} />,
-    },
-  ]
-
   const queueTabs = [
     { id: 'all', label: 'All Active', count: activeWork.length },
     { id: 'new-referral', label: 'New Referral', count: activeWork.filter(r => getReferralBoardStage(r, assessData) === 'New Referral').length },
@@ -202,6 +151,7 @@ export function AllReferralsPage({ refs, assessData = [], onSelectRef, onOpenPro
     { id: 'pending-paperwork', label: 'Pending Paperwork', count: kpiPendingPaperwork },
     { id: 'transitioned', label: 'Moved to Initial Assessment', count: kpiTransitioned },
   ]
+  const activeQueueTab = queueTabs.find(tab => tab.id === (showingTransitioned ? 'transitioned' : localStageFilter)) || queueTabs[0]
 
   return (
     <>
@@ -214,29 +164,9 @@ export function AllReferralsPage({ refs, assessData = [], onSelectRef, onOpenPro
         <p className="pg-hdr-sub">Review active referrals, blockers, paperwork, and next steps.</p>
       </div>
 
-      {/* KPI Summary Cards */}
-      <div className="referral-kpi-row">
-        {kpiCards.map(card => (
-          <button
-            key={card.id}
-            className={`stat-box stat-box-clickable referral-kpi-card${activeKpiId === card.id ? ' active' : ''}`}
-            onClick={() => handleKpiClick(card.id)}
-          >
-            <div className="referral-kpi-top">
-              <div className="referral-kpi-icon" style={{ background: card.bg, color: card.color }}>
-                {card.icon}
-              </div>
-              <div className="referral-kpi-num" style={{ color: card.color }}>{card.count}</div>
-            </div>
-            <div className="referral-kpi-label">{card.label}</div>
-            <div className="referral-kpi-helper">{card.helper}</div>
-          </button>
-        ))}
-      </div>
-
-      {/* Filter Row 1: Search + Office Chips + Export */}
+      {/* Filter Row 1: Search + Export */}
       <div className="filter-row referral-filter-row1" style={{ marginBottom: 10 }}>
-        <div className="search-wrap">
+        <div className="search-wrap referral-search-wrap">
           <input
             className="search-input"
             placeholder="Search name or caregiver..."
@@ -244,39 +174,77 @@ export function AllReferralsPage({ refs, assessData = [], onSelectRef, onOpenPro
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <div className="filter-btns referral-office-chips">
-          {['ALL', ...OFFICES].map(o => (
-            <button
-              key={o}
-              className={`filter-btn${office === o ? ' active' : ''}`}
-              style={{ borderRadius: 999 }}
-              onClick={() => setOffice(o)}
-            >
-              {OFFICE_LABELS[o] || o} ({officeCounts[o] ?? 0})
-            </button>
-          ))}
-        </div>
         <div className="filter-row-actions">
           <button className="btn-export" onClick={() => exportCSV(refs)}>Export CSV</button>
         </div>
       </div>
 
-      {/* Filter Row 2: Stage Queue Tabs */}
+      {/* Filter Row 2: Clinic + Referral View */}
       <div className="referral-queue-filter-row">
-        {queueTabs.map(tab => {
-          const isActive = tab.id === 'transitioned'
-            ? showingTransitioned
-            : !showingTransitioned && localStageFilter === tab.id
-          return (
-            <button
-              key={tab.id}
-              className={`referral-queue-tab${isActive ? ' active' : ''}`}
-              onClick={() => handleQueueTab(tab.id)}
-            >
-              {tab.label} ({tab.count})
-            </button>
-          )
-        })}
+        <details className="referral-stage-filter">
+          <summary className="referral-stage-filter-button">
+            <span className="referral-stage-filter-icon" aria-hidden="true">
+              <ListFilter size={15} strokeWidth={2.2} />
+            </span>
+            <span className="referral-stage-filter-copy">
+              <span>Clinic</span>
+              <strong>{OFFICE_LABELS[office] || office}</strong>
+            </span>
+            <span className="referral-stage-filter-count">{officeCounts[office] ?? 0}</span>
+            <ChevronDown className="referral-stage-filter-chevron" size={15} strokeWidth={2.2} />
+          </summary>
+          <div className="referral-stage-filter-menu">
+            {['ALL', ...OFFICES].map(o => (
+              <button
+                key={o}
+                type="button"
+                className={`referral-stage-filter-option${office === o ? ' active' : ''}`}
+                onClick={event => {
+                  setOffice(o)
+                  event.currentTarget.closest('details')?.removeAttribute('open')
+                }}
+              >
+                <span>{OFFICE_LABELS[o] || o}</span>
+                <strong>{officeCounts[o] ?? 0}</strong>
+              </button>
+            ))}
+          </div>
+        </details>
+
+        <details className="referral-stage-filter">
+          <summary className="referral-stage-filter-button">
+            <span className="referral-stage-filter-icon" aria-hidden="true">
+              <ListFilter size={15} strokeWidth={2.2} />
+            </span>
+            <span className="referral-stage-filter-copy">
+              <span>Referral view</span>
+              <strong>{activeQueueTab.label}</strong>
+            </span>
+            <span className="referral-stage-filter-count">{activeQueueTab.count}</span>
+            <ChevronDown className="referral-stage-filter-chevron" size={15} strokeWidth={2.2} />
+          </summary>
+          <div className="referral-stage-filter-menu">
+            {queueTabs.map(tab => {
+              const isActive = tab.id === 'transitioned'
+                ? showingTransitioned
+                : !showingTransitioned && localStageFilter === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={`referral-stage-filter-option${isActive ? ' active' : ''}`}
+                  onClick={event => {
+                    handleQueueTab(tab.id)
+                    event.currentTarget.closest('details')?.removeAttribute('open')
+                  }}
+                >
+                  <span>{tab.label}</span>
+                  <strong>{tab.count}</strong>
+                </button>
+              )
+            })}
+          </div>
+        </details>
       </div>
 
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered referrals" />

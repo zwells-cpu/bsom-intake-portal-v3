@@ -54,7 +54,6 @@ export const MODULE_NAV = {
     { id: 'activity', icon: Activity, label: 'Activity Log' },
   ],
   intake: [
-    { id: 'intakedash', icon: LayoutDashboard, label: 'Intake Dashboard' },
     { id: 'all', icon: ClipboardList, label: 'All Referrals' },
     { id: 'new', icon: FilePlus2, label: 'New Referral' },
     { id: 'pending', icon: FileClock, label: 'Pending Documents' },
