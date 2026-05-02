@@ -115,9 +115,9 @@ export const LIFECYCLE_BADGE_STYLES = {
     border: '#f59e0b35',
   },
   'Ready for Services': {
-    color: '#3b82f6',
-    background: '#3b82f618',
-    border: '#3b82f630',
+    color: '#22c55e',
+    background: '#22c55e20',
+    border: '#22c55e35',
   },
   'Active Client': {
     color: '#22c55e',

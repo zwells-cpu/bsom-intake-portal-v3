@@ -1,4 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
+import {
+  ClipboardCheck,
+  Eye,
+  FileText,
+  NotebookText,
+  PhoneCall,
+  ShieldCheck,
+  UserRound,
+  X,
+} from 'lucide-react'
 import { ConfirmationModal } from './ConfirmationModal'
 import { OFFICES } from '../lib/constants'
 import { cleanLookupValue, includeCurrentOption, normalizeOptions, optionValues } from '../lib/lookups'
@@ -7,14 +17,12 @@ import {
   AUTHORIZATION_STATUSES,
   PARENT_INTERVIEW_STATUSES,
   TREATMENT_PLAN_STATUSES,
-  formatDate,
   getAssessmentLifecycleStatus,
   isAssessmentActiveClient,
   normalizeAuthorizationStatus,
   normalizeAssessmentComponentStatus,
   normalizeParentInterviewStatus,
   normalizeTreatmentPlanStatus,
-  statusColor,
 } from '../lib/utils'
 
 function asBoolString(value) {
@@ -27,35 +35,38 @@ function displayValue(value) {
   return value || '--'
 }
 
-function assessVal(value) {
-  const normalized = normalizeAssessmentComponentStatus(value)
-  if (!normalized) return <span style={{ color: 'var(--dim)', fontSize: 12 }}>--</span>
-  const color = statusColor(normalized)
-
-  return <span className="bdg" style={{ background: `${color}20`, color, border: `1px solid ${color}35` }}>{normalized}</span>
+function assessmentStatusTone(value) {
+  const normalized = String(value || '').toLowerCase()
+  if (normalized === 'yes' || normalized === 'true' || normalized.includes('ready for services') || normalized.includes('approved') || normalized.includes('active')) return 'confirmed'
+  if (normalized.includes('referred out') || normalized.includes('denied')) return 'needs-follow-up'
+  if (normalized.includes('assessment') || normalized.includes('pending') || normalized.includes('review') || normalized.includes('submitted') || normalized.includes('progress')) return 'awaiting'
+  return 'ready'
 }
 
-function DetailRow({ label, value }) {
+function AssessmentSection({ icon: Icon, title, children, className = '' }) {
   return (
-    <div className="info-row">
-      <span className="info-label">{label}</span>
-      <span className="info-val">{displayValue(value)}</span>
+    <section className={`client-record-section assessment-record-section ${className}`}>
+      <div className="client-record-section-head">
+        <span className="client-record-section-icon"><Icon size={17} strokeWidth={2.2} /></span>
+        <h3>{title}</h3>
+      </div>
+      {children}
+    </section>
+  )
+}
+
+function AssessmentField({ label, value, children, className = '' }) {
+  return (
+    <div className={`client-record-field assessment-record-field ${className}`}>
+      <div className="label">{label}</div>
+      {children || <div className="client-record-value">{displayValue(value)}</div>}
     </div>
   )
 }
 
-function BadgeDetailRow({ label, value }) {
+function TextField({ label, value, onChange, placeholder = '', className = '' }) {
   return (
-    <div className="info-row">
-      <span className="info-label">{label}</span>
-      <span className="info-val">{assessVal(value)}</span>
-    </div>
-  )
-}
-
-function TextField({ label, value, onChange, placeholder = '' }) {
-  return (
-    <div>
+    <div className={`client-record-field assessment-record-field ${className}`}>
       <div className="label">{label}</div>
       <input className="edit-input" value={value || ''} placeholder={placeholder} onChange={ev => onChange(ev.target.value)} />
     </div>
@@ -64,7 +75,7 @@ function TextField({ label, value, onChange, placeholder = '' }) {
 
 function SelectField({ label, value, onChange, options, placeholder = '-- Select --' }) {
   return (
-    <div>
+    <div className="client-record-field assessment-record-field">
       <div className="label">{label}</div>
       <select className="edit-select" value={value || ''} onChange={ev => onChange(ev.target.value)}>
         <option value="">{placeholder}</option>
@@ -76,13 +87,31 @@ function SelectField({ label, value, onChange, options, placeholder = '-- Select
 
 function DateField({ label, value, onChange }) {
   return (
-    <div>
+    <div className="client-record-field assessment-record-field">
       <div className="label">{label}</div>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <input className="edit-input" type="date" value={value || ''} onChange={ev => onChange(ev.target.value)} style={{ flex: 1 }} />
-        <button className="btn-ghost" type="button" onClick={() => onChange('')}>Clear</button>
+      <div className="assessment-record-date-control">
+        <input className="edit-input" type="date" value={value || ''} onChange={ev => onChange(ev.target.value)} />
+        <button className="btn-ghost assessment-record-clear-btn" type="button" onClick={() => onChange('')}>Clear</button>
       </div>
     </div>
+  )
+}
+
+function MetadataChip({ label, children }) {
+  return (
+    <span className="client-record-chip">
+      <span>{label}</span>
+      <strong>{children || '--'}</strong>
+    </span>
+  )
+}
+
+function StatusPill({ value, children, className = '' }) {
+  const display = children || displayValue(value)
+  return (
+    <span className={`verification-pill verification-pill-${assessmentStatusTone(display)} ${className}`}>
+      {display}
+    </span>
   )
 }
 
@@ -222,106 +251,92 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, o
 
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="modal" onClick={ev => ev.stopPropagation()} style={{ maxWidth: 1080 }}>
-        <div className="modal-head">
-          <div>
-            <div className="modal-title">{displayValue(form?.client_name)}</div>
-            <div className="modal-sub">Live assessment record editor</div>
+      <div className="modal client-record-modal assessment-record-modal" onClick={ev => ev.stopPropagation()}>
+        <div className="modal-head client-record-head assessment-record-head">
+          <div className="client-record-identity">
+            <div className="client-record-kicker">Initial Assessment Record</div>
+            <div className="modal-title client-record-title">{displayValue(form?.client_name)}</div>
+            <div className="client-record-meta">
+              <MetadataChip label="Clinic / Office">{displayValue(clinic)}</MetadataChip>
+              <MetadataChip label="Assigned BCBA">{displayValue(selectedBcbaValue)}</MetadataChip>
+              <MetadataChip label="Lifecycle Status"><StatusPill value={lifecycleStatus} /></MetadataChip>
+              <MetadataChip label="Ready for Services"><StatusPill>{form?.ready_for_services === true ? 'Yes' : 'No'}</StatusPill></MetadataChip>
+            </div>
           </div>
-          <button className="close-btn" onClick={onClose}>x</button>
+          <div className="modal-actions client-record-head-actions">
+            <div className="assessment-record-status-summary">
+              <span>Current State</span>
+              <StatusPill value={lifecycleStatus} />
+            </div>
+            <button className="close-btn" onClick={onClose} aria-label="Close assessment record">
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
-        <div className="modal-body assessment-modal-body">
-          <div>
-            <div className="section-hdr">Client Details</div>
-            <DetailRow label="Client Name" value={form?.client_name} />
-            <DetailRow label="Clinic" value={clinic} />
-            <DetailRow label="Assigned BCBA" value={form?.assigned_bcba} />
-            <DetailRow label="Caregiver" value={form?.caregiver} />
-            <DetailRow label="Caregiver Phone" value={form?.caregiver_phone} />
-            <DetailRow label="Caregiver Email" value={form?.caregiver_email} />
-
-            <div className="section-hdr" style={{ marginTop: 18 }}>Caregiver / Insurance</div>
-            <DetailRow label="Insurance" value={form?.insurance} />
-            <DetailRow label="Other Services" value={form?.other_services} />
-
-            <div className="section-hdr" style={{ marginTop: 18 }}>Assessment Components</div>
-            <BadgeDetailRow label="Vineland" value={form?.vineland} />
-            <BadgeDetailRow label="SRS-2" value={form?.srs2} />
-            <BadgeDetailRow label="VBMAPP" value={form?.vbmapp} />
-            <BadgeDetailRow label="Socially Savvy" value={form?.socially_savvy} />
-
-            <div className="section-hdr" style={{ marginTop: 18 }}>Parent Interview Workflow</div>
-            <DetailRow label="Assigned BCBA" value={form?.assigned_bcba} />
-            <BadgeDetailRow label="Parent Interview Status" value={normalizeParentInterviewStatus(form?.parent_interview_status)} />
-            <DetailRow label="Interview Scheduled" value={form?.parent_interview_scheduled_date} />
-            <DetailRow label="Interview Completed" value={form?.parent_interview_completed_date} />
-            <BadgeDetailRow label="Direct Observation Status" value={form?.direct_obs_status || form?.direct_obs} />
-            <DetailRow label="Direct Observation Scheduled" value={form?.direct_obs_scheduled_date} />
-            <DetailRow label="Direct Observation Completed" value={form?.direct_obs_completed_date} />
-
-            <div className="section-hdr" style={{ marginTop: 18 }}>Treatment Plan / Authorization</div>
-            <DetailRow label="Treatment Plan" value={normalizeTreatmentPlanStatus(form?.treatment_plan_status)} />
-            <DetailRow label="Authorization Status" value={form?.authorization_status} />
-            <DetailRow label="Auth Approved" value={formatDate(form?.authorization_approved_date)} />
-            <DetailRow label="Lifecycle Status" value={lifecycleStatus} />
-            <DetailRow label="Ready for Services" value={form?.ready_for_services === true ? 'Yes' : 'No'} />
-            <DetailRow label="Active Client Date" value={formatDate(form?.active_client_date)} />
-
-            <div style={{ marginTop: 14 }}>
-              <div className="label">Notes</div>
-              <div style={{ color: 'var(--muted)', fontSize: 13, minHeight: 20, whiteSpace: 'pre-wrap' }}>
-                {displayValue(form?.notes)}
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div className="section-hdr">Client Details</div>
-            <div className="responsive-review-grid" style={{ gap: 12 }}>
+        <div className="modal-body client-record-body assessment-record-body">
+          <AssessmentSection icon={UserRound} title="Client Details">
+            <div className="client-record-form-grid assessment-record-grid">
               <TextField label="Client Name" value={form?.client_name} onChange={setField('client_name')} />
               <SelectField label="Clinic" value={form?.clinic || form?.office || ''} onChange={setField('clinic')} options={officeOptions} />
-
               <SelectField label="Assigned BCBA" value={selectedBcbaValue} onChange={setField('assigned_bcba')} options={assignedBcbaOptions} placeholder="Select BCBA" />
+              <AssessmentField label="Lifecycle Status">
+                <StatusPill value={lifecycleStatus} />
+              </AssessmentField>
             </div>
+          </AssessmentSection>
 
-            <div className="section-hdr" style={{ marginTop: 18 }}>Caregiver / Insurance</div>
-            <div className="responsive-review-grid" style={{ gap: 12 }}>
+          <AssessmentSection icon={ShieldCheck} title="Caregiver / Insurance">
+            <div className="client-record-form-grid assessment-record-grid">
               <TextField label="Caregiver" value={form?.caregiver} onChange={setField('caregiver')} />
               <TextField label="Caregiver Phone" value={form?.caregiver_phone} onChange={setField('caregiver_phone')} />
               <TextField label="Caregiver Email" value={form?.caregiver_email} onChange={setField('caregiver_email')} />
               <TextField label="Insurance" value={form?.insurance} onChange={setField('insurance')} />
-              <TextField label="Other Services" value={form?.other_services} onChange={setField('other_services')} placeholder="ABA, OT, speech, etc." />
+              <TextField label="Other Services" value={form?.other_services} onChange={setField('other_services')} placeholder="ABA, OT, speech, etc." className="client-record-field-span" />
             </div>
+          </AssessmentSection>
 
-            <div className="section-hdr" style={{ marginTop: 18 }}>Assessment Components</div>
-            <div className="responsive-review-grid" style={{ gap: 12 }}>
+          <AssessmentSection icon={ClipboardCheck} title="Assessment Components" className="client-record-section-wide">
+            <div className="client-record-form-grid client-record-form-grid-three assessment-record-grid">
               <SelectField label="Vineland" value={normalizeAssessmentComponentStatus(form?.vineland)} onChange={setField('vineland')} options={ASSESSMENT_COMPONENT_STATUSES} />
               <SelectField label="SRS-2" value={normalizeAssessmentComponentStatus(form?.srs2)} onChange={setField('srs2')} options={ASSESSMENT_COMPONENT_STATUSES} />
               <SelectField label="VBMAPP" value={normalizeAssessmentComponentStatus(form?.vbmapp)} onChange={setField('vbmapp')} options={ASSESSMENT_COMPONENT_STATUSES} />
               <SelectField label="Socially Savvy" value={normalizeAssessmentComponentStatus(form?.socially_savvy)} onChange={setField('socially_savvy')} options={ASSESSMENT_COMPONENT_STATUSES} />
             </div>
+          </AssessmentSection>
 
-            <div className="section-hdr" style={{ marginTop: 18 }}>Parent Interview Workflow</div>
-            <div className="responsive-review-grid" style={{ gap: 12 }}>
-              <SelectField label="Assigned BCBA" value={selectedBcbaValue} onChange={setField('assigned_bcba')} options={assignedBcbaOptions} placeholder="Select BCBA" />
+          <AssessmentSection icon={PhoneCall} title="Parent Interview Workflow">
+            <div className="client-record-form-grid assessment-record-grid">
               <SelectField label="Parent Interview Status" value={normalizeParentInterviewStatus(form?.parent_interview_status)} onChange={setField('parent_interview_status')} options={PARENT_INTERVIEW_STATUSES} />
               <DateField label="Interview Scheduled" value={form?.parent_interview_scheduled_date} onChange={setField('parent_interview_scheduled_date')} />
               <DateField label="Interview Completed" value={form?.parent_interview_completed_date} onChange={setField('parent_interview_completed_date')} />
+            </div>
+          </AssessmentSection>
+
+          <AssessmentSection icon={Eye} title="Direct Observation Workflow">
+            <div className="client-record-form-grid assessment-record-grid">
               <SelectField label="Direct Observation Status" value={normalizeAssessmentComponentStatus(form?.direct_obs_status || form?.direct_obs)} onChange={setField('direct_obs_status')} options={ASSESSMENT_COMPONENT_STATUSES} />
               <DateField label="Direct Observation Scheduled" value={form?.direct_obs_scheduled_date} onChange={setField('direct_obs_scheduled_date')} />
               <DateField label="Direct Observation Completed" value={form?.direct_obs_completed_date} onChange={setField('direct_obs_completed_date')} />
             </div>
+          </AssessmentSection>
 
-            <div className="section-hdr" style={{ marginTop: 18 }}>Treatment Plan / Authorization</div>
-            <div className="responsive-review-grid" style={{ gap: 12 }}>
+          <AssessmentSection icon={FileText} title="Treatment Plan / Authorization" className="client-record-section-wide assessment-record-treatment">
+            <div className="assessment-record-handoff">
+              <div>
+                <span className="client-record-banner-label">Final Handoff State</span>
+                <strong>Ready for Services</strong>
+              </div>
+              <StatusPill className="assessment-record-ready-pill">{form?.ready_for_services === true ? 'Yes' : 'No'}</StatusPill>
+            </div>
+            <div className="client-record-form-grid client-record-form-grid-three assessment-record-grid">
               <SelectField label="Treatment Plan Status" value={normalizeTreatmentPlanStatus(form?.treatment_plan_status)} onChange={setField('treatment_plan_status')} options={TREATMENT_PLAN_STATUSES} />
               <DateField label="Treatment Plan Started" value={form?.treatment_plan_started_date} onChange={setField('treatment_plan_started_date')} />
               <DateField label="Treatment Plan Completed" value={form?.treatment_plan_completed_date} onChange={setField('treatment_plan_completed_date')} />
               <SelectField label="Authorization Status" value={normalizeAuthorizationStatus(form?.authorization_status)} onChange={setField('authorization_status')} options={AUTHORIZATION_STATUSES} />
               <DateField label="Auth Submitted" value={form?.authorization_submitted_date} onChange={setField('authorization_submitted_date')} />
               <DateField label="Auth Approved" value={form?.authorization_approved_date} onChange={setField('authorization_approved_date')} />
-              <div>
+              <div className="client-record-field assessment-record-field assessment-record-ready-field">
                 <div className="label">Ready for Services</div>
                 <select className="edit-select" value={asBoolString(form?.ready_for_services)} onChange={ev => setField('ready_for_services')(ev.target.value)}>
                   <option value="false">No</option>
@@ -330,43 +345,43 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, o
               </div>
               <DateField label="Active Client Date" value={form?.active_client_date} onChange={setField('active_client_date')} />
             </div>
+          </AssessmentSection>
 
-            <div style={{ marginTop: 14 }}>
+          <AssessmentSection icon={NotebookText} title="Notes" className="client-record-section-wide">
+            <div className="client-record-field assessment-record-field client-record-notes-field">
               <div className="label">Notes</div>
               <textarea
-                className="edit-input"
-                rows={4}
+                className="edit-input client-record-notes assessment-record-notes"
+                rows={8}
                 value={form?.notes || ''}
                 onChange={ev => setField('notes')(ev.target.value)}
-                style={{ resize: 'vertical' }}
               />
             </div>
-          </div>
+          </AssessmentSection>
         </div>
 
-        <div className="modal-foot">
-          <div />
-          <div className="modal-actions">
+        <div className="modal-foot client-record-foot assessment-record-foot">
+          <div className="assessment-record-foot-left">
             {canReopen && isActiveClient ? (
               <button
-                className="btn-ghost"
+                className="client-record-action client-record-action-success"
                 onClick={handleReopenIntake}
                 disabled={saving || deleting || !recordId}
-                style={{ color: '#22c55e', borderColor: '#22c55e40' }}
               >
                 Reopen Intake
               </button>
             ) : null}
             {lifecycleStatus !== 'Referred Out' && !isActiveClient ? (
               <button
-                className="btn-ghost"
+                className="client-record-action assessment-record-referred-action"
                 onClick={handleMarkReferredOut}
                 disabled={saving || deleting || !recordId}
-                style={{ color: '#8b5cf6', borderColor: '#8b5cf640' }}
               >
                 Mark Referred Out
               </button>
             ) : null}
+          </div>
+          <div className="modal-actions client-record-foot-actions">
             {!isActiveClient ? (
               <button
                 className="btn-danger"

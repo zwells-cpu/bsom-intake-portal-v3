@@ -1,0 +1,67 @@
+[2m9:09:58 PM[22m [31m[1m[vite][22m[39m [31mInternal server error: C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\src\pages\AssessmentPages.jsx: Expected corresponding JSX closing tag for <>. (466:6)
+
+[0m [90m 464 |[31m         [33m<[31m[33m/[31m[33msection[31m[33m>[31m
+ [90m 465 |[31m       )}
+[31m[1m>[22m[31m[90m 466 |[31m       [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+ [90m     |[31m       [31m[1m^[22m[31m
+ [90m 467 |[31m     [33m<[31m[33m/[31m[33m>[31m
+ [90m 468 |[31m   )
+ [90m 469 |[31m }[0m[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mC:/Users/zdom9/Desktop/Projects/bsom-intake-portal-v3/src/pages/AssessmentPages.jsx[39m:466:6
+[33m  464 |          </section>
+  465 |        )}
+  466 |        </div>
+      |        ^
+  467 |      </>
+  468 |    )[39m
+      at constructor (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:365:19)
+      at JSXParserMixin.raise (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:6599:19)
+      at JSXParserMixin.jsxParseElementAt (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:4720:14)
+      at JSXParserMixin.jsxParseElement (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:4749:17)
+      at JSXParserMixin.parseExprAtom (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:4759:19)
+      at JSXParserMixin.parseExprSubscripts (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:11081:23)
+      at JSXParserMixin.parseUpdate (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:11066:21)
+      at JSXParserMixin.parseMaybeUnary (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:11046:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:10899:61)
+      at JSXParserMixin.parseExprOps (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:10904:23)
+      at JSXParserMixin.parseMaybeConditional (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:10881:23)
+      at JSXParserMixin.parseMaybeAssign (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:10831:21)
+      at C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:10800:39
+      at JSXParserMixin.allowInAnd (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:12426:12)
+      at JSXParserMixin.parseMaybeAssignAllowIn (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:10800:17)
+      at JSXParserMixin.parseMaybeAssignAllowInOrVoidPattern (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:12493:17)
+      at JSXParserMixin.parseParenAndDistinguishExpression (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:11675:28)
+      at JSXParserMixin.parseExprAtom (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:11331:23)
+      at JSXParserMixin.parseExprAtom (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:4764:20)
+      at JSXParserMixin.parseExprSubscripts (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:11081:23)
+      at JSXParserMixin.parseUpdate (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:11066:21)
+      at JSXParserMixin.parseMaybeUnary (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:11046:23)
+      at JSXParserMixin.parseMaybeUnaryOrPrivate (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:10899:61)
+      at JSXParserMixin.parseExprOps (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:10904:23)
+      at JSXParserMixin.parseMaybeConditional (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:10881:23)
+      at JSXParserMixin.parseMaybeAssign (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:10831:21)
+      at JSXParserMixin.parseExpressionBase (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:10784:23)
+      at C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:10780:39
+      at JSXParserMixin.allowInAnd (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:12421:16)
+      at JSXParserMixin.parseExpression (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:10780:17)
+      at JSXParserMixin.parseReturnStatement (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:13142:28)
+      at JSXParserMixin.parseStatementContent (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:12798:21)
+      at JSXParserMixin.parseStatementLike (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:12767:17)
+      at JSXParserMixin.parseStatementListItem (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:12747:17)
+      at JSXParserMixin.parseBlockOrModuleBlockBody (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:13316:61)
+      at JSXParserMixin.parseBlockBody (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:13309:10)
+      at JSXParserMixin.parseBlock (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:13297:10)
+      at JSXParserMixin.parseFunctionBody (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:12100:24)
+      at JSXParserMixin.parseFunctionBodyAndFinish (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:12086:10)
+      at C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:13445:12
+      at JSXParserMixin.withSmartMixTopicForbiddingContext (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:12403:14)
+      at JSXParserMixin.parseFunction (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:13444:10)
+      at JSXParserMixin.parseFunctionStatement (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:13125:17)
+      at JSXParserMixin.parseStatementContent (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:12791:21)
+      at JSXParserMixin.parseStatementLike (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:12767:17)
+      at JSXParserMixin.parseStatementListItem (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:12747:17)
+      at JSXParserMixin.parseExportDeclaration (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:13934:17)
+      at JSXParserMixin.maybeParseExportDeclaration (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:13893:31)
+      at JSXParserMixin.parseExport (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:13812:29)
+      at JSXParserMixin.parseStatementContent (C:\Users\zdom9\Desktop\Projects\bsom-intake-portal-v3\node_modules\@babel\parser\lib\index.js:12878:27)

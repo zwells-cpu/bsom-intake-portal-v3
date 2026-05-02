@@ -1,5 +1,36 @@
 import { getAssessmentLifecycleStatus, getAssessmentWorkflowStatus, getAuthorizationStatus, getInsuranceVerificationStatus, getReferralStage, isAssessmentActiveClient, isAuthorizationApproved, normalizeAutismDx, normalizeParentInterviewStatus, normalizeTreatmentPlanStatus } from './utils'
 
+function assessmentParentComplete(record) {
+  return normalizeParentInterviewStatus(record?.parent_interview_status) === 'Completed'
+    || Boolean(record?.parent_interview_completed_date)
+}
+
+function assessmentParentScheduled(record) {
+  return assessmentParentComplete(record)
+    || normalizeParentInterviewStatus(record?.parent_interview_status) === 'Scheduled'
+    || Boolean(record?.parent_interview_scheduled_date)
+}
+
+function assessmentDirectObsComplete(record) {
+  const status = String(record?.direct_obs_status || record?.direct_obs || '').trim()
+  return status === 'Completed' || Boolean(record?.direct_obs_completed_date)
+}
+
+function assessmentDirectObsScheduled(record) {
+  const status = String(record?.direct_obs_status || record?.direct_obs || '').trim()
+  return assessmentDirectObsComplete(record)
+    || status === 'Scheduled'
+    || Boolean(record?.direct_obs_scheduled_date)
+}
+
+function assessmentReferenceDays(record) {
+  const rawDate = record?.date_received || record?.created_at || record?.assessment_created_at || record?.updated_at || record?.parent_interview_scheduled_date || record?.treatment_plan_started_date
+  if (!rawDate) return 0
+  const timestamp = new Date(rawDate).getTime()
+  if (Number.isNaN(timestamp)) return 0
+  return Math.floor((Date.now() - timestamp) / 86400000)
+}
+
 export function isStatFilterTarget(filter, target) {
   return filter?.target === target ? filter : null
 }
@@ -54,11 +85,19 @@ export function matchesStatFilter(record, filter) {
   if (target === 'assessment-tracker') {
     const pa = getAuthorizationStatus(record)
     const stage = getAssessmentWorkflowStatus(record)
+    const parentStatus = normalizeParentInterviewStatus(record.parent_interview_status)
     if (key === 'pa-approved') return pa === 'Approved'
     if (key === 'partially-approved') return pa === 'Partially Approved'
     if (key === 'in-progress') return stage === 'In Progress'
     if (key === 'denied-appealed') return ['Denied', 'Appeal Pending'].includes(pa)
     if (key === 'awaiting-pa') return ['Pending Submission', 'Submitted / In Review'].includes(pa)
+    if (key === 'ready-interview') return assessmentParentScheduled(record) && !assessmentParentComplete(record)
+    if (key === 'parent-follow-up') return !assessmentParentComplete(record) && (!assessmentParentScheduled(record) || ['No Show', 'Not Started', 'Awaiting Assignment'].includes(parentStatus))
+    if (key === 'direct-observation') return assessmentParentScheduled(record) && !assessmentDirectObsScheduled(record)
+    if (key === 'bcba-review') return stage === 'Completed' && ['', 'Not Started'].includes(normalizeTreatmentPlanStatus(record.treatment_plan_status)) && getAssessmentLifecycleStatus(record) !== 'Referred Out'
+    if (key === 'stalled') return assessmentReferenceDays(record) > 14 && stage !== 'Completed' && getAssessmentLifecycleStatus(record) !== 'Referred Out' && !isAssessmentActiveClient(record)
+    if (key === 'missing-documents') return !record.vineland || !record.srs2 || !record.vbmapp || !record.socially_savvy
+    if (key === 'waiting-bcba') return Boolean(record.assigned_bcba) && stage === 'Completed' && ['', 'Not Started'].includes(normalizeTreatmentPlanStatus(record.treatment_plan_status))
     return true
   }
 

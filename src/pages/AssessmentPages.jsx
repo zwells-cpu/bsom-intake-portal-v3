@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react'
-import { FilePlus2 } from 'lucide-react'
+import {
+  AlertCircle,
+  ArrowRight,
+  CalendarCheck,
+  ClipboardCheck,
+  ClockAlert,
+  Eye,
+  FilePlus2,
+  PhoneCall,
+} from 'lucide-react'
 import { PaStatusBadge } from '../components/Badge'
 import { NotifyModal } from '../components/NotifyModal'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
@@ -111,6 +120,89 @@ function lifecycleBadge(status) {
   return <span className="bdg" style={{ background: style.background, color: style.color, border: `1px solid ${style.border}` }}>{status}</span>
 }
 
+function isParentInterviewComplete(record) {
+  return normalizeParentInterviewStatus(record?.parent_interview_status) === 'Completed'
+    || Boolean(record?.parent_interview_completed_date)
+}
+
+function isParentInterviewScheduled(record) {
+  return isParentInterviewComplete(record)
+    || normalizeParentInterviewStatus(record?.parent_interview_status) === 'Scheduled'
+    || Boolean(record?.parent_interview_scheduled_date)
+}
+
+function isDirectObservationComplete(record) {
+  return normalizeAssessmentComponentStatus(record?.direct_obs_status || record?.direct_obs) === 'Completed'
+    || Boolean(record?.direct_obs_completed_date)
+}
+
+function isDirectObservationScheduled(record) {
+  return isDirectObservationComplete(record)
+    || normalizeAssessmentComponentStatus(record?.direct_obs_status || record?.direct_obs) === 'Scheduled'
+    || Boolean(record?.direct_obs_scheduled_date)
+}
+
+function getAssessmentReferenceDate(record) {
+  return record?.date_received
+    || record?.created_at
+    || record?.assessment_created_at
+    || record?.updated_at
+    || record?.parent_interview_scheduled_date
+    || record?.treatment_plan_started_date
+    || null
+}
+
+function getDaysSinceAssessmentReference(record) {
+  const rawDate = getAssessmentReferenceDate(record)
+  if (!rawDate) return 0
+  const timestamp = new Date(rawDate).getTime()
+  if (Number.isNaN(timestamp)) return 0
+  return Math.floor((Date.now() - timestamp) / 86400000)
+}
+
+function isAssessmentStalled(record) {
+  return getDaysSinceAssessmentReference(record) > 14
+    && getAssessmentWorkflowStatus(record) !== 'Completed'
+    && getAssessmentLifecycleStatus(record) !== 'Referred Out'
+    && !isAssessmentActiveClient(record)
+}
+
+function needsParentFollowUp(record) {
+  const status = normalizeParentInterviewStatus(record?.parent_interview_status)
+  return !isParentInterviewComplete(record)
+    && (!isParentInterviewScheduled(record) || ['No Show', 'Not Started', 'Awaiting Assignment'].includes(status))
+}
+
+function needsDirectObservation(record) {
+  return isParentInterviewScheduled(record) && !isDirectObservationScheduled(record)
+}
+
+function isReadyForBcbaReview(record) {
+  return getAssessmentWorkflowStatus(record) === 'Completed'
+    && ['Not Started', ''].includes(normalizeTreatmentPlanStatus(record?.treatment_plan_status))
+    && getAssessmentLifecycleStatus(record) !== 'Referred Out'
+}
+
+function isMissingAssessmentDocuments(record) {
+  return !record?.vineland || !record?.srs2 || !record?.vbmapp || !record?.socially_savvy
+}
+
+function getNextBlocker(record) {
+  if (!isParentInterviewScheduled(record)) return 'Parent interview needed'
+  if (!isDirectObservationScheduled(record)) return 'Direct observation needed'
+  if (getAssessmentWorkflowStatus(record) !== 'Completed') return 'Assessment completion needed'
+  if (['Not Started', ''].includes(normalizeTreatmentPlanStatus(record?.treatment_plan_status))) return 'Ready for BCBA review'
+  if (!['Submitted / In Review', 'Approved', 'Partially Approved', 'No PA Needed', 'Approved/Discharged', 'Approved / Discharged'].includes(getAuthorizationStatus(record))) return 'Authorization needed'
+  return 'No blocker'
+}
+
+function blockerTone(label) {
+  if (label === 'No blocker') return 'green'
+  if (label === 'Ready for BCBA review') return 'blue'
+  if (label === 'Authorization needed') return 'yellow'
+  return 'orange'
+}
+
 function getAssessmentPageFilter(statFilter, onSetStatFilter, target) {
   const activeFilter = isStatFilterTarget(statFilter, target)
   const toggleFilter = (key, label) => onSetStatFilter(toggleStatFilter(activeFilter, { target, key, label }))
@@ -148,24 +240,93 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, o
   })
 
   const approved = filtered.filter(record => record.authorization_status === 'Approved').length
-  const partiallyApproved = filtered.filter(record => record.authorization_status === 'Partially Approved').length
-  const inProgress = filtered.filter(record => getAssessmentWorkflowStatus(record) === 'In Progress').length
-  const denied = filtered.filter(record => ['Denied', 'Appeal Pending'].includes(record.authorization_status)).length
+  const readyInterview = filtered.filter(record => isParentInterviewScheduled(record) && !isParentInterviewComplete(record))
+  const parentFollowUp = filtered.filter(needsParentFollowUp)
+  const directObservationNeeded = filtered.filter(needsDirectObservation)
+  const readyForBcbaReview = filtered.filter(isReadyForBcbaReview)
+  const stalledAssessments = filtered.filter(isAssessmentStalled)
+  const waitingOnBcba = filtered.filter(record => Boolean(record.assigned_bcba) && isReadyForBcbaReview(record))
+  const missingDocuments = filtered.filter(isMissingAssessmentDocuments)
+  const completedRows = filtered.filter(record => getAssessmentWorkflowStatus(record) === 'Completed').slice(0, 6)
+  const actionBuckets = [
+    {
+      key: 'ready-interview',
+      label: 'Ready for Interview',
+      helper: 'Parent interview is scheduled and ready to complete.',
+      count: readyInterview.length,
+      color: '#22c55e',
+      Icon: CalendarCheck,
+    },
+    {
+      key: 'parent-follow-up',
+      label: 'Parent Follow-Up Needed',
+      helper: 'Needs scheduling, outreach, or parent response.',
+      count: parentFollowUp.length,
+      color: '#f59e0b',
+      Icon: PhoneCall,
+    },
+    {
+      key: 'direct-observation',
+      label: 'Direct Observation Needed',
+      helper: 'Parent step is moving, direct observation is next.',
+      count: directObservationNeeded.length,
+      color: '#fb923c',
+      Icon: Eye,
+    },
+    {
+      key: 'bcba-review',
+      label: 'Ready for BCBA Review',
+      helper: 'Assessment work is complete and ready for plan review.',
+      count: readyForBcbaReview.length,
+      color: '#6366f1',
+      Icon: ClipboardCheck,
+    },
+    {
+      key: 'stalled',
+      label: 'Stalled Over 14 Days',
+      helper: 'Older assessment records that need intervention.',
+      count: stalledAssessments.length,
+      color: '#ef4444',
+      Icon: ClockAlert,
+    },
+  ]
+  const bottlenecks = [
+    { key: 'parent-follow-up', label: 'Waiting on Parent', count: parentFollowUp.length, tone: 'yellow' },
+    { key: 'waiting-bcba', label: 'Waiting on BCBA', count: waitingOnBcba.length, tone: 'blue' },
+    { key: 'missing-documents', label: 'Missing Documents', count: missingDocuments.length, tone: 'orange' },
+    { key: 'stalled', label: 'Stalled Assessments', count: stalledAssessments.length, tone: 'red' },
+    { key: 'bcba-review', label: 'Ready for Review', count: readyForBcbaReview.length, tone: 'green' },
+  ]
+
   return (
     <>
       <div className="pg-hdr assessment-board-header">
-        <div className="pg-hdr-title">Initial Assessment Board</div>
+        <div>
+          <div className="pg-hdr-title">Initial Assessment Board</div>
+          <div className="pg-hdr-sub">Track clinical assessment movement, blockers, and readiness for BCBA review.</div>
+        </div>
         <button type="button" className="btn-save assessment-board-new-btn" onClick={onNewAssessment}>
           <FilePlus2 size={16} />
           New Initial Assessment
         </button>
       </div>
-      <div className="stats-row assessment-kpi-row">
-        <ClickableStatCard value={filtered.length} label="Total Clients" color="#6366f1" sublabel="showing" active={activeFilter?.key === 'all'} onClick={() => toggleFilter('all', 'Assessment Tracker: All Clients')} />
-        <ClickableStatCard value={approved} label="PA Approved" color="#22c55e" sublabel="full approval" active={activeFilter?.key === 'pa-approved'} onClick={() => toggleFilter('pa-approved', 'Assessment Tracker: PA Approved')} />
-        <ClickableStatCard value={partiallyApproved} label="Partially Approved" color="#0891b2" active={activeFilter?.key === 'partially-approved'} onClick={() => toggleFilter('partially-approved', 'Assessment Tracker: Partially Approved')} />
-        <ClickableStatCard value={inProgress} label="In Progress" color="#f59e0b" active={activeFilter?.key === 'in-progress'} onClick={() => toggleFilter('in-progress', 'Assessment Tracker: In Progress')} />
-        <ClickableStatCard value={denied} label="Denied / Appealed" color="#ef4444" active={activeFilter?.key === 'denied-appealed'} onClick={() => toggleFilter('denied-appealed', 'Assessment Tracker: Denied / Appealed')} />
+      <div className="assessment-command-grid">
+        {actionBuckets.map(({ key, label, helper, count, color, Icon }) => (
+          <button
+            key={key}
+            type="button"
+            className={`assessment-action-bucket ${activeFilter?.key === key ? 'is-active' : ''}`}
+            style={{ '--bucket-color': color }}
+            onClick={() => toggleFilter(key, `Assessment Tracker: ${label}`)}
+          >
+            <span className="assessment-action-icon"><Icon size={20} /></span>
+            <span className="assessment-action-copy">
+              <span className="assessment-action-count">{count}</span>
+              <span className="assessment-action-label">{label}</span>
+              <span className="assessment-action-helper">{helper}</span>
+            </span>
+          </button>
+        ))}
       </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered assessment records" />
 
@@ -191,37 +352,117 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, o
         </div>
       </div>
 
-      <div className="card">
-        <SyncedHorizontalScrollTable>
-          <table>
-            <thead><tr><th>Client</th><th>Clinic</th><th>Insurance</th><th>Vineland</th><th>SRS-2</th><th>Parent Interview</th><th>Direct Obs.</th><th>In School</th><th>Other Services</th><th>Status</th><th>PA Status</th></tr></thead>
-            <tbody>
-              {filtered.length === 0
-                ? <tr><td colSpan={11} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No clients match your filters.</td></tr>
-                : filtered.map(record => (
-                  <tr
-                    key={record.assessment_id || record.client_name}
-                    className="row-hover"
-                    onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
-                    style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
-                  >
-                    <td>{renderClientCell(record, record.caregiver)}</td>
-                    <td><span className="office-pill">{record.clinic || '--'}</span></td>
-                    <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.insurance || '--'}</td>
-                    <td>{assessVal(record.vineland)}</td>
-                    <td>{assessVal(record.srs2)}</td>
-                    <td>{sBdg(normalizeParentInterviewStatus(record.parent_interview_status))}</td>
-                    <td>{assessVal(record.direct_obs)}</td>
-                    <td>{simpleValueBadge(record.in_school)}</td>
-                    <td style={{ fontSize: 11, color: record.other_services ? 'var(--muted)' : 'var(--dim)', maxWidth: 140 }}>{record.other_services || '--'}</td>
-                    <td>{lifecycleBadge(getAssessmentLifecycleStatus(record))}</td>
-                    <td><PaStatusBadge status={record.authorization_status} /></td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </SyncedHorizontalScrollTable>
+      <div className="assessment-command-layout">
+        <section className="assessment-work-queue">
+          <div className="work-queue-header">
+            <div>
+              <div className="work-queue-eyebrow">Clinical Workflow</div>
+              <div className="work-queue-title">Assessment Work Queue</div>
+              <div className="work-queue-subtitle">{filtered.length} clients in the current view. {approved} authorization approvals recorded.</div>
+            </div>
+          </div>
+          <div className="work-queue-card assessment-work-queue-card">
+            <SyncedHorizontalScrollTable>
+              <table className="work-queue-table assessment-work-table">
+                <thead><tr><th>Client</th><th>Clinic</th><th>Assigned BCBA</th><th>Parent Interview</th><th>Direct Observation</th><th>Assessment Status</th><th>Next Blocker</th><th>Next Step</th></tr></thead>
+                <tbody>
+                  {filtered.length === 0
+                    ? <tr><td colSpan={8} className="assessment-empty-row">No clients match your filters.</td></tr>
+                    : filtered.map(record => {
+                      const canOpen = Boolean(getAssessmentRecordId(record))
+                      const blocker = getNextBlocker(record)
+                      return (
+                        <tr
+                          key={record.assessment_id || record.client_name}
+                          className={canOpen ? 'row-hover' : ''}
+                          onClick={() => canOpen && onSelectAssess(record)}
+                          style={{ cursor: canOpen ? 'pointer' : 'default' }}
+                        >
+                          <td>
+                            <div className="work-queue-client-name">{record.client_name || '--'}</div>
+                            <div className="work-queue-client-date">{record.caregiver || 'Caregiver not listed'}</div>
+                          </td>
+                          <td><span className="office-pill">{record.clinic || '--'}</span></td>
+                          <td><span className="assessment-bcba-cell">{record.assigned_bcba || 'Unassigned'}</span></td>
+                          <td>{sBdg(normalizeParentInterviewStatus(record.parent_interview_status))}</td>
+                          <td>{assessVal(record.direct_obs_status || record.direct_obs)}</td>
+                          <td>{lifecycleBadge(getAssessmentLifecycleStatus(record))}</td>
+                          <td><span className={`assessment-blocker-pill assessment-blocker-${blockerTone(blocker)}`}>{blocker}</span></td>
+                          <td>
+                            {canOpen ? (
+                              <button
+                                type="button"
+                                className="work-queue-action assessment-open-action"
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  onSelectAssess(record)
+                                }}
+                              >
+                                Open Client <ArrowRight size={14} />
+                              </button>
+                            ) : '--'}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                </tbody>
+              </table>
+            </SyncedHorizontalScrollTable>
+          </div>
+        </section>
+
+        <aside className="assessment-bottlenecks-panel">
+          <div className="assessment-side-head">
+            <div>
+              <div className="work-queue-eyebrow">Operational Focus</div>
+              <div className="assessment-side-title">Clinical Bottlenecks</div>
+            </div>
+            <span className="assessment-side-icon"><AlertCircle size={18} /></span>
+          </div>
+          <div className="assessment-bottleneck-list">
+            {bottlenecks.map(item => (
+              <button
+                key={item.key}
+                type="button"
+                className={`assessment-bottleneck-row assessment-bottleneck-${item.tone} ${activeFilter?.key === item.key ? 'is-active' : ''}`}
+                onClick={() => toggleFilter(item.key, `Assessment Tracker: ${item.label}`)}
+              >
+                <span>{item.label}</span>
+                <strong>{item.count}</strong>
+                <small>Review</small>
+              </button>
+            ))}
+          </div>
+        </aside>
       </div>
+
+      {completedRows.length > 0 && (
+        <section className="assessment-completed-section">
+          <div className="work-queue-header">
+            <div>
+              <div className="work-queue-eyebrow">Recently Completed</div>
+              <div className="work-queue-title">Completed Assessment Movement</div>
+              <div className="work-queue-subtitle">Secondary view of completed assessment records in the current filter.</div>
+            </div>
+          </div>
+          <div className="assessment-completed-list">
+            {completedRows.map(record => (
+              <button
+                key={record.assessment_id || record.client_name}
+                type="button"
+                className="assessment-completed-row"
+                onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
+              >
+                <span>
+                  <strong>{record.client_name || '--'}</strong>
+                  <small>{record.clinic || '--'} / {record.assigned_bcba || 'Unassigned'}</small>
+                </span>
+                {lifecycleBadge(getAssessmentLifecycleStatus(record))}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
     </>
   )
 }
@@ -960,7 +1201,7 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
         <div className="pg-hdr-sub">Clients who have completed all pre-service requirements</div>
       </div>
       <div className="stats-row" style={{ marginBottom: 22, gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))' }}>
-        <ClickableStatCard value={ready.length} label="Ready for Services" color="#3b82f6" active={activeFilter?.key === 'ready'} onClick={() => toggleFilter('ready', 'Ready for Services')} />
+        <ClickableStatCard value={ready.length} label="Ready for Services" color="#22c55e" active={activeFilter?.key === 'ready'} onClick={() => toggleFilter('ready', 'Ready for Services')} />
         <ClickableStatCard value={almostAuth.length} label="Awaiting Authorization" color="#f59e0b" active={activeFilter?.key === 'awaiting-authorization'} onClick={() => toggleFilter('awaiting-authorization', 'Ready for Services: Awaiting Authorization')} />
         <ClickableStatCard value={notReady.length} label="Not Ready" color="#ef4444" active={activeFilter?.key === 'not-ready'} onClick={() => toggleFilter('not-ready', 'Ready for Services: Not Ready')} />
         <ClickableStatCard value={activeClients.length} label="Active Clients" color="#22c55e" active={activeFilter?.key === 'active-clients'} onClick={() => toggleFilter('active-clients', 'Ready for Services: Active Clients')} />
@@ -1000,7 +1241,7 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
 
       {readyRows.length > 0 && (
         <>
-          <div style={{ marginBottom: 14, fontSize: 13, fontWeight: 700, color: '#3b82f6' }}>Ready for Services ({readyRows.length})</div>
+          <div style={{ marginBottom: 14, fontSize: 13, fontWeight: 700, color: '#22c55e' }}>Ready for Services ({readyRows.length})</div>
           <div className="card" style={{ marginBottom: 20 }}>
             <div className="table-wrap">
               <table>
@@ -1014,7 +1255,7 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
                       style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
                     >
                       <td>
-                        <div style={{ fontWeight: 700, color: '#3b82f6' }}>{record.client_name}</div>
+                        <div style={{ fontWeight: 700, color: '#22c55e' }}>{record.client_name}</div>
                         <div style={{ fontSize: 11, color: 'var(--dim)' }}>{record.clinic || ''}</div>
                       </td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>

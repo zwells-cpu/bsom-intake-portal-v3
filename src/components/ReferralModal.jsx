@@ -1,4 +1,14 @@
 import { useMemo, useState, useEffect } from 'react'
+import {
+  ClipboardCheck,
+  FileText,
+  NotebookText,
+  PhoneCall,
+  ShieldCheck,
+  UploadCloud,
+  UserRound,
+  X,
+} from 'lucide-react'
 import { Badge, OfficePill, ProgressRing, StagePill } from './Badge'
 import { ConfirmationModal } from './ConfirmationModal'
 import { INSURANCE_PAYERS, REFERRAL_SOURCES, BOOL, STAFF, OFFICES, CHECKLIST_FIELDS } from '../lib/constants'
@@ -23,6 +33,43 @@ function formatFileSize(size) {
   if (size < 1024) return `${size} B`
   if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`
   return `${(size / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function verificationTone(value) {
+  if (value === 'YES' || value === 'Confirmed') return 'confirmed'
+  if (value === 'NO' || value === 'Follow-Up Needed') return 'needs-follow-up'
+  if (value === 'AWAITING' || value === 'Awaiting Response') return 'awaiting'
+  return 'ready'
+}
+
+function SectionCard({ icon: Icon, title, children, className = '' }) {
+  return (
+    <section className={`client-record-section ${className}`}>
+      <div className="client-record-section-head">
+        <span className="client-record-section-icon"><Icon size={17} strokeWidth={2.2} /></span>
+        <h3>{title}</h3>
+      </div>
+      {children}
+    </section>
+  )
+}
+
+function DetailField({ label, value, children, className = '' }) {
+  return (
+    <div className={`client-record-field ${className}`}>
+      <div className="label">{label}</div>
+      {children || <div className="client-record-value">{value || '--'}</div>}
+    </div>
+  )
+}
+
+function MetadataChip({ label, children }) {
+  return (
+    <span className="client-record-chip">
+      <span>{label}</span>
+      <strong>{children || '--'}</strong>
+    </span>
+  )
 }
 
 function getEditableReferralPatch(record = {}) {
@@ -77,6 +124,13 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
   const originalPatch = useMemo(() => getEditableReferralPatch(referral), [referral])
   const currentPatch = useMemo(() => getEditableReferralPatch(form), [form])
   const hasUnsavedChanges = editMode && JSON.stringify(currentPatch) !== JSON.stringify(originalPatch)
+  const verificationStatusValue = editMode
+    ? (e.insurance_verification_status ?? e.insurance_verified ?? '')
+    : getInsuranceVerificationLabel(r)
+  const verificationStatusLabel = editMode
+    ? formatInsuranceVerificationOption(verificationStatusValue)
+    : getInsuranceVerificationLabel(r)
+  const verificationStatusTone = verificationTone(verificationStatusValue)
 
   const field = (key) => (val) => setForm(f => ({ ...f, [key]: val }))
 
@@ -171,31 +225,23 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
       return (
         <button onClick={() => handleStatusChange('active')}
           disabled={saving}
-          style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #22c55e40', background: '#22c55e15', color: '#22c55e', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+          className="client-record-action client-record-action-success">
           Restore Active
         </button>
       )
     }
     return (
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div className="client-record-foot-left">
         <button className="btn-ghost" onClick={() => handleStatusChange('non-responsive')}
-          disabled={saving}
-          style={{ color: '#ef4444', borderColor: '#ef444440', fontSize: 12 }}>
+          disabled={saving}>
           Non-Responsive
         </button>
         <button className="btn-ghost" onClick={() => handleStatusChange('referred-out')}
-          disabled={saving}
-          style={{ color: '#8b5cf6', borderColor: '#8b5cf640', fontSize: 12 }}>
+          disabled={saving}>
           Referred Out
         </button>
         <button onClick={() => onToggleParentInterview(r.id, !r.ready_for_parent_interview)}
-          style={{
-            padding: '7px 13px', borderRadius: 8,
-            border: `1px solid ${r.ready_for_parent_interview ? '#22c55e40' : '#1a2840'}`,
-            background: r.ready_for_parent_interview ? '#22c55e15' : 'transparent',
-            color: r.ready_for_parent_interview ? '#22c55e' : 'var(--dim)',
-            fontSize: 12, fontWeight: 600, cursor: 'pointer',
-          }}>
+          className={`client-record-action ${r.ready_for_parent_interview ? 'client-record-action-success' : ''}`}>
           {r.ready_for_parent_interview ? 'Ready for Interview' : 'Mark Ready for Interview'}
         </button>
       </div>
@@ -204,16 +250,25 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
 
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="modal" onClick={ev => ev.stopPropagation()}>
-        <div className="modal-head">
-          <div>
-            <div className="modal-title">{r.first_name} {r.last_name}</div>
-            <div className="modal-sub">
-              DOB: {formatDisplayDate(r.dob)} | Received: {formatDisplayDate(r.date_received)} | <OfficePill office={r.office} />
+      <div className="modal client-record-modal" onClick={ev => ev.stopPropagation()}>
+        <div className="modal-head client-record-head">
+          <div className="client-record-identity">
+            <div className="client-record-kicker">Referral Client Record</div>
+            <div className="modal-title client-record-title">{r.first_name} {r.last_name}</div>
+            <div className="client-record-meta">
+              <MetadataChip label="DOB">{formatDisplayDate(r.dob)}</MetadataChip>
+              <MetadataChip label="Date Received">{formatDisplayDate(r.date_received)}</MetadataChip>
+              <MetadataChip label="Office"><OfficePill office={r.office} /></MetadataChip>
+              <MetadataChip label="Stage"><StagePill stage={intakeStage} /></MetadataChip>
             </div>
           </div>
-          <div className="modal-actions">
-            <ProgressRing value={pct(r)} />
+          <div className="modal-actions client-record-head-actions">
+            <div className="client-record-progress-stack" aria-label={`Referral completion ${pct(r)} percent`}>
+              <div className="client-record-progress">
+                <ProgressRing value={pct(r)} />
+              </div>
+              <span>Complete</span>
+            </div>
             <button className={`btn-edit ${editMode ? 'editing' : ''}`}
               onClick={() => { if (!editMode) { setForm({
                 ...r,
@@ -223,196 +278,230 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
               }); setEditMode(true) } else handleCancelEdit() }}>
               {editMode ? 'Editing' : 'Edit Record'}
             </button>
-            <button className="close-btn" onClick={onClose}>x</button>
+            <button className="close-btn" onClick={onClose} aria-label="Close referral record">
+              <X size={18} />
+            </button>
           </div>
         </div>
 
-        <div className="modal-body">
-          {/* Left column */}
-          <div>
-            <div className="section-hdr">Caregiver</div>
+        <div className="modal-body client-record-body">
+          <SectionCard icon={UserRound} title="Caregiver Information">
             {editMode ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-                {[['caregiver', 'Full Name'], ['caregiver_phone', '601-000-0000'], ['caregiver_email', 'email@example.com']].map(([k, ph]) => (
-                  <div key={k}>
-                    <div className="label">{k.replace('caregiver_', '').replace('_', ' ')}</div>
+              <div className="client-record-form-grid">
+                {[['caregiver', 'Full Name', 'Full Name'], ['caregiver_phone', 'Phone', '601-000-0000'], ['caregiver_email', 'Email', 'email@example.com']].map(([k, label, ph]) => (
+                  <DetailField key={k} label={label}>
                     <input className="edit-input" value={e[k] || ''} onChange={ev => field(k)(ev.target.value)} placeholder={ph} />
-                  </div>
+                  </DetailField>
                 ))}
               </div>
             ) : (
-              [['Name', r.caregiver], ['Phone', r.caregiver_phone], ['Email', r.caregiver_email]].map(([l, v]) => (
-                <div key={l} style={{ marginBottom: 12 }}>
-                  <div className="label">{l}</div>
-                  <div style={{ color: 'var(--text)', fontSize: 14 }}>{v || '--'}</div>
-                </div>
-              ))
+              <div className="client-record-form-grid">
+                {['Name', 'Phone', 'Email'].map((label, index) => (
+                  <DetailField key={label} label={label} value={[r.caregiver, r.caregiver_phone, r.caregiver_email][index]} />
+                ))}
+              </div>
             )}
+          </SectionCard>
 
-            <div className="section-hdr" style={{ marginTop: 4 }}>Insurance</div>
+          <SectionCard icon={ShieldCheck} title="Insurance Details" className="client-record-section-wide client-record-insurance">
+            <div className="client-record-verification-banner">
+              <div>
+                <span className="client-record-banner-label">Verification Status</span>
+                <strong>{verificationStatusLabel}</strong>
+              </div>
+              <span className={`verification-pill verification-pill-${verificationStatusTone}`}>
+                {verificationStatusLabel}
+              </span>
+            </div>
             {editMode ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 4 }}>
-                <div className="info-row"><span className="info-label">Member ID</span>
+              <div className="client-record-insurance-grid">
+                <DetailField label="Member ID">
                   <input className="edit-input" value={e.insurance_member_id || ''} onChange={ev => field('insurance_member_id')(ev.target.value)} />
-                </div>
-                <div className="info-row"><span className="info-label">Client Address</span>
-                  <textarea className="edit-input" rows={2} value={e.client_address || ''} onChange={ev => field('client_address')(ev.target.value)} style={{ resize: 'vertical' }} />
-                </div>
-                <div className="info-row"><span className="info-label">Primary Insurance</span>
+                </DetailField>
+                <DetailField label="Client Address">
+                  <textarea className="edit-input" rows={3} value={e.client_address || ''} onChange={ev => field('client_address')(ev.target.value)} />
+                </DetailField>
+                <DetailField label="Primary Insurance">
                   <select className="edit-select" value={e.insurance || ''} onChange={ev => field('insurance')(ev.target.value)}>
                     {insuranceOptions.map(i => <option key={i}>{i}</option>)}
                   </select>
-                </div>
-                <div className="info-row"><span className="info-label">Secondary Insurance</span>
+                </DetailField>
+                <DetailField label="Secondary Insurance">
                   <select className="edit-select" value={e.secondary_insurance || ''} onChange={ev => field('secondary_insurance')(ev.target.value)}>
                     {secondaryInsuranceOptions.map(i => <option key={i}>{i}</option>)}
                   </select>
-                </div>
-                <div className="info-row"><span className="info-label">Verification Status</span>
+                </DetailField>
+                <DetailField label="Insurance Verification Status">
                   <select className="edit-select" value={e.insurance_verification_status ?? e.insurance_verified ?? ''} onChange={ev => field('insurance_verification_status')(ev.target.value)}>
                     {INSURANCE_VERIFICATION_STATUS_OPTIONS.map(status => <option key={status || 'ready'} value={status}>{formatInsuranceVerificationOption(status)}</option>)}
                   </select>
-                </div>
-                <div className="info-row"><span className="info-label">Last Verified Date</span>
+                  <span className={`verification-pill verification-pill-${verificationStatusTone}`}>
+                    {formatInsuranceVerificationOption(e.insurance_verification_status ?? e.insurance_verified ?? '')}
+                  </span>
+                </DetailField>
+                <DetailField label="Last Verified Date">
                   <input className="edit-input" type="date" value={e.insurance_last_verified_date || ''} onChange={ev => field('insurance_last_verified_date')(ev.target.value)} />
-                </div>
-                <div>
-                  <div className="label">Verification Notes</div>
-                  <textarea className="edit-input" rows={3} value={e.insurance_verification_notes || ''} onChange={ev => field('insurance_verification_notes')(ev.target.value)} style={{ resize: 'vertical' }} />
-                </div>
+                </DetailField>
+                <DetailField label="Verification Notes" className="client-record-field-span">
+                  <textarea className="edit-input" rows={4} value={e.insurance_verification_notes || ''} onChange={ev => field('insurance_verification_notes')(ev.target.value)} />
+                </DetailField>
               </div>
             ) : (
-              <>
-                <div className="info-row"><span className="info-label">Member ID</span><span className="info-val">{r.insurance_member_id || '--'}</span></div>
-                <div className="info-row"><span className="info-label">Client Address</span><span className="info-val">{r.client_address || '--'}</span></div>
-                <div className="info-row"><span className="info-label">Primary Insurance</span><span className="info-val">{formatInsurance(r.insurance) || '--'}</span></div>
-                <div className="info-row"><span className="info-label">Secondary Insurance</span><span className="info-val">{formatInsurance(r.secondary_insurance) || '--'}</span></div>
-                <div className="info-row"><span className="info-label">Verification Status</span><Badge value={getInsuranceVerificationLabel(r)} /></div>
-                <div className="info-row"><span className="info-label">Last Verified Date</span><span className="info-val">{formatDisplayDate(r.insurance_last_verified_date)}</span></div>
-                <div className="info-row"><span className="info-label">Verification Notes</span><span className="info-val">{r.insurance_verification_notes || '--'}</span></div>
-              </>
+              <div className="client-record-insurance-grid">
+                <DetailField label="Member ID" value={r.insurance_member_id} />
+                <DetailField label="Client Address" value={r.client_address} />
+                <DetailField label="Primary Insurance" value={formatInsurance(r.insurance)} />
+                <DetailField label="Secondary Insurance" value={formatInsurance(r.secondary_insurance)} />
+                <DetailField label="Insurance Verification Status">
+                  <span className={`verification-pill verification-pill-${verificationStatusTone}`}>
+                    {verificationStatusLabel}
+                  </span>
+                </DetailField>
+                <DetailField label="Last Verified Date" value={formatDisplayDate(r.insurance_last_verified_date)} />
+                <DetailField label="Verification Notes" value={r.insurance_verification_notes} className="client-record-field-span" />
+              </div>
             )}
+          </SectionCard>
 
-            <div className="section-hdr" style={{ marginTop: 16 }}>Contact Log</div>
+          <SectionCard icon={PhoneCall} title="Contact Log">
             {['contact1', 'contact2', 'contact3'].map((k, i) => (
-              <div className="info-row" key={k}>
+              <div className="client-record-list-row" key={k}>
                 <span className="info-label">{i + 1}{['st', 'nd', 'rd'][i]} Contact</span>
                 {editMode
-                  ? <input className="edit-input" type="date" value={e[k] || ''} onChange={ev => field(k)(ev.target.value)} style={{ width: 160 }} />
+                  ? <input className="edit-input client-record-compact-control" type="date" value={e[k] || ''} onChange={ev => field(k)(ev.target.value)} />
                   : <span className={r[k] ? 'contact-val' : 'info-val'}>{r[k] ? formatDisplayDate(r[k]) : '--'}</span>}
               </div>
             ))}
+          </SectionCard>
 
-            {editMode && (
-              <>
-                <div style={{ marginTop: 12 }}>
-                  <div className="label">Date Received</div>
-                  <input className="edit-input" type="date" value={e.date_received || ''} onChange={ev => field('date_received')(ev.target.value)} />
-                </div>
-                <div style={{ marginTop: 10 }}>
-                  <div className="label">Office</div>
-                  <select className="edit-select" value={e.office || ''} onChange={ev => field('office')(ev.target.value)}>
-                    {officeOptions.map(o => <option key={o}>{o}</option>)}
-                  </select>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Right column */}
-          <div>
-            <div className="section-hdr">Intake Checklist</div>
-            <div className="info-row">
-              <span className="info-label">Current Intake Stage</span>
-              <StagePill stage={intakeStage} />
-            </div>
-            {CHECKLIST_FIELDS.map(([label, key, opts]) => (
-              <div className="info-row" key={key}>
-                <span className="info-label">{label}</span>
-                {editMode
-                  ? <select className="edit-select" value={e[key] || ''} onChange={ev => field(key)(ev.target.value)} style={{ width: 160 }}>
-                    {opts.map(o => <option key={o}>{o}</option>)}
-                    </select>
-                  : <Badge value={key === 'autism_diagnosis' ? normalizeAutismDx(r[key]) : normalizeReferralFieldValue(key, r[key])} />}
+          <SectionCard icon={ClipboardCheck} title="Intake Checklist">
+            <div className="client-record-checklist">
+              <div className="client-record-list-row client-record-stage-row">
+                <span className="info-label">Current Intake Stage</span>
+                <StagePill stage={intakeStage} />
               </div>
-            ))}
+              {CHECKLIST_FIELDS.map(([label, key, opts]) => (
+                <div className="client-record-check-row" key={key}>
+                  <span className="info-label">{label}</span>
+                  {editMode
+                    ? <select className="edit-select" value={e[key] || ''} onChange={ev => field(key)(ev.target.value)}>
+                      {opts.map(o => <option key={o}>{o}</option>)}
+                      </select>
+                    : <Badge value={key === 'autism_diagnosis' ? normalizeAutismDx(r[key]) : normalizeReferralFieldValue(key, r[key])} />}
+                </div>
+              ))}
+            </div>
+          </SectionCard>
 
-            <div style={{ marginTop: 14 }}>
-              <div className="label">Referral Source</div>
-              {editMode
-                ? <select className="edit-select" value={e.referral_source || ''} onChange={ev => field('referral_source')(ev.target.value)}>
+          <SectionCard icon={NotebookText} title="Referral Details / Notes" className="client-record-section-wide">
+            <div className="client-record-form-grid client-record-form-grid-three">
+              <DetailField label="Date Received">
+                {editMode
+                  ? <input className="edit-input" type="date" value={e.date_received || ''} onChange={ev => field('date_received')(ev.target.value)} />
+                  : <div className="client-record-value">{formatDisplayDate(r.date_received)}</div>}
+              </DetailField>
+              <DetailField label="Office">
+                {editMode
+                  ? <select className="edit-select" value={e.office || ''} onChange={ev => field('office')(ev.target.value)}>
+                      {officeOptions.map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  : <OfficePill office={r.office} />}
+              </DetailField>
+              <DetailField label="Intake Personnel">
+                {editMode
+                  ? <select className="edit-select" value={e.intake_personnel || ''} onChange={ev => field('intake_personnel')(ev.target.value)}>
+                      {STAFF.map(s => <option key={s}>{s}</option>)}
+                    </select>
+                  : <div className="client-record-value">{r.intake_personnel || '--'}</div>}
+              </DetailField>
+              <DetailField label="Referral Source">
+                {editMode
+                  ? <select className="edit-select" value={e.referral_source || ''} onChange={ev => field('referral_source')(ev.target.value)}>
                     <option value="">-- Select --</option>
                     {referralSourceOptions.map(option => <option key={option}>{option}</option>)}
                   </select>
-                : <div style={{ color: 'var(--text)', fontWeight: 700, fontSize: 15, marginTop: 4 }}>{r.referral_source || '--'}</div>}
+                  : <div className="client-record-value">{r.referral_source || '--'}</div>}
+              </DetailField>
+              <DetailField label="Referral Source Phone">
+                {editMode
+                  ? <input className="edit-input" value={e.referral_source_phone || ''} onChange={ev => field('referral_source_phone')(ev.target.value)} />
+                  : <div className="client-record-value">{r.referral_source_phone || '--'}</div>}
+              </DetailField>
+              <DetailField label="Referral Source Fax">
+                {editMode
+                  ? <input className="edit-input" value={e.referral_source_fax || ''} onChange={ev => field('referral_source_fax')(ev.target.value)} />
+                  : <div className="client-record-value">{r.referral_source_fax || '--'}</div>}
+              </DetailField>
+              <DetailField label="Provider NPI">
+                {editMode
+                  ? <input className="edit-input" value={e.provider_npi || ''} onChange={ev => field('provider_npi')(ev.target.value)} />
+                  : <div className="client-record-value">{r.provider_npi || '--'}</div>}
+              </DetailField>
+              <DetailField label="Point of Contact">
+                {editMode
+                  ? <input className="edit-input" value={e.point_of_contact || ''} onChange={ev => field('point_of_contact')(ev.target.value)} />
+                  : <div className="client-record-value">{r.point_of_contact || '--'}</div>}
+              </DetailField>
+              <DetailField label="Reason for Referral" className="client-record-field-span">
+                {editMode
+                  ? <textarea className="edit-input" rows={3} value={e.reason_for_referral || ''} onChange={ev => field('reason_for_referral')(ev.target.value)} />
+                  : <div className="client-record-value">{r.reason_for_referral || '--'}</div>}
+              </DetailField>
             </div>
-
-            <div style={{ marginTop: 14 }}>
-              <div className="label">Intake Personnel</div>
+            <DetailField label="Notes" className="client-record-notes-field">
               {editMode
-                ? <select className="edit-select" value={e.intake_personnel || ''} onChange={ev => field('intake_personnel')(ev.target.value)}>
-                    {STAFF.map(s => <option key={s}>{s}</option>)}
-                  </select>
-                : <div style={{ color: 'var(--text)', fontWeight: 700, fontSize: 15, marginTop: 4 }}>{r.intake_personnel || '--'}</div>}
-            </div>
+                ? <textarea className="edit-input client-record-notes" rows={7} value={e.notes || ''} onChange={ev => field('notes')(ev.target.value)} />
+                : <div className="client-record-notes-read">{r.notes || '--'}</div>}
+            </DetailField>
+          </SectionCard>
 
-            {editMode ? (
-              <div style={{ marginTop: 14 }}>
-                <div className="label">Notes</div>
-                <textarea className="edit-input" rows={3} value={e.notes || ''} onChange={ev => field('notes')(ev.target.value)} style={{ resize: 'vertical' }} />
-              </div>
-            ) : r.notes ? (
-              <div style={{ marginTop: 12, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: 14 }}>
-                <div className="label" style={{ marginBottom: 6 }}>Notes</div>
-                <div style={{ color: 'var(--text)', fontSize: 13 }}>{r.notes}</div>
-              </div>
-            ) : null}
-
-            <div className="section-hdr" style={{ marginTop: 18 }}>Client Documents</div>
-            <div className="card card-pad" style={{ background: 'var(--bg)', border: '1px solid var(--border)', boxShadow: 'none' }}>
-
-              {/* Upload form - edit mode only */}
+          <SectionCard icon={FileText} title="Client Documents" className="client-record-section-wide">
+            <div className="client-doc-card">
               {editMode && (
-                <div style={{ display: 'grid', gap: 12, marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
-                  <div>
-                    <div className="label">Document Type</div>
+                <div className="client-doc-upload">
+                  <div className="client-doc-upload-head">
+                    <span>Upload Document</span>
+                    <small>Attach referral files to this client record.</small>
+                  </div>
+                  <DetailField label="Document Type">
                     <select className="edit-select" value={docType} onChange={ev => setDocType(ev.target.value)}>
                       {DOCUMENT_TYPE_OPTIONS.map(option => <option key={option}>{option}</option>)}
                     </select>
-                  </div>
+                  </DetailField>
 
-                  <div>
-                    <div className="label">File</div>
-                    <input
-                      className="edit-input"
-                      type="file"
-                      accept=".pdf,image/*"
-                      onChange={ev => {
-                        const nextFile = ev.target.files?.[0] || null
-                        setSelectedFile(nextFile)
-                        setUploadError(null)
-                        setUploadSuccess(null)
-                      }}
-                    />
-                    <div style={{ marginTop: 6, fontSize: 11, color: 'var(--dim)' }}>
-                      PDF and image files only | max 10 MB.
+                  <DetailField label="File">
+                    <div className="client-doc-file-input">
+                      <UploadCloud size={20} />
+                      <input
+                        type="file"
+                        accept=".pdf,image/*"
+                        onChange={ev => {
+                          const nextFile = ev.target.files?.[0] || null
+                          setSelectedFile(nextFile)
+                          setUploadError(null)
+                          setUploadSuccess(null)
+                        }}
+                      />
                     </div>
-                  </div>
+                    <div className="client-doc-helper">
+                      PDF and image files only. Max 10 MB.
+                    </div>
+                  </DetailField>
 
                   {selectedFile && (
-                    <div style={{ fontSize: 12, color: 'var(--text)', padding: '10px 12px', borderRadius: 10, background: 'var(--surface2)', border: '1px solid var(--border2)' }}>
+                    <div className="client-doc-selected">
                       {selectedFile.name} | {formatFileSize(selectedFile.size)}
                     </div>
                   )}
 
                   {uploadError && (
-                    <div className="error-bar" style={{ margin: 0 }}>
+                    <div className="error-bar client-doc-feedback">
                       {uploadError}
                     </div>
                   )}
 
                   {uploadSuccess && (
-                    <div style={{ borderRadius: 10, border: '1px solid #16a34a33', background: '#16a34a12', color: '#16a34a', padding: '10px 12px', fontSize: 12, fontWeight: 700 }}>
+                    <div className="client-doc-success">
                       {uploadSuccess}
                     </div>
                   )}
@@ -423,21 +512,21 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
                 </div>
               )}
 
-              {/* Document list - always visible */}
               {docsLoading && (
-                <div style={{ fontSize: 12, color: 'var(--dim)' }}>Loading documents...</div>
+                <div className="client-doc-empty">Loading documents...</div>
               )}
 
               {!docsLoading && docs.length > 0 && (
-                <div style={{ display: 'grid', gap: 6 }}>
+                <div className="client-doc-list">
                   {docs.map(doc => (
-                    <div key={doc.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)', fontSize: 12 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.file_name}</div>
-                        <div style={{ color: 'var(--muted)', marginTop: 2 }}>{doc.document_type} | {formatFileSize(doc.file_size)}</div>
+                    <div key={doc.id} className="client-doc-row">
+                      <FileText size={16} />
+                      <div className="client-doc-row-main">
+                        <div className="client-doc-name">{doc.file_name}</div>
+                        <div className="client-doc-meta">{doc.document_type} | {formatFileSize(doc.file_size)}</div>
                       </div>
                       {doc.created_at && (
-                        <div style={{ color: 'var(--dim)', whiteSpace: 'nowrap' }}>
+                        <div className="client-doc-date">
                           {new Date(doc.created_at).toLocaleDateString()}
                         </div>
                       )}
@@ -447,23 +536,23 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
               )}
 
               {!docsLoading && docs.length === 0 && (
-                <div style={{ fontSize: 12, color: 'var(--dim)' }}>
+                <div className="client-doc-empty">
                   {editMode ? 'No documents yet. Use the uploader above to attach files.' : 'No documents attached.'}
                 </div>
               )}
             </div>
-          </div>
+          </SectionCard>
         </div>
 
-        <div className="modal-foot">
+        <div className="modal-foot client-record-foot">
           <FootLeft />
-          <div className="modal-actions">
+          <div className="modal-actions client-record-foot-actions">
             {editMode ? (
               <>
                 <button className="btn-danger" onClick={handleDeleteRequest} disabled={saving}>
                   Delete
                 </button>
-                <div style={{ width: 1, background: 'var(--border)', alignSelf: 'stretch', margin: '0 4px' }} />
+                <div className="client-record-action-divider" />
                 <button className="btn-ghost" onClick={handleCancelEdit} disabled={saving}>Cancel</button>
                 <button className="btn-save" onClick={handleSave} disabled={saving}>
                   {saving ? 'Saving...' : 'Save Changes'}
