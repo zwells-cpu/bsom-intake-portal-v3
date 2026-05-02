@@ -347,10 +347,10 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, o
           <div className="work-queue-card assessment-work-queue-card">
             <SyncedHorizontalScrollTable>
               <table className="work-queue-table assessment-work-table">
-                <thead><tr><th>Client</th><th>Clinic</th><th>Assigned BCBA</th><th>Parent Interview</th><th>Direct Observation</th><th>Assessment Status</th><th>Next Blocker</th><th>Next Step</th></tr></thead>
+                <thead><tr><th>Client</th><th>Clinic</th><th>Assigned BCBA</th><th>Parent Interview</th><th>Direct Observation</th><th>Assessment Status</th><th>Next Blocker</th></tr></thead>
                 <tbody>
                   {filtered.length === 0
-                    ? <tr><td colSpan={8} className="assessment-empty-row">No clients match your filters.</td></tr>
+                    ? <tr><td colSpan={7} className="assessment-empty-row">No clients match your filters.</td></tr>
                     : filtered.map(record => {
                       const canOpen = Boolean(getAssessmentRecordId(record))
                       const blocker = getNextBlocker(record)
@@ -371,20 +371,6 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, o
                           <td>{assessVal(record.direct_obs_status || record.direct_obs)}</td>
                           <td>{lifecycleBadge(getAssessmentLifecycleStatus(record))}</td>
                           <td><span className={`assessment-blocker-pill assessment-blocker-${blockerTone(blocker)}`}>{blocker}</span></td>
-                          <td>
-                            {canOpen ? (
-                              <button
-                                type="button"
-                                className="work-queue-action assessment-open-action"
-                                onClick={(event) => {
-                                  event.stopPropagation()
-                                  onSelectAssess(record)
-                                }}
-                              >
-                                Open Client <ArrowRight size={14} />
-                              </button>
-                            ) : '--'}
-                          </td>
                         </tr>
                       )
                     })}
@@ -491,10 +477,10 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
         </div>
         <SyncedHorizontalScrollTable>
           <table className="work-queue-table">
-            <thead><tr><th>Client</th><th>Office</th><th>Assigned BCBA</th><th>Parent Interview</th><th>Scheduled Date</th><th>Completed Date</th><th>Direct Observation</th><th>Direct Obs. Date</th><th>Insurance</th><th>Next Step</th></tr></thead>
+            <thead><tr><th>Client</th><th>Office</th><th>Assigned BCBA</th><th>Parent Interview</th><th>Scheduled Date</th><th>Completed Date</th><th>Direct Observation</th><th>Direct Obs. Date</th><th>Insurance</th></tr></thead>
             <tbody>
               {filteredRows.length === 0
-                ? <tr><td colSpan={10} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No assessment records found.</td></tr>
+                ? <tr><td colSpan={9} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No assessment records found.</td></tr>
                 : filteredRows.map(record => {
                   const canOpen = Boolean(getAssessmentRecordId(record))
                   const directObsStatus = record.direct_obs_status || record.direct_obs || ''
@@ -532,20 +518,6 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
                       <td>{assessVal(directObsStatus)}</td>
                       <td style={{ fontSize: 11, color: record.direct_obs_completed_date ? '#22c55e' : record.direct_obs_scheduled_date ? '#a5b4fc' : 'var(--dim)' }}>{formatDisplayDate(directObsDate)}</td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.insurance || '--'}</td>
-                      <td style={{ textAlign: 'right' }}>
-                        {canOpen ? (
-                          <button
-                            type="button"
-                            className="work-queue-action"
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              openAssessment(record)
-                            }}
-                          >
-                            Open Client <ChevronRight size={14} />
-                          </button>
-                        ) : '--'}
-                      </td>
                     </tr>
                   )
                 })}

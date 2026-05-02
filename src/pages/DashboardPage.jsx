@@ -59,17 +59,6 @@ export function DashboardPage({ refs, assessData = [], setSelectedId, openModule
       defaultPriority: 3,
       action: () => openModulePage('operations', 'aging', { target: 'referral-aging', key: 'aging-14-plus', label: 'Aging 14+ Days' }),
     }] : []),
-    {
-      label: 'Needs Follow-Up or Referred Out',
-      value: nr.length,
-      actionLabel: 'Close the loop with families',
-      cta: 'Review follow-ups',
-      tone: 'red',
-      icon: UserRoundX,
-      intakePriority: 3,
-      defaultPriority: 4,
-      action: () => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'all', label: 'Non-Responsive / Referred Out' }),
-    },
   ].map((item, index) => ({
     intakePriority: index + 1,
     defaultPriority: index + 1,
@@ -81,7 +70,6 @@ export function DashboardPage({ refs, assessData = [], setSelectedId, openModule
       <section className="priority-queue" aria-labelledby="priority-queue-title">
         <div className="priority-queue-header">
           <div>
-            <div className="priority-queue-eyebrow">Today</div>
             <h2 id="priority-queue-title" className="priority-queue-title">Today's Priority Queue</h2>
             <p className="priority-queue-subtitle">Start with the items most likely to move a family forward today.</p>
           </div>
@@ -118,7 +106,6 @@ export function DashboardPage({ refs, assessData = [], setSelectedId, openModule
         <section className="intake-work-queue">
           <div className="work-queue-header">
             <div>
-              <div className="work-queue-eyebrow">Operational Workspace</div>
               <div className="work-queue-title">Current Intake Work Queue</div>
               <div className="work-queue-subtitle">Active families intake staff may need to review next.</div>
             </div>

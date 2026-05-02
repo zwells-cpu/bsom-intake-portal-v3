@@ -267,13 +267,13 @@ export function AllReferralsPage({ refs, assessData = [], onSelectRef, statFilte
                 <Th col="intake_paperwork" label="Paperwork" />
                 <th style={{ cursor: 'default' }}>Next Blocker</th>
                 <Th col="intake_personnel" label="Personnel" />
-                <th style={{ cursor: 'default', textAlign: 'right' }}>Next Step</th>
+                <th style={{ cursor: 'default', textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={10} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>
+                  <td colSpan={9} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>
                     No referrals found.
                   </td>
                 </tr>
@@ -318,22 +318,14 @@ export function AllReferralsPage({ refs, assessData = [], onSelectRef, statFilte
                     </td>
                     <td className="work-queue-personnel">{r.intake_personnel || '--'}</td>
                     <td style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
-                        <button
-                          className="btn-action-primary"
-                          onClick={e => { e.stopPropagation(); onSelectRef(r.id) }}
-                        >
-                          Open
-                        </button>
-                        <button
-                          className="btn-action-secondary"
-                          onClick={e => { e.stopPropagation(); setNotifyReferral(r) }}
-                          title="Send notification"
-                        >
-                          <Bell size={12} />
-                          Notify
-                        </button>
-                      </div>
+                      <button
+                        className="btn-action-secondary"
+                        onClick={e => { e.stopPropagation(); setNotifyReferral(r) }}
+                        title="Send notification"
+                      >
+                        <Bell size={12} />
+                        Notify
+                      </button>
                     </td>
                   </tr>
                 )
