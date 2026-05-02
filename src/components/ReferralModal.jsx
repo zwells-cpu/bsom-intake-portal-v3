@@ -1,10 +1,12 @@
 import { useMemo, useState, useEffect } from 'react'
 import {
   ClipboardCheck,
+  Download,
   FileText,
   NotebookText,
   PhoneCall,
   ShieldCheck,
+  Trash2,
   UploadCloud,
   UserRound,
   X,
@@ -83,7 +85,7 @@ function getEditableReferralPatch(record = {}) {
   return patch
 }
 
-export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus, onToggleParentInterview, onUploadDocument, officeOptions: liveOfficeOptions = [], insuranceOptions: liveInsuranceOptions = [], referralSourceOptions: liveReferralSourceOptions = [] }) {
+export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus, onToggleParentInterview, onUploadDocument, onDeleteDocument, onDownloadDocument, officeOptions: liveOfficeOptions = [], insuranceOptions: liveInsuranceOptions = [], referralSourceOptions: liveReferralSourceOptions = [] }) {
   const [editMode, setEditMode] = useState(false)
   const [form, setForm] = useState({
     ...referral,
@@ -101,6 +103,11 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
   const [docs, setDocs] = useState([])
   const [docsLoading, setDocsLoading] = useState(false)
   const [docsKey, setDocsKey] = useState(0)
+  const [docDeleteTarget, setDocDeleteTarget] = useState(null)
+  const [deletingDocId, setDeletingDocId] = useState(null)
+  const [docDeleteError, setDocDeleteError] = useState(null)
+  const [docDownloadError, setDocDownloadError] = useState(null)
+  const [downloadingDocId, setDownloadingDocId] = useState(null)
 
   useEffect(() => {
     if (!referral?.id) return
@@ -209,6 +216,58 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
     }
 
     setUploading(false)
+  }
+
+  const handleDocumentDelete = async () => {
+    const doc = docDeleteTarget
+    setDocDeleteTarget(null)
+    if (!doc || !onDeleteDocument) return
+    setDeletingDocId(doc.id)
+    setDocDeleteError(null)
+    const res = await onDeleteDocument({ referral: r, doc })
+    if (res?.success) {
+      setDocsKey(k => k + 1)
+    } else {
+      setDocDeleteError(res?.error || 'Could not delete document. Please try again.')
+    }
+    setDeletingDocId(null)
+  }
+
+  const handleDocumentDownload = async (doc) => {
+    const signedUrl = doc?.signed_url
+    const fileName = doc?.file_name || doc?.filename || doc?.original_filename || 'document'
+
+    if (!signedUrl) {
+      setDocDownloadError('Download link is unavailable. Please try again in a moment.')
+      return
+    }
+
+    setDownloadingDocId(doc.id)
+    setDocDownloadError(null)
+
+    let objectUrl = null
+    try {
+      const res = await fetch(signedUrl)
+      if (!res.ok) throw new Error('Download failed.')
+
+      const blob = await res.blob()
+      objectUrl = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = objectUrl
+      anchor.download = fileName
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+
+      if (onDownloadDocument) {
+        await onDownloadDocument({ referral: r, doc: { ...doc, file_name: fileName } })
+      }
+    } catch {
+      setDocDownloadError('Could not download this document. Please try again.')
+    } finally {
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+      setDownloadingDocId(null)
+    }
   }
 
   const isNR = r.status === 'non-responsive' || r.status === 'referred-out'
@@ -512,26 +571,70 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
                 </div>
               )}
 
+              {docDeleteError && (
+                <div className="error-bar client-doc-feedback">{docDeleteError}</div>
+              )}
+
+              {docDownloadError && (
+                <div className="error-bar client-doc-feedback">{docDownloadError}</div>
+              )}
+
               {docsLoading && (
                 <div className="client-doc-empty">Loading documents...</div>
               )}
 
               {!docsLoading && docs.length > 0 && (
                 <div className="client-doc-list">
-                  {docs.map(doc => (
-                    <div key={doc.id} className="client-doc-row">
-                      <FileText size={16} />
-                      <div className="client-doc-row-main">
-                        <div className="client-doc-name">{doc.file_name}</div>
-                        <div className="client-doc-meta">{doc.document_type} | {formatFileSize(doc.file_size)}</div>
-                      </div>
-                      {doc.created_at && (
-                        <div className="client-doc-date">
-                          {new Date(doc.created_at).toLocaleDateString()}
+                  {docs.map(doc => {
+                    const viewUrl = doc.signed_url || doc.view_url
+                    return (
+                      <div key={doc.id} className="client-doc-tile">
+                        <div className="client-doc-tile-head">
+                          <span className="client-doc-file-icon">
+                            <FileText size={15} strokeWidth={2.2} />
+                          </span>
+                          <div className="client-doc-name">{doc.file_name || doc.original_filename}</div>
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        <div className="client-doc-type">{doc.document_type || 'Document'}</div>
+                        <div className="client-doc-meta">
+                          <span>{formatFileSize(doc.file_size)}</span>
+                          {doc.uploaded_by_name && <span>{doc.uploaded_by_name}</span>}
+                        </div>
+                        <div className="client-doc-actions">
+                          <div className="client-doc-primary-actions">
+                            {viewUrl && (
+                              <a
+                                href={viewUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-sm client-doc-view-btn"
+                              >
+                                View
+                              </a>
+                            )}
+                            <button
+                              type="button"
+                              className="btn-sm client-doc-download-btn"
+                              onClick={() => handleDocumentDownload(doc)}
+                              disabled={downloadingDocId === doc.id}
+                              aria-label="Download document"
+                            >
+                              <Download size={12} />
+                              {downloadingDocId === doc.id ? 'Saving' : 'Download'}
+                            </button>
+                          </div>
+                          <button
+                            className="client-doc-delete-btn"
+                            onClick={() => setDocDeleteTarget(doc)}
+                            disabled={deletingDocId === doc.id}
+                            aria-label="Delete document"
+                          >
+                            {deletingDocId === doc.id ? '...' : <Trash2 size={13} />}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
 
@@ -573,6 +676,16 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
         cancelLabel="Cancel"
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteConfirmOpen(false)}
+      />
+
+      <ConfirmationModal
+        isOpen={!!docDeleteTarget}
+        title="Delete Document"
+        message="Delete this uploaded document? This cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={handleDocumentDelete}
+        onCancel={() => setDocDeleteTarget(null)}
       />
     </div>
   )

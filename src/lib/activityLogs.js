@@ -84,6 +84,7 @@ const ACTION_LABELS = {
   referral_status_changed: 'Status Changed',
   documents_updated: 'Documents Updated',
   document_uploaded: 'Document Uploaded',
+  document_downloaded: 'Document Downloaded',
   contact_info_updated: 'Contact Info Updated',
   insurance_updated: 'Insurance Updated',
   insurance_verified: 'Insurance Verified',
@@ -231,6 +232,10 @@ function fallbackSummary(log) {
     case 'document_uploaded': {
       const type = log?.details_json?.document_type
       return type ? `Document uploaded: ${type}.` : 'Document uploaded.'
+    }
+    case 'document_downloaded': {
+      const fileName = log?.details_json?.file_name
+      return fileName ? `Document downloaded: ${fileName}.` : 'Document downloaded.'
     }
     case 'referral_created':
       return `${clientName} was added to the intake pipeline.`

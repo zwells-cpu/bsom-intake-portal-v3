@@ -19,7 +19,7 @@ import { NewAssessmentModal } from './components/NewAssessmentModal'
 import { NewReferralPage } from './pages/NewReferralPage'
 import { createActivityLog } from './lib/activityLogs'
 import { getAssessmentRecordId, isActiveReferralWork, isAssessmentActiveClient, isReferralTransitioned, needsInsuranceVerification } from './lib/utils'
-import { API_BASE } from './lib/api'
+import { API_BASE, parseApiError } from './lib/api'
 import { formatProfileAccessLabel, formatRoleLabel, isAdmin, normalizeProfile, canAccessOperations } from './lib/profileUtils'
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then(module => ({ default: module.DashboardPage })))
@@ -590,12 +590,7 @@ export default function App() {
         method: 'POST',
         body: formData,
       })
-      if (!res.ok) {
-        const text = await res.text()
-        let msg = text
-        try { msg = JSON.parse(text)?.error || text } catch {}
-        return { success: false, error: msg || 'Upload failed.' }
-      }
+      if (!res.ok) return { success: false, error: await parseApiError(res, 'Upload failed.') }
       const data = await res.json()
       await writeReferralActivity({
         action: 'document_uploaded',
@@ -607,6 +602,45 @@ export default function App() {
     } catch {
       return { success: false, error: 'Could not reach the server. Check your connection.' }
     }
+  }
+
+  const handleDeleteClientDocument = async ({ referral, doc }) => {
+    const referralId = referral?.id
+    const documentId = doc?.id
+    if (!referralId || !documentId) return { success: false, error: 'Missing referral or document ID.' }
+
+    try {
+      const res = await fetch(`${API_BASE}/referrals/${referralId}/documents/${documentId}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) return { success: false, error: await parseApiError(res, 'Delete failed.') }
+      await writeReferralActivity({
+        action: 'document_deleted',
+        record: referral,
+        description: `${formatReferralName(referral)} document deleted: ${doc.document_type || doc.file_name}.`,
+        details_json: { document_id: documentId, document_type: doc.document_type, file_name: doc.file_name },
+      })
+      return { success: true }
+    } catch {
+      return { success: false, error: 'Could not reach the server. Check your connection.' }
+    }
+  }
+
+  const handleDownloadClientDocument = async ({ referral, doc }) => {
+    if (!referral || !doc) return { success: false }
+
+    const fileName = doc.file_name || doc.filename || doc.original_filename || 'document'
+    await writeReferralActivity({
+      action: 'document_downloaded',
+      record: referral,
+      description: `${formatReferralName(referral)} document downloaded: ${fileName}.`,
+      details_json: {
+        document_id: doc.id || '',
+        document_type: doc.document_type || '',
+        file_name: fileName,
+      },
+    })
+    return { success: true }
   }
 
   const handleCreateReferral = async (form) => {
@@ -1447,6 +1481,8 @@ export default function App() {
           onClose={() => setSelId(null)}
           onSave={handleUpdateReferral}
           onUploadDocument={handleUploadClientDocument}
+          onDeleteDocument={handleDeleteClientDocument}
+          onDownloadDocument={handleDownloadClientDocument}
           officeOptions={officeOptions}
           insuranceOptions={insuranceOptions}
           referralSourceOptions={referralSourceOptions}
