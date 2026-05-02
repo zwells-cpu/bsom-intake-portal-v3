@@ -36,9 +36,7 @@ const AssessmentTracker = lazy(() => import('./pages/AssessmentPages').then(modu
 const ParentInterviewsPage = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.ParentInterviewsPage })))
 const BCBAAssignmentsPage = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.BCBAAssignmentsPage })))
 const AssessmentProgressPage = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.AssessmentProgressPage })))
-const TreatmentPlansPage = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.TreatmentPlansPage })))
 const ReadyForServicesPage = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.ReadyForServicesPage })))
-const ActiveClientsPage = lazy(() => import('./pages/AssessmentPages').then(module => ({ default: module.ActiveClientsPage })))
 const PipelineOverviewPage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.PipelineOverviewPage })))
 const ReferralAgingPage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.ReferralAgingPage })))
 const ClinicVolumePage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.ClinicVolumePage })))
@@ -1210,7 +1208,9 @@ export default function App() {
   const m = MODULES.find(x => x.id === module)
   const navItems = MODULE_NAV[module] || []
   const canViewActivityLog = profile?.role === 'admin'
-  const activeSubpage = module === 'dashboard' && subpage === 'activity' && !canViewActivityLog ? 'overview' : subpage
+  const assessmentSubpageFallbacks = { txplan: 'bcba', activeclients: 'readysvc' }
+  const normalizedSubpage = module === 'assessment' ? (assessmentSubpageFallbacks[subpage] || subpage) : subpage
+  const activeSubpage = module === 'dashboard' && normalizedSubpage === 'activity' && !canViewActivityLog ? 'overview' : normalizedSubpage
   const currentNavLabel = navItems.find(n => n.id === activeSubpage)?.label || ''
 
   const renderPage = () => {
@@ -1254,13 +1254,11 @@ export default function App() {
     }
 
     if (module === 'assessment') {
-      if (subpage === 'tracker') return <AssessmentTracker assessData={activeAssessmentQueueData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} onNewAssessment={() => setNewAssessmentOpen(true)} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'interviews') return <ParentInterviewsPage assessData={activeAssessmentQueueData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'bcba') return <BCBAAssignmentsPage assessData={activeAssessmentQueueData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} bcbaOptions={bcbaOptions} officeOptions={officeOptions} onRefreshLookups={reloadLookups} />
-      if (subpage === 'progress') return <AssessmentProgressPage assessData={activeAssessmentQueueData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'txplan') return <TreatmentPlansPage assessData={activeAssessmentQueueData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'readysvc') return <ReadyForServicesPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
-      if (subpage === 'activeclients') return <ActiveClientsPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} />
+      if (activeSubpage === 'tracker') return <AssessmentTracker assessData={activeAssessmentQueueData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} onNewAssessment={() => setNewAssessmentOpen(true)} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (activeSubpage === 'interviews') return <ParentInterviewsPage assessData={activeAssessmentQueueData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (activeSubpage === 'bcba') return <BCBAAssignmentsPage assessData={activeAssessmentQueueData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} bcbaOptions={bcbaOptions} officeOptions={officeOptions} onRefreshLookups={reloadLookups} />
+      if (activeSubpage === 'progress') return <AssessmentProgressPage assessData={activeAssessmentQueueData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
+      if (activeSubpage === 'readysvc') return <ReadyForServicesPage assessData={assessData} assessLoading={assessLoading} onSelectAssess={handleSelectAssessment} statFilter={routeFilter} onSetStatFilter={setRouteFilter} onClearStatFilter={() => setRouteFilter(null)} />
     }
 
     if (module === 'operations') {

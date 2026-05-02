@@ -3,12 +3,20 @@ import { Badge, OfficePill, ProgressRing, StagePill } from './Badge'
 import { ConfirmationModal } from './ConfirmationModal'
 import { INSURANCE_PAYERS, REFERRAL_SOURCES, BOOL, STAFF, OFFICES, CHECKLIST_FIELDS } from '../lib/constants'
 import { includeCurrentOption, normalizeOptions, optionValues } from '../lib/lookups'
-import { formatDisplayDate, getReferralStage, pct, formatInsurance, normalizeAutismDx, normalizeReferralFieldValue } from '../lib/utils'
+import { formatDisplayDate, getInsuranceVerificationLabel, getReferralStage, pct, formatInsurance, normalizeAutismDx, normalizeReferralFieldValue } from '../lib/utils'
 import { API_BASE } from '../lib/api'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 
 const DOCUMENT_TYPE_OPTIONS = ['Referral Form', 'Insurance Card', 'Diagnosis Report', 'Assessment Report', 'IEP/School Records', 'Consent Form', 'Other']
+const INSURANCE_VERIFICATION_STATUS_OPTIONS = ['', 'YES', 'NO', 'AWAITING']
+
+function formatInsuranceVerificationOption(value) {
+  if (value === 'YES') return 'Confirmed'
+  if (value === 'NO') return 'Follow-Up Needed'
+  if (value === 'AWAITING') return 'Awaiting Response'
+  return 'Ready to Verify'
+}
 
 function formatFileSize(size) {
   if (!size) return '--'
@@ -244,27 +252,44 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
             <div className="section-hdr" style={{ marginTop: 4 }}>Insurance</div>
             {editMode ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 4 }}>
-                <div className="info-row"><span className="info-label">Primary</span>
+                <div className="info-row"><span className="info-label">Member ID</span>
+                  <input className="edit-input" value={e.insurance_member_id || ''} onChange={ev => field('insurance_member_id')(ev.target.value)} />
+                </div>
+                <div className="info-row"><span className="info-label">Client Address</span>
+                  <textarea className="edit-input" rows={2} value={e.client_address || ''} onChange={ev => field('client_address')(ev.target.value)} style={{ resize: 'vertical' }} />
+                </div>
+                <div className="info-row"><span className="info-label">Primary Insurance</span>
                   <select className="edit-select" value={e.insurance || ''} onChange={ev => field('insurance')(ev.target.value)}>
                     {insuranceOptions.map(i => <option key={i}>{i}</option>)}
                   </select>
                 </div>
-                <div className="info-row"><span className="info-label">Secondary</span>
+                <div className="info-row"><span className="info-label">Secondary Insurance</span>
                   <select className="edit-select" value={e.secondary_insurance || ''} onChange={ev => field('secondary_insurance')(ev.target.value)}>
                     {secondaryInsuranceOptions.map(i => <option key={i}>{i}</option>)}
                   </select>
                 </div>
-                <div className="info-row"><span className="info-label">Verified</span>
-                  <select className="edit-select" value={e.insurance_verified || ''} onChange={ev => field('insurance_verified')(ev.target.value)}>
-                    {BOOL.map(b => <option key={b}>{b}</option>)}
+                <div className="info-row"><span className="info-label">Verification Status</span>
+                  <select className="edit-select" value={e.insurance_verification_status ?? e.insurance_verified ?? ''} onChange={ev => field('insurance_verification_status')(ev.target.value)}>
+                    {INSURANCE_VERIFICATION_STATUS_OPTIONS.map(status => <option key={status || 'ready'} value={status}>{formatInsuranceVerificationOption(status)}</option>)}
                   </select>
+                </div>
+                <div className="info-row"><span className="info-label">Last Verified Date</span>
+                  <input className="edit-input" type="date" value={e.insurance_last_verified_date || ''} onChange={ev => field('insurance_last_verified_date')(ev.target.value)} />
+                </div>
+                <div>
+                  <div className="label">Verification Notes</div>
+                  <textarea className="edit-input" rows={3} value={e.insurance_verification_notes || ''} onChange={ev => field('insurance_verification_notes')(ev.target.value)} style={{ resize: 'vertical' }} />
                 </div>
               </div>
             ) : (
               <>
-                <div className="info-row"><span className="info-label">Primary</span><span className="info-val">{formatInsurance(r.insurance) || '--'}</span></div>
-                <div className="info-row"><span className="info-label">Secondary</span><span className="info-val">{formatInsurance(r.secondary_insurance) || '--'}</span></div>
-                <div className="info-row"><span className="info-label">Verified</span><Badge value={r.insurance_verified} /></div>
+                <div className="info-row"><span className="info-label">Member ID</span><span className="info-val">{r.insurance_member_id || '--'}</span></div>
+                <div className="info-row"><span className="info-label">Client Address</span><span className="info-val">{r.client_address || '--'}</span></div>
+                <div className="info-row"><span className="info-label">Primary Insurance</span><span className="info-val">{formatInsurance(r.insurance) || '--'}</span></div>
+                <div className="info-row"><span className="info-label">Secondary Insurance</span><span className="info-val">{formatInsurance(r.secondary_insurance) || '--'}</span></div>
+                <div className="info-row"><span className="info-label">Verification Status</span><Badge value={getInsuranceVerificationLabel(r)} /></div>
+                <div className="info-row"><span className="info-label">Last Verified Date</span><span className="info-val">{formatDisplayDate(r.insurance_last_verified_date)}</span></div>
+                <div className="info-row"><span className="info-label">Verification Notes</span><span className="info-val">{r.insurance_verification_notes || '--'}</span></div>
               </>
             )}
 

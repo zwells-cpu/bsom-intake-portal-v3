@@ -95,9 +95,9 @@ export function PipelineOverviewPage({ refs, assessData = [], openModulePage }) 
 
       <div className="stats-row" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', marginBottom: 24 }}>
         <ClickableStatCard value={active.length} label="Active Referrals" color="#6366f1" icon={Users} onClick={() => openModulePage('intake', 'all', { target: 'all-referrals', key: 'active-referrals', label: 'Active Referrals' })} />
-        <ClickableStatCard value={activeClients} label="Active Clients" color="#22c55e" icon={UserCheck} sublabel="receiving services" onClick={() => openModulePage('assessment', 'activeclients')} />
+        <ClickableStatCard value={activeClients} label="Active Clients" color="#22c55e" icon={UserCheck} sublabel="receiving services" onClick={() => openModulePage('assessment', 'readysvc', { target: 'ready-for-services', key: 'active-clients', label: 'Ready for Services: Active Clients' })} />
         <ClickableStatCard value={awaitingPA} label="Awaiting PA" color="#f59e0b" icon={Clock} sublabel="submitted to insurance" onClick={() => openModulePage('assessment', 'tracker', { target: 'assessment-tracker', key: 'awaiting-pa', label: 'Assessment Tracker: Awaiting PA' })} />
-        <ClickableStatCard value={txInProgress} label="Treatment Plans In Progress" color="#a5b4fc" icon={FileText} sublabel="from assessments" onClick={() => openModulePage('assessment', 'txplan', { target: 'treatment-plans', key: 'In Progress', label: 'Treatment Plans: In Progress' })} />
+        <ClickableStatCard value={txInProgress} label="Treatment Plans In Progress" color="#a5b4fc" icon={FileText} sublabel="from assessments" onClick={() => openModulePage('assessment', 'bcba', { target: 'treatment-plans', key: 'In Progress', label: 'BCBA Waitlist: Treatment Plans In Progress' })} />
         <ClickableStatCard value={nr.length} label="Non-Responsive" color="#ef4444" icon={UserX} sublabel="or referred out" onClick={() => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'non-responsive-only', label: 'Non-Responsive' })} />
       </div>
 

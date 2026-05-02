@@ -1,4 +1,4 @@
-import { getAssessmentLifecycleStatus, getAssessmentWorkflowStatus, getAuthorizationStatus, getReferralStage, isAssessmentActiveClient, isAuthorizationApproved, normalizeAutismDx, normalizeParentInterviewStatus, normalizeTreatmentPlanStatus } from './utils'
+import { getAssessmentLifecycleStatus, getAssessmentWorkflowStatus, getAuthorizationStatus, getInsuranceVerificationStatus, getReferralStage, isAssessmentActiveClient, isAuthorizationApproved, normalizeAutismDx, normalizeParentInterviewStatus, normalizeTreatmentPlanStatus } from './utils'
 
 export function isStatFilterTarget(filter, target) {
   return filter?.target === target ? filter : null
@@ -36,12 +36,13 @@ export function matchesStatFilter(record, filter) {
   }
 
   if (target === 'insurance-verification') {
-    const status = (record.insurance_verified || '').toLowerCase()
-    if (key === 'verified') return status === 'yes'
-    if (key === 'awaiting') return status === 'awaiting'
-    if (key === 'not-started') return status === 'no'
+    const status = getInsuranceVerificationStatus(record)
+    if (key === 'verified' || key === 'confirmed') return status === 'YES'
+    if (key === 'awaiting') return status === 'AWAITING'
+    if (key === 'not-started' || key === 'follow-up-needed') return status === 'NO'
+    if (key === 'ready-to-verify') return !status
     if (key === 'total-active') return true
-    return status !== 'yes'
+    return status !== 'YES'
   }
 
   if (target === 'non-responsive') {

@@ -604,24 +604,27 @@ export function BCBAAssignmentsPage({
     if (key) staffNamesByKey[key] = cleanLookupValue(name)
   })
   const duplicateGroups = getDuplicateBcbaGroups(assessData)
-  const { activeFilter, toggleFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'bcba-assignments')
+  const bcbaFilter = isStatFilterTarget(statFilter, 'bcba-assignments')
+  const treatmentPlanFilter = isStatFilterTarget(statFilter, 'treatment-plans')
+  const activeFilter = bcbaFilter || treatmentPlanFilter
+  const toggleFilter = (key, label) => onSetStatFilter(toggleStatFilter(bcbaFilter, { target: 'bcba-assignments', key, label }))
   const filteredRows = assessData.filter(record => matchesStatFilter(record, activeFilter))
 
   assigned.forEach(record => {
-    const workflowStatus = getAssessmentWorkflowStatus(record)
+    const workflowStatus = normalizeTreatmentPlanStatus(record.treatment_plan_status)
     const key = getBcbaAssignmentKey(record.assigned_bcba)
     const displayName = staffNamesByKey[key] || getBcbaDisplayName(record.assigned_bcba)
     if (!byBCBA[key]) byBCBA[key] = { name: displayName, total: 0, completed: 0, inProgress: 0, notStarted: 0 }
     byBCBA[key].total += 1
-    if (workflowStatus === 'Completed') byBCBA[key].completed += 1
+    if (workflowStatus === 'Completed' || workflowStatus === 'Finalized') byBCBA[key].completed += 1
     else if (workflowStatus === 'In Progress') byBCBA[key].inProgress += 1
     else byBCBA[key].notStarted += 1
   })
 
   const unassignedStats = unassigned.reduce((stats, record) => {
-    const workflowStatus = getAssessmentWorkflowStatus(record)
+    const workflowStatus = normalizeTreatmentPlanStatus(record.treatment_plan_status)
     stats.total += 1
-    if (workflowStatus === 'Completed') stats.completed += 1
+    if (workflowStatus === 'Completed' || workflowStatus === 'Finalized') stats.completed += 1
     else if (workflowStatus === 'In Progress') stats.inProgress += 1
     else stats.notStarted += 1
     return stats
@@ -664,19 +667,19 @@ export function BCBAAssignmentsPage({
     <>
       <div className="pg-hdr" style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
         <div>
-          <div className="pg-hdr-title">BCBA Assignments</div>
-          <div className="pg-hdr-sub">Caseload distribution and assignment tracking across BCBAs</div>
+          <div className="pg-hdr-title">BCBA Waitlist</div>
+          <div className="pg-hdr-sub">Track assigned BCBAs, treatment plan progress, and authorization readiness.</div>
         </div>
         <button type="button" className="btn-ghost" onClick={() => setManageBcbasOpen(true)} style={{ fontSize: 12, padding: '8px 12px' }}>
           Manage BCBAs
         </button>
       </div>
       <div className="stats-row stats-3" style={{ marginBottom: 22 }}>
-        <ClickableStatCard value={assessData.length} label="Total Clients" color="#6366f1" active={activeFilter?.key === 'all'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('all', 'BCBA Assignments: All Clients') }} />
-        <ClickableStatCard value={unassigned.length} label="Unassigned" color="#ef4444" active={activeFilter?.key === 'unassigned'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('unassigned', 'BCBA Assignments: Unassigned') }} />
-        <ClickableStatCard value={Object.keys(byBCBA).length} label="Active BCBAs" color="#22c55e" active={activeFilter?.key === 'assigned'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('assigned', 'BCBA Assignments: Assigned to BCBA') }} />
+        <ClickableStatCard value={assessData.length} label="Total Clients" color="#6366f1" active={activeFilter?.key === 'all'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('all', 'BCBA Waitlist: All Clients') }} />
+        <ClickableStatCard value={unassigned.length} label="Unassigned" color="#ef4444" active={activeFilter?.key === 'unassigned'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('unassigned', 'BCBA Waitlist: Unassigned') }} />
+        <ClickableStatCard value={Object.keys(byBCBA).length} label="Active BCBAs" color="#22c55e" active={activeFilter?.key === 'assigned'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('assigned', 'BCBA Waitlist: Assigned to BCBA') }} />
       </div>
-      <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered BCBA assignments" />
+      <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered BCBA waitlist" />
 
       {duplicateGroups.length > 0 ? (
         <div className="card card-pad" style={{ marginBottom: 22, borderColor: '#f59e0b55' }}>
@@ -719,14 +722,14 @@ export function BCBAAssignmentsPage({
                 <span className="bdg" style={{ background: '#6366f120', color: '#a5b4fc', border: '1px solid #6366f130' }}>{stats.total} clients</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div className="info-row"><span className="info-label">Completed</span><span style={{ color: '#22c55e', fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{stats.completed}</span></div>
-                <div className="info-row"><span className="info-label">In Progress</span><span style={{ color: '#f59e0b', fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{stats.inProgress}</span></div>
-                <div className="info-row" style={{ border: 'none' }}><span className="info-label">Not Started</span><span style={{ color: '#ef4444', fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{stats.notStarted}</span></div>
+                <div className="info-row"><span className="info-label">Plan Completed</span><span style={{ color: '#22c55e', fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{stats.completed}</span></div>
+                <div className="info-row"><span className="info-label">Plan In Progress</span><span style={{ color: '#f59e0b', fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{stats.inProgress}</span></div>
+                <div className="info-row" style={{ border: 'none' }}><span className="info-label">Plan Not Started</span><span style={{ color: '#ef4444', fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{stats.notStarted}</span></div>
               </div>
               <div style={{ marginTop: 12, background: 'var(--surface2)', borderRadius: 4, height: 6 }}>
                 <div style={{ width: `${stats.total ? Math.round((stats.completed / stats.total) * 100) : 0}%`, height: 6, borderRadius: 4, background: '#22c55e', transition: 'width 0.5s' }} />
               </div>
-              <div style={{ fontSize: 10, color: 'var(--dim)', marginTop: 4, textAlign: 'right' }}>{stats.total ? Math.round((stats.completed / stats.total) * 100) : 0}% complete</div>
+              <div style={{ fontSize: 10, color: 'var(--dim)', marginTop: 4, textAlign: 'right' }}>{stats.total ? Math.round((stats.completed / stats.total) * 100) : 0}% plans complete</div>
             </div>
             )
           })}
@@ -751,10 +754,10 @@ export function BCBAAssignmentsPage({
       <div className="card">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Client</th><th>Office</th><th>Assigned BCBA</th><th>Assessment Progress</th><th>PA Status</th><th>Insurance</th><th /></tr></thead>
+            <thead><tr><th>Client</th><th>Office</th><th>Assigned BCBA</th><th>Treatment Plan Status</th><th>Authorization Status</th><th>Treatment Plan Started</th><th>Treatment Plan Completed</th><th /></tr></thead>
             <tbody>
               {tableRows.length === 0 ? (
-                <tr><td colSpan={7} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>{selectedBcbaKey ? 'No clients assigned to this BCBA yet.' : 'No assessment records match the current filter.'}</td></tr>
+                <tr><td colSpan={8} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>{selectedBcbaKey ? 'No clients assigned to this BCBA yet.' : 'No assessment records match the current filter.'}</td></tr>
               ) : tableRows.map(record => (
                 <tr
                   key={record.assessment_id || record.client_name}
@@ -763,11 +766,12 @@ export function BCBAAssignmentsPage({
                   style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
                 >
                   <td>{renderClientCell(record, record.caregiver)}</td>
-                  <td><span className="office-pill">{record.clinic || '--'}</span></td>
+                  <td><span className="office-pill">{record.clinic || record.office || '--'}</span></td>
                   <td style={{ fontSize: 12, color: 'var(--muted)' }}>{getBcbaDisplayName(record.assigned_bcba) || <span style={{ color: 'var(--dim)', fontStyle: 'italic' }}>Unassigned</span>}</td>
-                  <td>{sBdg(getAssessmentWorkflowStatus(record))}</td>
+                  <td>{sBdg(normalizeTreatmentPlanStatus(record.treatment_plan_status))}</td>
                   <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
-                  <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.insurance || '--'}</td>
+                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.treatment_plan_started_date ? 'var(--muted)' : 'var(--dim)' }}>{formatDisplayDate(record.treatment_plan_started_date)}</td>
+                  <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: record.treatment_plan_completed_date ? '#22c55e' : 'var(--dim)' }}>{formatDisplayDate(record.treatment_plan_completed_date)}</td>
                   <td style={{ color: 'var(--accent)' }}>→</td>
                 </tr>
               ))}

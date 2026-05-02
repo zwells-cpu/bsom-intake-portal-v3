@@ -1,24 +1,27 @@
-import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
+import { useState } from 'react'
+import { Badge, OfficePill } from '../components/Badge'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
-import { getReferralBoardStage, getReferralStage, isActiveReferralWork, isReferralTransitioned, pct, displayStaffName, formatDisplayDate, formatInsurance, normalizeAutismDx, normalizeOffice, normalizeStaffName } from '../lib/utils'
+import { getInsuranceVerificationLabel, getInsuranceVerificationStatus, getReferralStage, isActiveReferralWork, isReferralTransitioned, displayStaffName, formatDisplayDate, formatInsurance, normalizeAutismDx, normalizeStaffName } from '../lib/utils'
+import { AlertCircle, ArrowRight, CheckCircle, ChevronRight, Clock, FileSearch, FileText, FileWarning, ShieldCheck, UserRoundX, Users } from 'lucide-react'
 
 // ══════════════════════════════════════
 // INTAKE DASHBOARD
 // ══════════════════════════════════════
 export function IntakeDashboard({ refs, assessData = [], onSelectRef, openModulePage }) {
-  const active  = refs.filter(r => isActiveReferralWork(r, assessData))
-  const transitioned = refs.filter(r => r.status === 'active' && isReferralTransitioned(r, assessData))
-  const nr      = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
-  const pending = active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
-  const signed  = active.filter(r => (r.intake_paperwork || '').toLowerCase().includes('signed'))
-  const noIns   = active.filter(r => !['yes'].includes((r.insurance_verified || '').toLowerCase()))
-  const noDx    = active.filter(r => normalizeAutismDx(r.autism_diagnosis) !== 'Received')
-  const readyPI = transitioned
+  return <RedesignedIntakeDashboard refs={refs} assessData={assessData} onSelectRef={onSelectRef} openModulePage={openModulePage} />
+}
 
-  const byStage = {}
-  active.forEach(r => { const s = getReferralStage(r); byStage[s] = (byStage[s] || 0) + 1 })
-  const stageOrder = ['New Referral', 'Intake', 'Ready for Interview', 'Initial Assessment', 'PA Submitted', 'PA In Review', 'PA Approved', 'Active Client', 'Reauth Needed', 'Discharged']
+function RedesignedIntakeDashboard({ refs, assessData = [], onSelectRef, openModulePage }) {
+  const [queueFilter, setQueueFilter] = useState('all')
+  const active = refs.filter(r => isActiveReferralWork(r, assessData))
+  const transitioned = refs.filter(r => r.status === 'active' && isReferralTransitioned(r, assessData))
+  const nr = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
+  const pending = active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
+  const signed = active.filter(r => (r.intake_paperwork || '').toLowerCase().includes('signed'))
+  const noIns = active.filter(r => getInsuranceVerificationStatus(r) !== 'YES')
+  const noDx = active.filter(r => normalizeAutismDx(r.autism_diagnosis) !== 'Received')
+  const readyPI = transitioned
 
   const staffCounts = {}
   active.forEach(r => {
@@ -28,7 +31,64 @@ export function IntakeDashboard({ refs, assessData = [], onSelectRef, openModule
     staffCounts[staffKey].total += 1
     if (!['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase())) staffCounts[staffKey].pending += 1
   })
-  const staffList = Object.values(staffCounts)
+  const staffList = Object.values(staffCounts).sort((a, b) => b.total - a.total)
+  const maxStaffTotal = Math.max(...staffList.map(staff => staff.total), 1)
+
+  const getDaysInIntake = (referral) => {
+    const received = referral.referral_received_date || referral.date_received
+    if (!received) return null
+    const parsed = new Date(received)
+    if (Number.isNaN(parsed.getTime())) return null
+    return Math.max(Math.floor((Date.now() - parsed.getTime()) / 86400000), 0)
+  }
+
+  const getQueueMeta = (referral) => {
+    const paperworkMissing = !['signed', 'completed'].includes((referral.intake_paperwork || '').toLowerCase())
+    const insuranceNeeded = getInsuranceVerificationStatus(referral) !== 'YES'
+    const diagnosisNeeded = normalizeAutismDx(referral.autism_diagnosis) !== 'Received'
+    const days = getDaysInIntake(referral)
+    const aging = days !== null && days >= 14
+    const ready = getReferralStage(referral) === 'Ready for Interview'
+
+    if (paperworkMissing) return { reason: 'Missing Paperwork', tone: 'yellow', nextStep: 'Collect intake documents', priority: 1, filter: 'paperwork' }
+    if (insuranceNeeded) return { reason: 'Insurance Needed', tone: 'blue', nextStep: 'Verify coverage', priority: 2, filter: 'insurance' }
+    if (diagnosisNeeded) return { reason: 'Diagnosis Docs', tone: 'orange', nextStep: 'Request diagnosis docs', priority: 3, filter: 'diagnosis' }
+    if (ready) return { reason: 'Ready for Interview', tone: 'green', nextStep: 'Schedule interview', priority: 4, filter: 'ready' }
+    if (aging) return { reason: 'Aging 14+ Days', tone: 'red', nextStep: 'Escalate follow-up', priority: 5, filter: 'aging' }
+    return { reason: 'Intake In Progress', tone: 'slate', nextStep: 'Continue intake review', priority: 6, filter: 'all' }
+  }
+
+  const queueRows = active
+    .map(referral => ({ referral, days: getDaysInIntake(referral), meta: getQueueMeta(referral) }))
+    .filter(row => {
+      if (queueFilter === 'all') return true
+      if (queueFilter === 'paperwork') return row.meta.filter === 'paperwork'
+      if (queueFilter === 'insurance') return row.meta.filter === 'insurance'
+      if (queueFilter === 'ready') return row.meta.filter === 'ready'
+      if (queueFilter === 'aging') return row.days !== null && row.days >= 14
+      return true
+    })
+    .sort((a, b) => a.meta.priority - b.meta.priority || (b.days || 0) - (a.days || 0))
+    .slice(0, 10)
+
+  const recentRows = [...refs]
+    .sort((a, b) => new Date(b.date_received || b.referral_received_date || 0).getTime() - new Date(a.date_received || a.referral_received_date || 0).getTime())
+    .slice(0, 8)
+
+  const kpis = [
+    { value: active.length, label: 'Total Active', color: '#6366f1', icon: Users, onClick: () => openModulePage('intake', 'all', { target: 'all-referrals', key: 'active-referrals', label: 'Active Referrals' }) },
+    { value: signed.length, label: 'Paperwork Signed', color: '#22c55e', icon: CheckCircle, onClick: () => openModulePage('intake', 'all', { target: 'all-referrals', key: 'paperwork-signed', label: 'Paperwork Signed' }) },
+    { value: pending.length, label: 'Pending Documents', color: '#f59e0b', icon: FileText, onClick: () => openModulePage('intake', 'pending', { target: 'pending-docs', key: 'total-pending', label: 'Pending Documents' }) },
+    { value: nr.length, label: 'Non-Responsive', color: '#ef4444', icon: UserRoundX, onClick: () => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'all', label: 'Non-Responsive / Referred Out' }) },
+  ]
+  const queueFilters = [['all', 'All'], ['paperwork', 'Missing Paperwork'], ['insurance', 'Insurance Needed'], ['ready', 'Ready for Interview'], ['aging', 'Aging 14+ Days']]
+  const actionItems = [
+    { icon: FileText, tone: 'yellow', title: `${pending.length} pending documents`, helper: 'Families missing or still completing intake paperwork.', action: 'Review', onClick: () => openModulePage('intake', 'pending', { target: 'pending-docs', key: 'total-pending', label: 'Pending Documents' }), show: pending.length > 0 },
+    { icon: ShieldCheck, tone: 'blue', title: `${noIns.length} insurance checks`, helper: 'Coverage details still need verification.', action: 'Verify', onClick: () => openModulePage('intake', 'insurance', { target: 'insurance-verification', key: 'unverified', label: 'Unverified Insurance' }), show: noIns.length > 0 },
+    { icon: FileWarning, tone: 'orange', title: `${noDx.length} diagnosis docs`, helper: 'Diagnosis documentation has not been received.', action: 'Open', onClick: () => openModulePage('intake', 'pending', { target: 'pending-docs', key: 'needs-dx', label: 'Pending Documents: Awaiting Diagnosis Docs' }), show: noDx.length > 0 },
+    { icon: UserRoundX, tone: 'red', title: `${nr.length} non-responsive`, helper: 'Follow-up or referred-out records needing review.', action: 'Review', onClick: () => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'all', label: 'Non-Responsive / Referred Out' }), show: nr.length > 0 },
+    { icon: ArrowRight, tone: 'violet', title: `${readyPI.length} moved to assessment`, helper: 'Families transitioned into initial assessment.', action: 'View', onClick: () => openModulePage('intake', 'all', { target: 'all-referrals', key: 'transitioned-to-initial', label: 'Moved to Initial Assessment' }), show: readyPI.length > 0 },
+  ]
 
   return (
     <>
@@ -37,104 +97,83 @@ export function IntakeDashboard({ refs, assessData = [], onSelectRef, openModule
         <div className="pg-hdr-sub">Real-time overview of all active referrals and action items</div>
       </div>
 
-      <div className="stats-row stats-4" style={{ marginBottom: 24 }}>
-        <ClickableStatCard value={active.length} label="Total Active" color="#6366f1" onClick={() => openModulePage('intake', 'all', { target: 'all-referrals', key: 'active-referrals', label: 'Active Referrals' })} />
-        <ClickableStatCard value={signed.length} label="Paperwork Signed" color="#22c55e" onClick={() => openModulePage('intake', 'all', { target: 'all-referrals', key: 'paperwork-signed', label: 'Paperwork Signed' })} />
-        <ClickableStatCard value={pending.length} label="Pending Documents" color="#f59e0b" onClick={() => openModulePage('intake', 'pending', { target: 'pending-docs', key: 'total-pending', label: 'Pending Documents' })} />
-        <ClickableStatCard value={nr.length} label="Non-Responsive" color="#ef4444" onClick={() => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'all', label: 'Non-Responsive / Referred Out' })} />
+      <div className="intake-kpi-grid">
+        {kpis.map(kpi => (
+          <ClickableStatCard key={kpi.label} value={kpi.value} label={kpi.label} color={kpi.color} icon={kpi.icon} onClick={kpi.onClick} />
+        ))}
       </div>
 
-      <div className="responsive-two-col" style={{ marginBottom: 24 }}>
-        <div className="card card-pad">
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Pipeline by Stage</div>
-          {stageOrder.map(s => {
-            const count = byStage[s] || 0
-            if (!count) return null
-            const max = Math.max(...Object.values(byStage), 1)
-            const STAGE_C = { 'New Referral': '#6366f1', 'Intake': '#8b5cf6', 'Ready for Interview': '#22c55e', 'Initial Assessment': '#f59e0b', 'Moved to Initial Assessment': '#f59e0b', 'PA Submitted': '#fb923c', 'PA In Review': '#fb923c', 'PA Approved': '#22c55e', 'Active Client': '#22c55e', 'Reauth Needed': '#f59e0b', 'Discharged': '#64748b' }
-            const c = STAGE_C[s] || '#64748b'
-            return (
-              <div key={s} style={{ marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <StagePill stage={s} />
-                  <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "'DM Mono',monospace", color: 'var(--muted)' }}>{count}</span>
-                </div>
-                <div style={{ background: 'var(--surface2)', borderRadius: 4, height: 6 }}>
-                  <div style={{ width: `${Math.round(count / max * 100)}%`, height: 6, borderRadius: 4, background: c, transition: 'width 0.5s' }} />
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div className="card card-pad">
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Action Items</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {pending.length ? <ActionItem color="#f59e0b" text={`${pending.length} pending documents`} onClick={() => openModulePage('intake', 'pending', { target: 'pending-docs', key: 'total-pending', label: 'Pending Documents' })} /> : null}
-              {noIns.length ? <ActionItem color="#a5b4fc" text={`${noIns.length} unverified insurance`} onClick={() => openModulePage('intake', 'insurance', { target: 'insurance-verification', key: 'unverified', label: 'Unverified Insurance' })} /> : null}
-              {noDx.length ? <ActionItem color="#fb923c" text={`${noDx.length} awaiting diagnosis docs`} /> : null}
-              {nr.length ? <ActionItem color="#ef4444" text={`${nr.length} non-responsive / referred out`} onClick={() => openModulePage('intake', 'nr', { target: 'non-responsive', key: 'all', label: 'Non-Responsive / Referred Out' })} /> : null}
-              {readyPI.length ? <ActionItem color="#f59e0b" text={`${readyPI.length} moved to initial assessment`} onClick={() => openModulePage('intake', 'all', { target: 'all-referrals', key: 'transitioned-to-initial', label: 'Moved to Initial Assessment' })} /> : null}
-              {!pending.length && !noIns.length && !nr.length && <div style={{ color: 'var(--dim)', fontSize: 13, textAlign: 'center', padding: 16 }}>No action items.</div>}
+      <div className="intake-dashboard-layout">
+        <div className="intake-dashboard-main">
+          <section className="card intake-panel intake-work-panel">
+            <div className="intake-panel-header">
+              <div><div className="intake-panel-eyebrow">Today</div><h2 className="intake-panel-title">Today's Intake Work Queue</h2><p className="intake-panel-subtitle">Highest-priority active referrals to move forward next.</p></div>
+              <button className="intake-soft-button" type="button" onClick={() => openModulePage('intake', 'all', { target: 'all-referrals', key: 'active-referrals', label: 'Active Referrals' })}>View all<ChevronRight size={15} strokeWidth={2.2} /></button>
             </div>
-          </div>
+            <div className="intake-filter-chip-row" aria-label="Work queue filters">
+              {queueFilters.map(([key, label]) => <button key={key} type="button" className={`intake-filter-chip${queueFilter === key ? ' active' : ''}`} onClick={() => setQueueFilter(key)}>{label}</button>)}
+            </div>
+            <div className="table-wrap intake-table-wrap">
+              <table className="intake-enterprise-table">
+                <thead><tr><th>Client</th><th>Priority Reason</th><th>Office</th><th>Days in Intake</th><th>Next Step</th><th /></tr></thead>
+                <tbody>
+                  {queueRows.length === 0 ? <tr><td colSpan={6} className="intake-empty-state">No active referrals match this filter.</td></tr> : queueRows.map(({ referral, days, meta }) => (
+                    <tr key={referral.id} className="row-hover" onClick={() => onSelectRef(referral.id)}>
+                      <td><div className="intake-client-name">{referral.first_name} {referral.last_name}</div><div className="intake-client-meta">{referral.date_received ? formatDisplayDate(referral.date_received) : 'No received date'}</div></td>
+                      <td><span className={`intake-priority-pill intake-priority-${meta.tone}`}>{meta.reason}</span></td>
+                      <td><OfficePill office={referral.office} previousOffice={referral.previous_office} /></td>
+                      <td><span className="intake-days-pill">{days === null ? '--' : `${days} days`}</span></td>
+                      <td className="intake-next-step">{meta.nextStep}</td>
+                      <td><button type="button" className="work-queue-action" onClick={(event) => { event.stopPropagation(); onSelectRef(referral.id) }}>Open Client<ChevronRight size={14} strokeWidth={2.2} /></button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-          <div className="card card-pad">
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>By Staff Member</div>
-            {staffList.map(staff => {
-              return (
-                <div key={staff.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #0a1525' }}>
-                  <span style={{ fontSize: 13, fontWeight: 600 }}>{staff.label}</span>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <span className="bdg" style={{ background: '#6366f120', color: '#a5b4fc', border: '1px solid #6366f130' }}>{staff.total} total</span>
-                    {staff.pending ? <span className="bdg" style={{ background: '#f59e0b20', color: '#f59e0b', border: '1px solid #f59e0b30' }}>{staff.pending} pending</span> : null}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+          <section className="card intake-panel">
+            <div className="intake-panel-header">
+              <div><div className="intake-panel-eyebrow">New Referrals</div><h2 className="intake-panel-title">Recently Added</h2><p className="intake-panel-subtitle">Latest referral records entered into the intake pipeline.</p></div>
+              <button className="intake-soft-button" type="button" onClick={() => openModulePage('intake', 'all', { target: 'all-referrals', key: 'active-referrals', label: 'Active Referrals' })}>View all referrals<ChevronRight size={15} strokeWidth={2.2} /></button>
+            </div>
+            <div className="table-wrap intake-table-wrap">
+              <table className="intake-enterprise-table intake-recent-table">
+                <thead><tr><th>Client</th><th>Added On</th><th>Referral Source</th><th>Office</th><th>Assigned Staff</th><th>Next Step</th></tr></thead>
+                <tbody>{recentRows.map(r => {
+                  const meta = getQueueMeta(r)
+                  return <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}><td><div className="intake-client-name">{r.first_name} {r.last_name}</div><div className="intake-client-meta">{r.referral_id || '--'}</div></td><td className="intake-mono">{formatDisplayDate(r.date_received || r.referral_received_date)}</td><td className="intake-muted-cell">{r.referral_source || '—'}</td><td><OfficePill office={r.office} previousOffice={r.previous_office} /></td><td className="intake-muted-cell">{r.intake_personnel || '--'}</td><td className="intake-next-step">{meta.nextStep}</td></tr>
+                })}</tbody>
+              </table>
+            </div>
+          </section>
         </div>
-      </div>
 
-      <div>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Recently Added</div>
-        <div className="card">
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>Client</th><th>Referral ID</th><th>Stage</th><th>Paperwork</th><th>Insurance</th><th>Staff</th><th /></tr></thead>
-              <tbody>
-                {active.slice(0, 8).map(r => (
-                  <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}>
-                    <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--muted)' }}>{r.date_received ? formatDisplayDate(r.date_received) : ''}</div></td>
-                    <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--muted)' }}>{r.referral_id || '--'}</td>
-                    <td><StagePill stage={getReferralBoardStage(r, assessData)} /></td>
-                    <td><Badge value={r.intake_paperwork} /></td>
-                    <td><Badge value={r.insurance_verified} /></td>
-                    <td style={{ fontSize: 12, color: 'var(--text)' }}>{r.intake_personnel || '--'}</td>
-                    <td style={{ color: 'var(--accent)' }}>→</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <aside className="intake-dashboard-side">
+          <section className="card intake-panel intake-command-panel">
+            <div className="intake-panel-header"><div><div className="intake-panel-eyebrow">Command Panel</div><h2 className="intake-panel-title">Action Items</h2><p className="intake-panel-subtitle">Quick paths to the work most likely to need attention.</p></div></div>
+            <div className="intake-action-list">{actionItems.filter(item => item.show).map(item => <IntakeActionItem key={item.title} {...item} />)}{actionItems.every(item => !item.show) ? <div className="intake-empty-state">No action items.</div> : null}</div>
+          </section>
+          <section className="card intake-panel">
+            <div className="intake-panel-header"><div><div className="intake-panel-eyebrow">Capacity</div><h2 className="intake-panel-title">Workload by Staff</h2><p className="intake-panel-subtitle">Active referrals and pending items by intake owner.</p></div></div>
+            <div className="intake-staff-list">{staffList.length === 0 ? <div className="intake-empty-state">No assigned active referrals.</div> : staffList.map(staff => <div key={staff.label} className="intake-staff-row"><div className="intake-staff-topline"><span className="intake-staff-name">{staff.label}</span><span className="intake-staff-count">{staff.total} active</span></div><div className="intake-staff-meta"><span>{staff.pending} pending items</span><span>{Math.round(staff.total / maxStaffTotal * 100)}% workload</span></div><div className="intake-workload-track"><div className="intake-workload-bar" style={{ width: `${Math.round(staff.total / maxStaffTotal * 100)}%` }} /></div></div>)}</div>
+          </section>
+        </aside>
       </div>
     </>
   )
 }
 
-function ActionItem({ color, text, onClick }) {
+function IntakeActionItem({ icon: Icon, tone, title, helper, action, onClick }) {
   return (
-    <div onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default', background: `${color}10`, border: `1px solid ${color}30`, borderRadius: 8, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <span style={{ color, fontWeight: 700, fontSize: 13 }}>{text}</span>
-      {onClick && <span style={{ color, fontSize: 12 }}>View →</span>}
+    <div className={`intake-action-row intake-action-${tone}`}>
+      <div className="intake-action-icon" aria-hidden="true"><Icon size={18} strokeWidth={2} /></div>
+      <div className="intake-action-body"><div className="intake-action-title">{title}</div><div className="intake-action-helper">{helper}</div></div>
+      <button type="button" className="intake-action-button" onClick={onClick}>{action}<ChevronRight size={14} strokeWidth={2.2} /></button>
     </div>
   )
 }
 
-// ══════════════════════════════════════
-// PENDING DOCUMENTS
 // ══════════════════════════════════════
 export function PendingDocsPage({ refs, assessData = [], onSelectRef, statFilter, onSetStatFilter, onClearStatFilter }) {
   const active  = refs.filter(r => isActiveReferralWork(r, assessData))
@@ -156,30 +195,32 @@ export function PendingDocsPage({ refs, assessData = [], onSelectRef, statFilter
       </div>
       <div className="stats-row stats-4" style={{ marginBottom: 22 }}>
         <ClickableStatCard value={pending.length} label="Total Pending" color="#f59e0b" active={activeFilter?.key === 'total-pending'} onClick={() => toggleFilter('total-pending', 'Pending Documents')} />
-        <ClickableStatCard value={needsPaperwork.length} label="Not Yet Sent" color="#ef4444" active={activeFilter?.key === 'not-yet-sent'} onClick={() => toggleFilter('not-yet-sent', 'Pending Documents: Not Yet Sent')} />
+        <ClickableStatCard value={needsPaperwork.length} label="Please Send" color="#ef4444" active={activeFilter?.key === 'not-yet-sent'} onClick={() => toggleFilter('not-yet-sent', 'Pending Documents: Please Send')} />
         <ClickableStatCard value={emailed.length} label="Emailed — Awaiting Return" color="#fb923c" active={activeFilter?.key === 'emailed'} onClick={() => toggleFilter('emailed', 'Pending Documents: Emailed — Awaiting Return')} />
         <ClickableStatCard value={needsDx.length} label="Awaiting Diagnosis Docs" color="#6366f1" active={activeFilter?.key === 'needs-dx'} onClick={() => toggleFilter('needs-dx', 'Pending Documents: Awaiting Diagnosis Docs')} />
       </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing pending document matches" />
-      <div className="card">
-        <div className="table-wrap">
-          <table>
-            <thead><tr><th>Client</th><th>Referral ID</th><th>Office</th><th>Paperwork</th><th>Autism DX</th><th>Vineland</th><th>SRS-2</th><th>Staff</th><th>Date Received</th><th /></tr></thead>
+      <div className="card work-queue-card pending-docs-table-card">
+        <div className="table-wrap work-queue-table-wrap">
+          <table className="work-queue-table pending-docs-table">
+            <thead><tr><th>Client</th><th>Office</th><th>Paperwork</th><th>Autism DX</th><th>Staff</th><th>Date Received</th><th>Action</th></tr></thead>
             <tbody>
               {filteredRows.length === 0
-                ? <tr><td colSpan={10} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No pending documents.</td></tr>
+                ? <tr><td colSpan={7} className="pending-docs-empty">No pending documents.</td></tr>
                 : filteredRows.map(r => (
                   <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}>
-                    <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.caregiver || ''}</div></td>
-                    <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--muted)' }}>{r.referral_id || '--'}</td>
+                    <td><div className="work-queue-client-name">{r.first_name} {r.last_name}</div><div className="work-queue-client-date">{r.caregiver || ''}</div></td>
                     <td><OfficePill office={r.office} previousOffice={r.previous_office} /></td>
-                    <td><Badge value={r.intake_paperwork} /></td>
-                    <td><Badge value={normalizeAutismDx(r.autism_diagnosis)} /></td>
-                    <td><Badge value={r.vineland} /></td>
-                    <td><Badge value={r.srs2} /></td>
-                    <td style={{ fontSize: 12, color: 'var(--text)' }}>{r.intake_personnel || '--'}</td>
-                    <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--muted)' }}>{formatDisplayDate(r.date_received)}</td>
-                    <td style={{ color: 'var(--accent)' }}>→</td>
+                    <td className="work-queue-status-cell"><Badge value={r.intake_paperwork} /></td>
+                    <td className="work-queue-status-cell"><Badge value={normalizeAutismDx(r.autism_diagnosis)} /></td>
+                    <td className="work-queue-personnel">{r.intake_personnel || '--'}</td>
+                    <td className="intake-mono">{formatDisplayDate(r.date_received)}</td>
+                    <td>
+                      <button type="button" className="work-queue-action" onClick={(event) => { event.stopPropagation(); onSelectRef(r.id) }}>
+                        Open Client
+                        <ChevronRight size={14} strokeWidth={2.2} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
             </tbody>
@@ -194,71 +235,124 @@ export function PendingDocsPage({ refs, assessData = [], onSelectRef, statFilter
 // INSURANCE VERIFICATION
 // ══════════════════════════════════════
 export function InsuranceVerifPage({ refs, assessData = [], onSelectRef, statFilter, onSetStatFilter, onClearStatFilter }) {
+  const [providerFilter, setProviderFilter] = useState('')
   const active     = refs.filter(r => isActiveReferralWork(r, assessData))
-  const unverified = active.filter(r => !['yes'].includes((r.insurance_verified || '').toLowerCase()))
-  const verified   = active.filter(r => (r.insurance_verified || '').toLowerCase() === 'yes')
-  const awaiting   = active.filter(r => (r.insurance_verified || '').toLowerCase() === 'awaiting')
-  const notStarted = active.filter(r => (r.insurance_verified || '').toLowerCase() === 'no')
+  const confirmed  = active.filter(r => getInsuranceVerificationStatus(r) === 'YES')
+  const awaiting   = active.filter(r => getInsuranceVerificationStatus(r) === 'AWAITING')
+  const ready      = active.filter(r => !getInsuranceVerificationStatus(r))
+  const followUp   = active.filter(r => getInsuranceVerificationStatus(r) === 'NO')
+  const needsWork  = active.filter(r => getInsuranceVerificationStatus(r) !== 'YES')
   const byProvider = {}
-  unverified.forEach(r => { const p = formatInsurance(r.insurance) || 'Unknown'; byProvider[p] = (byProvider[p] || 0) + 1 })
-  const verRate = active.length ? Math.round(verified.length / active.length * 100) : 0
+  needsWork.forEach(r => { const p = formatInsurance(r.insurance) || 'Unknown'; byProvider[p] = (byProvider[p] || 0) + 1 })
+  const providerRows = Object.entries(byProvider).sort((a, b) => b[1] - a[1])
+  const verRate = active.length ? Math.round(confirmed.length / active.length * 100) : 0
   const activeFilter = isStatFilterTarget(statFilter, 'insurance-verification')
   const toggleFilter = (key, label) => onSetStatFilter(toggleStatFilter(activeFilter, { target: 'insurance-verification', key, label }))
-  const filteredRows = active.filter(r => matchesStatFilter(r, activeFilter))
+  const filteredRows = active
+    .filter(r => matchesStatFilter(r, activeFilter))
+    .filter(r => !providerFilter || (formatInsurance(r.insurance) || 'Unknown') === providerFilter)
+    .sort((a, b) => {
+      const statusOrder = { NO: 1, AWAITING: 2, '': 3, YES: 4 }
+      return (statusOrder[getInsuranceVerificationStatus(a)] || 5) - (statusOrder[getInsuranceVerificationStatus(b)] || 5)
+    })
+  const kpis = [
+    { value: confirmed.length, label: 'Coverage Confirmed', color: '#22c55e', icon: ShieldCheck, key: 'confirmed' },
+    { value: awaiting.length, label: 'Awaiting Response', color: '#f59e0b', icon: Clock, key: 'awaiting' },
+    { value: ready.length, label: 'Ready to Verify', color: '#3b82f6', icon: FileSearch, key: 'ready-to-verify' },
+    { value: followUp.length, label: 'Follow-Up Needed', color: '#ef4444', icon: AlertCircle, key: 'follow-up-needed' },
+  ]
+
+  const getNextAction = (record) => {
+    const status = getInsuranceVerificationStatus(record)
+    if (status === 'YES') return 'Monitor for renewal'
+    if (status === 'AWAITING') return 'Check payer response'
+    if (status === 'NO') return 'Resolve coverage issue'
+    return 'Start verification'
+  }
 
   return (
     <>
       <div className="pg-hdr">
         <div className="pg-hdr-title">Insurance Verification</div>
-        <div className="pg-hdr-sub">Track insurance verification status across all active referrals</div>
+        <div className="pg-hdr-sub">Review coverage details, verification status, and follow-up needs for active referrals.</div>
       </div>
-      <div className="stats-row stats-4" style={{ marginBottom: 22 }}>
-        <ClickableStatCard value={verified.length} label="Verified" color="#22c55e" active={activeFilter?.key === 'verified'} onClick={() => toggleFilter('verified', 'Insurance Verification: Verified')} />
-        <ClickableStatCard value={awaiting.length} label="Awaiting" color="#f59e0b" active={activeFilter?.key === 'awaiting'} onClick={() => toggleFilter('awaiting', 'Insurance Verification: Awaiting')} />
-        <ClickableStatCard value={notStarted.length} label="Not Started" color="#ef4444" active={activeFilter?.key === 'not-started'} onClick={() => toggleFilter('not-started', 'Insurance Verification: Not Started')} />
-        <ClickableStatCard value={active.length} label="Total Active" color="#6366f1" active={activeFilter?.key === 'total-active'} onClick={() => toggleFilter('total-active', 'Insurance Verification: Total Active')} />
+      <div className="intake-kpi-grid insurance-kpi-grid">
+        {kpis.map(kpi => (
+          <ClickableStatCard
+            key={kpi.key}
+            value={kpi.value}
+            label={kpi.label}
+            color={kpi.color}
+            icon={kpi.icon}
+            active={activeFilter?.key === kpi.key}
+            onClick={() => toggleFilter(kpi.key, `Insurance Verification: ${kpi.label}`)}
+          />
+        ))}
       </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing insurance verification matches" />
-      <div className="responsive-two-col">
-        <div className="card">
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>Client</th><th>Insurance</th><th>Verified</th><th>Staff</th><th /></tr></thead>
+      {providerFilter && (
+        <div className="insurance-provider-filter">
+          <span>Provider: {providerFilter}</span>
+          <button type="button" onClick={() => setProviderFilter('')}>Clear</button>
+        </div>
+      )}
+      <div className="insurance-work-layout">
+        <section className="card work-queue-card insurance-work-card">
+          <div className="work-queue-header">
+            <div>
+              <div className="work-queue-eyebrow">Coverage Operations</div>
+              <div className="work-queue-title">Insurance Work Queue</div>
+              <div className="work-queue-subtitle">Prioritized active referrals with payer status and the next verification step.</div>
+            </div>
+          </div>
+          <div className="table-wrap work-queue-table-wrap">
+            <table className="work-queue-table insurance-work-table">
+              <thead><tr><th>Client</th><th>Insurance Provider</th><th>Verification Status</th><th>Assigned Staff</th><th>Last Checked</th><th>Next Action</th></tr></thead>
               <tbody>
                 {filteredRows.length === 0
-                  ? <tr><td colSpan={5} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>All insurance verified.</td></tr>
+                  ? <tr><td colSpan={6} className="insurance-empty-state">No insurance items match this view.</td></tr>
                   : filteredRows.map(r => (
                     <tr key={r.id} className="row-hover" onClick={() => onSelectRef(r.id)}>
-                      <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11 }}><OfficePill office={r.office} previousOffice={r.previous_office} /></div></td>
-                      <td style={{ fontSize: 12, color: 'var(--text)' }}>{formatInsurance(r.insurance) || '--'}</td>
-                      <td><Badge value={r.insurance_verified} /></td>
-                      <td style={{ fontSize: 12, color: 'var(--text)' }}>{r.intake_personnel || '--'}</td>
-                      <td style={{ color: 'var(--accent)' }}>→</td>
+                      <td><div className="work-queue-client-name">{r.first_name} {r.last_name}</div><div className="work-queue-client-date"><OfficePill office={r.office} previousOffice={r.previous_office} /></div></td>
+                      <td className="insurance-provider-cell">{formatInsurance(r.insurance) || '--'}</td>
+                      <td><InsuranceStatusPill record={r} /></td>
+                      <td className="work-queue-personnel">{displayStaffName(r.intake_personnel) || '--'}</td>
+                      <td className="intake-mono">{formatDisplayDate(r.insurance_last_verified_date)}</td>
+                      <td><button type="button" className="work-queue-action" onClick={(event) => { event.stopPropagation(); onSelectRef(r.id) }}>{getNextAction(r)}<ChevronRight size={14} strokeWidth={2.2} /></button></td>
                     </tr>
                   ))}
               </tbody>
             </table>
           </div>
-        </div>
-        <div className="card card-pad">
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>By Provider</div>
-          {Object.entries(byProvider).sort((a, b) => b[1] - a[1]).map(([p, c]) => (
-            <div key={p} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #0a1525' }}>
-              <span style={{ fontSize: 12, color: 'var(--muted)' }}>{p}</span>
-              <span className="bdg" style={{ background: '#f59e0b20', color: '#f59e0b', border: '1px solid #f59e0b30' }}>{c} pending</span>
-            </div>
-          ))}
-          {Object.keys(byProvider).length === 0 && <div style={{ color: 'var(--dim)', fontSize: 13, textAlign: 'center', padding: 16 }}>All clear.</div>}
-          <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0' }}>
-              <span style={{ fontSize: 12, color: 'var(--muted)' }}>Verification rate</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#22c55e' }}>{verRate}%</span>
-            </div>
-            <div style={{ background: 'var(--surface2)', borderRadius: 4, height: 8, marginTop: 6 }}>
-              <div style={{ width: `${verRate}%`, height: 8, borderRadius: 4, background: '#22c55e', transition: 'width 0.5s' }} />
+        </section>
+        <aside className="card intake-panel insurance-provider-panel">
+          <div className="intake-panel-header">
+            <div>
+              <div className="intake-panel-eyebrow">Payers</div>
+              <h2 className="intake-panel-title">Provider Follow-Up</h2>
+              <p className="intake-panel-subtitle">Payers with referrals still needing verification or follow-up.</p>
             </div>
           </div>
-        </div>
+          <div className="insurance-provider-list">
+            {providerRows.map(([provider, count]) => (
+              <div key={provider} className="insurance-provider-row">
+                <div className="insurance-provider-name">{provider}</div>
+                <span className="insurance-count-badge">{count}</span>
+                <button type="button" className="insurance-review-button" onClick={() => setProviderFilter(provider)}>Review</button>
+              </div>
+            ))}
+            {providerRows.length === 0 && <div className="intake-empty-state">All providers are confirmed.</div>}
+          </div>
+          <div className="insurance-rate-block">
+            <div className="insurance-rate-line">
+              <span>Verification rate</span>
+              <strong>{verRate}%</strong>
+            </div>
+            <div className="insurance-rate-track">
+              <div className="insurance-rate-bar" style={{ width: `${verRate}%` }} />
+            </div>
+          </div>
+        </aside>
       </div>
     </>
   )
@@ -267,6 +361,13 @@ export function InsuranceVerifPage({ refs, assessData = [], onSelectRef, statFil
 // ══════════════════════════════════════
 // NON-RESPONSIVE
 // ══════════════════════════════════════
+function InsuranceStatusPill({ record }) {
+  const status = getInsuranceVerificationStatus(record)
+  const label = getInsuranceVerificationLabel(record)
+  const tone = status === 'YES' ? 'confirmed' : status === 'AWAITING' ? 'awaiting' : status === 'NO' ? 'follow-up' : 'ready'
+  return <span className={`insurance-status-pill insurance-status-${tone}`}>{label}</span>
+}
+
 export function NonResponsivePage({ refs, onRestore, statFilter, onClearStatFilter }) {
   const nr = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
   const activeFilter = isStatFilterTarget(statFilter, 'non-responsive')

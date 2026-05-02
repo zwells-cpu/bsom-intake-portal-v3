@@ -33,7 +33,9 @@ export function badgeIcon(v) {
 export function pct(r) {
   const fs = ['referral_form','permission_assessment','vineland','srs2','insurance_verified','autism_diagnosis','intake_paperwork','intake_personnel']
   const done = fs.filter(f => {
-    const v = f === 'autism_diagnosis'
+    const v = f === 'insurance_verified'
+      ? getInsuranceVerificationStatus(r)
+      : f === 'autism_diagnosis'
       ? normalizeAutismDx(r[f], { emptyAsNotReceived: false }).toUpperCase()
       : (r[f] || '').toUpperCase()
     return ['YES','COMPLETED','SIGNED','RECEIVED'].some(x => v.includes(x))
@@ -55,6 +57,7 @@ export function hasReferralIntakeProgress(record) {
     record.vineland,
     record.srs2,
     record.insurance_verified,
+    record.insurance_verification_status,
     record.autism_diagnosis,
     record.intake_paperwork,
     record.intake_personnel,
@@ -77,7 +80,7 @@ export function isReferralReadyForInterview(record) {
     isReceivedOrCompleted(record.permission_assessment),
     isReceivedOrCompleted(record.vineland),
     isReceivedOrCompleted(record.srs2),
-    isInsuranceVerified(record.insurance_verified),
+    isInsuranceVerified(getInsuranceVerificationStatus(record)),
     isReceivedOrCompleted(normalizedAutismDx),
     isReceivedOrCompleted(record.intake_paperwork),
   ].every(Boolean)
@@ -357,11 +360,25 @@ export function isAuthorizationApproved(record) {
 
 export function normalizeInsuranceVerifiedStatus(value) {
   const normalized = String(value || '').trim().toUpperCase()
-  if (normalized === 'VERIFIED') return 'YES'
-  if (normalized === 'YES') return 'YES'
-  if (normalized === 'AWAITING') return 'AWAITING'
-  if (normalized === 'NO') return 'NO'
+  if (['VERIFIED', 'CONFIRMED', 'YES'].includes(normalized)) return 'YES'
+  if (['AWAITING', 'AWAITING RESPONSE', 'PENDING'].includes(normalized)) return 'AWAITING'
+  if (['FOLLOW-UP NEEDED', 'FOLLOW UP NEEDED', 'NO'].includes(normalized)) return 'NO'
+  if (['READY TO VERIFY', 'READY'].includes(normalized)) return ''
   return normalized
+}
+
+export function getInsuranceVerificationStatus(record = {}) {
+  return normalizeInsuranceVerifiedStatus(
+    record.insurance_verification_status || record.insurance_verified || ''
+  )
+}
+
+export function getInsuranceVerificationLabel(record = {}) {
+  const status = getInsuranceVerificationStatus(record)
+  if (status === 'YES') return 'Confirmed'
+  if (status === 'NO') return 'Follow-Up Needed'
+  if (status === 'AWAITING') return 'Awaiting Response'
+  return 'Ready to Verify'
 }
 
 export function normalizeReferralFieldValue(field, value) {
