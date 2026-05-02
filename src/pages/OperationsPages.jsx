@@ -31,7 +31,7 @@ function MiniBar({ val, max, color = '#6366f1' }) {
       <div style={{ flex: 1, background: 'var(--surface2)', borderRadius: 3, height: 6, minWidth: 60 }}>
         <div style={{ width: `${p}%`, height: 6, borderRadius: 3, background: color, transition: 'width 0.5s' }} />
       </div>
-      <span style={{ fontSize: 11, fontFamily: "'DM Mono',monospace", color: 'var(--muted)', minWidth: 24 }}>{val}</span>
+      <span style={{ fontSize: 11, color: 'var(--muted)', minWidth: 24 }}>{val}</span>
     </div>
   )
 }
@@ -111,7 +111,7 @@ export function PipelineOverviewPage({ refs, assessData = [], openModulePage }) 
               <div key={s} style={{ marginBottom: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
                   <StagePill stage={s} />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', fontFamily: "'DM Mono',monospace" }}>{count} referral{count !== 1 ? 's' : ''}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)' }}>{count} referral{count !== 1 ? 's' : ''}</span>
                 </div>
                 <MiniBar val={count} max={maxVal} />
               </div>
@@ -212,11 +212,11 @@ export function ReferralAgingPage({ refs, assessData = [], onSelectRef }) {
                     <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.office || ''}</div></td>
                     <td><StagePill stage={getReferralStage(r)} /></td>
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>
-                    <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--dim)' }}>{r.received || '--'}</td>
+                    <td style={{ fontSize: 11, color: 'var(--dim)' }}>{r.received || '--'}</td>
                     <td><AgeBadge days={r.daysTotal} warn={WARN} danger={DANGER} /></td>
                     <td>{r.daysAwaitPW !== null ? <AgeBadge days={r.daysAwaitPW} warn={WARN} danger={DANGER} /> : <span style={{ color: '#22c55e', fontSize: 12 }}>Done</span>}</td>
                     <td>{r.daysAwaitIns !== null ? <AgeBadge days={r.daysAwaitIns} warn={WARN} danger={DANGER} /> : <span style={{ color: '#22c55e', fontSize: 12 }}>Done</span>}</td>
-                    <td>{r.daysToActive !== null ? <span style={{ color: '#22c55e', fontFamily: "'DM Mono',monospace", fontSize: 12 }}>{r.daysToActive}d</span> : <span style={{ color: 'var(--dim)', fontSize: 12 }}>--</span>}</td>
+                    <td>{r.daysToActive !== null ? <span style={{ color: '#22c55e', fontSize: 12 }}>{r.daysToActive}d</span> : <span style={{ color: 'var(--dim)', fontSize: 12 }}>--</span>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -279,7 +279,7 @@ export function ClinicVolumePage({ refs, assessData = [] }) {
           <div style={{ display: 'flex', gap: 20 }}>
             {[['Signed', topClinic.signed, '#22c55e'], ['Ins. Verified', topClinic.verified, '#a5b4fc'], ['Non-Responsive', topClinic.nr, '#ef4444']].map(([l, v, c]) => (
               <div key={l} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: c, fontFamily: "'DM Mono',monospace" }}>{v}</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: c }}>{v}</div>
                 <div style={{ fontSize: 11, color: 'var(--dim)' }}>{l}</div>
               </div>
             ))}
@@ -347,13 +347,13 @@ export function ClinicVolumePage({ refs, assessData = [] }) {
                     const rowTotal = Object.values(months[m]).reduce((s, v) => s + v, 0)
                     return (
                       <tr key={m} style={{ borderBottom: '1px solid #0a1525' }}>
-                        <td style={{ padding: '7px 8px', color: 'var(--muted)', fontFamily: "'DM Mono',monospace" }}>{label}</td>
+                        <td style={{ padding: '7px 8px', color: 'var(--muted)' }}>{label}</td>
                         {offices.filter(o => stats.find(s => s.office === o)).map(o => (
                           <td key={o} style={{ textAlign: 'center', padding: '7px 8px', fontWeight: months[m][o] ? 600 : 400, color: months[m][o] ? OFFICE_COLORS[o] : 'var(--dim)' }}>
                             {months[m][o] || '--'}
                           </td>
                         ))}
-                        <td style={{ textAlign: 'center', padding: '7px 8px', fontWeight: 700, color: 'var(--text)', fontFamily: "'DM Mono',monospace" }}>{rowTotal}</td>
+                        <td style={{ textAlign: 'center', padding: '7px 8px', fontWeight: 700, color: 'var(--text)' }}>{rowTotal}</td>
                       </tr>
                     )
                   })}
@@ -427,7 +427,7 @@ export function ConversionRatePage({ refs, assessData = [] }) {
               <div key={step.label} style={{ marginBottom: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
                   <span style={{ fontSize: 12, color: 'var(--muted)' }}>{step.label}</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: step.color, fontFamily: "'DM Mono',monospace" }}>{step.count} ({pct}%)</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: step.color }}>{step.count} ({pct}%)</span>
                 </div>
                 <div style={{ background: 'var(--surface2)', borderRadius: 4, height: 8 }}>
                   <div style={{ width: `${pct}%`, height: 8, borderRadius: 4, background: step.color, transition: 'width 0.5s' }} />
@@ -455,8 +455,8 @@ export function ConversionRatePage({ refs, assessData = [] }) {
                   return (
                     <tr key={step.label}>
                       <td style={{ padding: '7px 0', color: isBig ? '#ef4444' : 'var(--muted)', fontSize: 11 }}>{step.label.split(' ').slice(0, 2).join(' ')}</td>
-                      <td style={{ textAlign: 'center', padding: '7px 0', fontWeight: 700, color: step.color, fontFamily: "'DM Mono',monospace" }}>{step.count}</td>
-                      <td style={{ textAlign: 'center', padding: '7px 0', color: lost > 0 ? '#ef4444' : 'var(--dim)', fontFamily: "'DM Mono',monospace" }}>{lost > 0 ? `-${lost}` : '--'}</td>
+                      <td style={{ textAlign: 'center', padding: '7px 0', fontWeight: 700, color: step.color }}>{step.count}</td>
+                      <td style={{ textAlign: 'center', padding: '7px 0', color: lost > 0 ? '#ef4444' : 'var(--dim)' }}>{lost > 0 ? `-${lost}` : '--'}</td>
                       <td style={{ textAlign: 'center', padding: '7px 0', color: isBig ? '#ef4444' : lostPct > 20 ? '#f59e0b' : 'var(--dim)', fontWeight: isBig ? 700 : 400 }}>{lostPct > 0 ? `${lostPct}%` : '--'}</td>
                     </tr>
                   )
@@ -537,13 +537,13 @@ export function IntakePerformancePage({ refs, assessData = [] }) {
                   return (
                     <tr key={p.staff}>
                       <td style={{ fontWeight: 700 }}>{p.staff}</td>
-                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: 'var(--muted)' }}>{p.total}</td>
+                      <td style={{ fontSize: 12, color: 'var(--muted)' }}>{p.total}</td>
                       <td><MiniBar val={p.signed}   max={p.total} color="#22c55e" /></td>
                       <td><MiniBar val={p.verified} max={p.total} color="#f59e0b" /></td>
                       <td><MiniBar val={p.dxRecvd}  max={p.total} color="#a5b4fc" /></td>
-                      <td style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: '#22c55e' }}>{p.active}</td>
+                      <td style={{ fontSize: 12, color: '#22c55e' }}>{p.active}</td>
                       <td>{p.pending > 0 ? <span className="bdg" style={{ background: '#f59e0b20', color: '#f59e0b', border: '1px solid #f59e0b30' }}>{p.pending}</span> : <span style={{ color: '#22c55e', fontSize: 12 }}>Clear</span>}</td>
-                      <td><span style={{ fontSize: 14, fontWeight: 800, color: scoreColor, fontFamily: "'DM Mono',monospace" }}>{p.score}%</span></td>
+                      <td><span style={{ fontSize: 14, fontWeight: 800, color: scoreColor }}>{p.score}%</span></td>
                     </tr>
                   )
                 })}
@@ -565,7 +565,7 @@ export function IntakePerformancePage({ refs, assessData = [] }) {
               const h = Math.round(months[m] / maxM * 70)
               return (
                 <div key={m} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flex: 1 }}>
-                  <span style={{ fontSize: 10, color: 'var(--muted)', fontFamily: "'DM Mono',monospace" }}>{months[m]}</span>
+                  <span style={{ fontSize: 10, color: 'var(--muted)' }}>{months[m]}</span>
                   <div style={{ width: '100%', height: h, background: '#6366f1', borderRadius: '4px 4px 0 0', minHeight: 4, transition: 'height 0.5s' }} />
                   <span style={{ fontSize: 10, color: 'var(--dim)' }}>{label}</span>
                 </div>
