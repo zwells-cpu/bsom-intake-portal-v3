@@ -3,11 +3,17 @@ import {
   AlertCircle,
   ArrowRight,
   CalendarCheck,
+  CalendarClock,
+  CheckCircle,
+  ChevronRight,
+  CircleDashed,
+  Clock,
   ClipboardCheck,
-  ClockAlert,
   Eye,
   FilePlus2,
   PhoneCall,
+  ClockAlert,
+  UserPlus,
 } from 'lucide-react'
 import { PaStatusBadge } from '../components/Badge'
 import { NotifyModal } from '../components/NotifyModal'
@@ -59,6 +65,7 @@ function sBdg(status) {
     Scheduled: '#f59e0b',
     'No Show': '#ef4444',
     Finalized: '#22c55e',
+    'Awaiting Assignment': '#3b82f6',
   }
   const color = map[normalizedStatus] || '#64748b'
   return <span className="bdg" style={{ background: `${color}20`, color, border: `1px solid ${color}35` }}>{normalizedStatus || '--'}</span>
@@ -218,7 +225,7 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, o
     return <div className="loader-wrap"><div className="spinner" /><div style={{ color: 'var(--muted)' }}>Loading assessments...</div></div>
   }
 
-  const src = assessData.map(record => ({
+  const src = (assessData || []).map(record => ({
     ...record,
     client_name: record.client_name || record.name || '',
     clinic: record.clinic || record.office || '',
@@ -331,36 +338,36 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, o
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered assessment records" />
 
       <div className="filter-row assessment-primary-controls">
-        <div className="search-wrap">
+        <div className="search-wrap assessment-search-group">
           <input className="search-input" placeholder="Search client or caregiver..." value={search} onChange={event => setSearch(event.target.value)} />
         </div>
-        <div className="filter-btns">
+        <div className="filter-divider"></div>
+        <div className="filter-btns assessment-clinic-filter-group">
           {['ALL', 'MERIDIAN', 'FOREST', 'FLOWOOD', 'DAY TREATMENT'].map(option => (
             <button key={option} className={`filter-btn ${office === option ? 'active' : ''}`} onClick={() => setOffice(option)}>{option}</button>
           ))}
         </div>
+        <div className="filter-divider"></div>
+        <div className="assessment-pa-select-group">
+          <span>Prior Authorization</span>
+          <select value={paFilter} onChange={event => setPaFilter(event.target.value)} aria-label="Prior Authorization">
+            {ALL_PA.map(status => (
+              <option key={status} value={status}>{PA_FILTER_LABELS[status] || status}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      <div className="assessment-secondary-filter-panel">
-        <div className="filter-label">Prior Authorization</div>
-        <div className="filter-btns assessment-pa-chips">
-          {ALL_PA.map(status => (
-            <button key={status} className={`filter-btn assessment-pa-chip ${paFilter === status ? 'active' : ''}`} onClick={() => setPaFilter(status)}>
-              {PA_FILTER_LABELS[status] || status}
-            </button>
-          ))}
+      <div className="work-queue-header">
+        <div>
+          <div className="work-queue-eyebrow">Clinical Workflow</div>
+          <div className="work-queue-title">Assessment Work Queue</div>
+          <div className="work-queue-subtitle">{filtered.length} clients in the current view. {approved} authorization approvals recorded.</div>
         </div>
       </div>
 
       <div className="assessment-command-layout">
         <section className="assessment-work-queue">
-          <div className="work-queue-header">
-            <div>
-              <div className="work-queue-eyebrow">Clinical Workflow</div>
-              <div className="work-queue-title">Assessment Work Queue</div>
-              <div className="work-queue-subtitle">{filtered.length} clients in the current view. {approved} authorization approvals recorded.</div>
-            </div>
-          </div>
           <div className="work-queue-card assessment-work-queue-card">
             <SyncedHorizontalScrollTable>
               <table className="work-queue-table assessment-work-table">
@@ -468,6 +475,10 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, o
 }
 
 export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess, statFilter, onSetStatFilter, onClearStatFilter }) {
+  const [search, setSearch] = useState('')
+  const [office, setOffice] = useState('ALL')
+  const [statusFilter, setStatusFilter] = useState('All')
+
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
   const awaitingAssignment = assessData.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === 'Awaiting Assignment')
@@ -477,7 +488,23 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
   const completed = assessData.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === 'Completed')
   const noShow = assessData.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === 'No Show')
   const { activeFilter, toggleFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'parent-interviews')
-  const filteredRows = assessData.filter(record => matchesStatFilter(record, activeFilter))
+  let filteredRows = assessData.filter(record => matchesStatFilter(record, activeFilter))
+
+  // Apply additional filters
+  if (search) {
+    const lowerSearch = search.toLowerCase()
+    filteredRows = filteredRows.filter(record =>
+      (record.client_name || '').toLowerCase().includes(lowerSearch) ||
+      (record.caregiver || '').toLowerCase().includes(lowerSearch)
+    )
+  }
+  if (office !== 'ALL') {
+    filteredRows = filteredRows.filter(record => (record.clinic || record.office || '').toUpperCase() === office)
+  }
+  if (statusFilter !== 'All') {
+    filteredRows = filteredRows.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === statusFilter)
+  }
+
   const openAssessment = (record) => {
     if (!getAssessmentRecordId(record)) return
     onSelectAssess(record)
@@ -487,22 +514,54 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
     <>
       <div className="pg-hdr">
         <div className="pg-hdr-title">Parent Interviews</div>
-        <div className="pg-hdr-sub">Schedule, track, and complete parent interviews for initial assessments</div>
+        <div className="pg-hdr-sub">Schedule, track, and complete parent interviews and direct observations.</div>
       </div>
       <div className="stats-row stats-6" style={{ marginBottom: 22 }}>
-        <ClickableStatCard value={awaitingAssignment.length} label="Awaiting Assignment" color="#64748b" active={activeFilter?.key === 'awaiting-assignment'} onClick={() => toggleFilter('awaiting-assignment', 'Parent Interviews: Awaiting Assignment')} />
-        <ClickableStatCard value={notStarted.length} label="Not Started" color="#ef4444" active={activeFilter?.key === 'not-started'} onClick={() => toggleFilter('not-started', 'Parent Interviews: Not Started')} />
-        <ClickableStatCard value={scheduled.length} label="Scheduled" color="#f59e0b" active={activeFilter?.key === 'scheduled'} onClick={() => toggleFilter('scheduled', 'Parent Interviews: Scheduled')} />
-        <ClickableStatCard value={inProgress.length} label="In Progress" color="#f59e0b" active={activeFilter?.key === 'in-progress'} onClick={() => toggleFilter('in-progress', 'Parent Interviews: In Progress')} />
-        <ClickableStatCard value={completed.length} label="Completed" color="#22c55e" active={activeFilter?.key === 'completed'} onClick={() => toggleFilter('completed', 'Parent Interviews: Completed')} />
-        <ClickableStatCard value={noShow.length} label="No Show" color="#ef4444" active={activeFilter?.key === 'no-show'} onClick={() => toggleFilter('no-show', 'Parent Interviews: No Show')} />
+        <ClickableStatCard value={awaitingAssignment.length} label="Awaiting Assignment" color="#3b82f6" icon={UserPlus} active={activeFilter?.key === 'awaiting-assignment'} onClick={() => toggleFilter('awaiting-assignment', 'Parent Interviews: Awaiting Assignment')} />
+        <ClickableStatCard value={notStarted.length} label="Not Started" color="#ef4444" icon={CircleDashed} active={activeFilter?.key === 'not-started'} onClick={() => toggleFilter('not-started', 'Parent Interviews: Not Started')} />
+        <ClickableStatCard value={scheduled.length} label="Scheduled" color="#f59e0b" icon={CalendarClock} active={activeFilter?.key === 'scheduled'} onClick={() => toggleFilter('scheduled', 'Parent Interviews: Scheduled')} />
+        <ClickableStatCard value={inProgress.length} label="In Progress" color="#f59e0b" icon={Clock} active={activeFilter?.key === 'in-progress'} onClick={() => toggleFilter('in-progress', 'Parent Interviews: In Progress')} />
+        <ClickableStatCard value={completed.length} label="Completed" color="#22c55e" icon={CheckCircle} active={activeFilter?.key === 'completed'} onClick={() => toggleFilter('completed', 'Parent Interviews: Completed')} />
+        <ClickableStatCard value={noShow.length} label="No Show" color="#ef4444" icon={AlertCircle} active={activeFilter?.key === 'no-show'} onClick={() => toggleFilter('no-show', 'Parent Interviews: No Show')} />
       </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered parent interviews" />
 
-      <div className="card">
-        <div className="table-wrap">
-          <table>
-            <thead><tr><th>Client</th><th>Office</th><th>Assigned BCBA</th><th>Interview Status</th><th>Scheduled Date</th><th>Completed Date</th><th>Direct Obs.</th><th>Direct Obs. Date</th><th>Insurance</th><th>Open</th></tr></thead>
+      <div className="filter-row assessment-primary-controls">
+        <div className="search-wrap assessment-search-group">
+          <input className="search-input" placeholder="Search client or caregiver..." value={search} onChange={event => setSearch(event.target.value)} />
+        </div>
+        <div className="filter-divider"></div>
+        <div className="filter-btns assessment-clinic-filter-group">
+          {['ALL', 'MERIDIAN', 'FOREST', 'FLOWOOD', 'DAY TREATMENT'].map(option => (
+            <button key={option} className={`filter-btn ${office === option ? 'active' : ''}`} onClick={() => setOffice(option)}>{option}</button>
+          ))}
+        </div>
+        <div className="filter-divider"></div>
+        <div className="assessment-pa-select-group">
+          <span>Interview Status</span>
+          <select value={statusFilter} onChange={event => setStatusFilter(event.target.value)} aria-label="Interview Status">
+            <option value="All">All</option>
+            <option value="Awaiting Assignment">Awaiting Assignment</option>
+            <option value="Not Started">Not Started</option>
+            <option value="Scheduled">Scheduled</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="No Show">No Show</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="work-queue-card">
+        <div className="work-queue-header" style={{ marginBottom: 16 }}>
+          <div>
+            <div className="work-queue-eyebrow">Parent Interview Workflow</div>
+            <div className="work-queue-title">Parent Interview Work Queue</div>
+            <div className="work-queue-subtitle">{filteredRows.length} clients in the current view.</div>
+          </div>
+        </div>
+        <SyncedHorizontalScrollTable>
+          <table className="work-queue-table">
+            <thead><tr><th>Client</th><th>Office</th><th>Assigned BCBA</th><th>Parent Interview</th><th>Scheduled Date</th><th>Completed Date</th><th>Direct Observation</th><th>Direct Obs. Date</th><th>Insurance</th><th>Next Step</th></tr></thead>
             <tbody>
               {filteredRows.length === 0
                 ? <tr><td colSpan={10} style={{ padding: 56, textAlign: 'center', color: 'var(--dim)' }}>No assessment records found.</td></tr>
@@ -547,23 +606,22 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
                         {canOpen ? (
                           <button
                             type="button"
-                            className="btn-ghost"
+                            className="work-queue-action"
                             onClick={(event) => {
                               event.stopPropagation()
                               openAssessment(record)
                             }}
-                            style={{ padding: '6px 10px', fontSize: 12, color: 'var(--accent)', borderColor: 'var(--border2)' }}
                           >
-                            Open
+                            Open Client <ChevronRight size={14} />
                           </button>
-                        ) : null}
+                        ) : '--'}
                       </td>
                     </tr>
                   )
                 })}
             </tbody>
           </table>
-        </div>
+        </SyncedHorizontalScrollTable>
       </div>
     </>
   )
