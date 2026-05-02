@@ -4118,6 +4118,119 @@ tr{ transition:background 0.15s ease, transform 0.08s ease; }
   line-height:1.5;
 }
 
+/* ── All Referrals Page ──────────────────────────────────────── */
+.referral-kpi-row{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+  margin-bottom:20px;
+}
+.referral-kpi-card{
+  text-align:left;
+  padding:18px 20px;
+  border-radius:22px;
+}
+.referral-kpi-top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  margin-bottom:12px;
+}
+.referral-kpi-icon{
+  width:38px;
+  height:38px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+}
+.referral-kpi-num{
+  font-size:28px;
+  font-weight:800;
+  line-height:1;
+  letter-spacing:-0.03em;
+}
+.referral-kpi-label{
+  font-size:12.5px;
+  font-weight:700;
+  color:var(--text);
+  line-height:1.3;
+}
+.referral-kpi-helper{
+  font-size:11px;
+  color:var(--muted);
+  margin-top:4px;
+  line-height:1.45;
+  font-weight:400;
+}
+.referral-filter-row1{
+  align-items:center;
+}
+.referral-queue-filter-row{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  margin-bottom:16px;
+}
+.referral-queue-tab{
+  background:transparent;
+  border:1px solid var(--border2);
+  border-radius:7px;
+  padding:5px 13px;
+  font-size:11.5px;
+  font-weight:600;
+  color:var(--muted);
+  cursor:pointer;
+  transition:all 0.15s;
+  min-height:34px;
+  font-family:inherit;
+}
+.referral-queue-tab:hover{ border-color:var(--accent); color:var(--accent); }
+.referral-queue-tab.active{ background:#6366f115; border-color:var(--accent); color:var(--accent); }
+.btn-action-primary{
+  background:#6366f115;
+  border:1px solid #6366f130;
+  border-radius:999px;
+  padding:5px 14px;
+  font-size:11.5px;
+  font-weight:700;
+  color:var(--accent);
+  cursor:pointer;
+  transition:all 0.15s;
+  font-family:inherit;
+  white-space:nowrap;
+}
+.btn-action-primary:hover{ background:#6366f125; border-color:var(--accent); }
+.btn-action-secondary{
+  background:transparent;
+  border:1px solid var(--border2);
+  border-radius:999px;
+  padding:5px 10px;
+  font-size:11px;
+  font-weight:600;
+  color:var(--muted);
+  cursor:pointer;
+  transition:all 0.15s;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  font-family:inherit;
+  white-space:nowrap;
+}
+.btn-action-secondary:hover{ border-color:var(--muted); color:var(--text); }
+@media(max-width:900px){
+  .referral-kpi-row{ grid-template-columns:repeat(2,1fr); }
+}
+@media(max-width:540px){
+  .referral-kpi-row{ grid-template-columns:1fr 1fr; }
+}
+[data-theme="light"] .referral-queue-tab{ background:var(--surface); border-color:var(--border2); color:var(--muted); }
+[data-theme="light"] .referral-queue-tab.active{ background:#4f46e515; border-color:var(--accent); color:var(--accent); }
+[data-theme="light"] .btn-action-primary{ background:#4f46e510; border-color:#4f46e125; color:var(--accent); }
+[data-theme="light"] .btn-action-primary:hover{ background:#4f46e520; }
+[data-theme="light"] .btn-action-secondary{ border-color:var(--border2); color:var(--muted); }
+
 /* Sidebar brand refinement — "BSOM Intake Portal" is longer, so allow slight wrapping */
 .sidebar-title{
   font-weight:800;

@@ -487,13 +487,7 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
 
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
-  const awaitingAssignment = assessData.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === 'Awaiting Assignment')
-  const notStarted = assessData.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === 'Not Started')
-  const scheduled = assessData.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === 'Scheduled')
-  const inProgress = assessData.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === 'In Progress')
-  const completed = assessData.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === 'Completed')
-  const noShow = assessData.filter(record => normalizeParentInterviewStatus(record.parent_interview_status) === 'No Show')
-  const { activeFilter, toggleFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'parent-interviews')
+  const { activeFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'parent-interviews')
   let filteredRows = assessData.filter(record => matchesStatFilter(record, activeFilter))
 
   // Apply additional filters
@@ -518,18 +512,6 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
 
   return (
     <>
-      <div className="pg-hdr">
-        <div className="pg-hdr-title">Parent Interviews</div>
-        <div className="pg-hdr-sub">Schedule, track, and complete parent interviews and direct observations.</div>
-      </div>
-      <div className="stats-row stats-6" style={{ marginBottom: 22 }}>
-        <ClickableStatCard value={awaitingAssignment.length} label="Awaiting Assignment" color="#3b82f6" icon={UserPlus} active={activeFilter?.key === 'awaiting-assignment'} onClick={() => toggleFilter('awaiting-assignment', 'Parent Interviews: Awaiting Assignment')} />
-        <ClickableStatCard value={notStarted.length} label="Not Started" color="#ef4444" icon={CircleDashed} active={activeFilter?.key === 'not-started'} onClick={() => toggleFilter('not-started', 'Parent Interviews: Not Started')} />
-        <ClickableStatCard value={scheduled.length} label="Scheduled" color="#f59e0b" icon={CalendarClock} active={activeFilter?.key === 'scheduled'} onClick={() => toggleFilter('scheduled', 'Parent Interviews: Scheduled')} />
-        <ClickableStatCard value={inProgress.length} label="In Progress" color="#f59e0b" icon={Clock} active={activeFilter?.key === 'in-progress'} onClick={() => toggleFilter('in-progress', 'Parent Interviews: In Progress')} />
-        <ClickableStatCard value={completed.length} label="Completed" color="#22c55e" icon={CheckCircle} active={activeFilter?.key === 'completed'} onClick={() => toggleFilter('completed', 'Parent Interviews: Completed')} />
-        <ClickableStatCard value={noShow.length} label="No Show" color="#ef4444" icon={AlertCircle} active={activeFilter?.key === 'no-show'} onClick={() => toggleFilter('no-show', 'Parent Interviews: No Show')} />
-      </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered parent interviews" />
 
       <div className="filter-row assessment-primary-controls">
@@ -993,19 +975,10 @@ export function BCBAAssignmentsPage({
 
   return (
     <>
-      <div className="pg-hdr" style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <div>
-          <div className="pg-hdr-title">BCBA Waitlist</div>
-          <div className="pg-hdr-sub">Track assigned BCBAs, treatment plan progress, and authorization readiness.</div>
-        </div>
+      <div className="pg-hdr" style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <button type="button" onClick={() => setManageBcbasOpen(true)} style={{ fontSize: 12, padding: '8px 16px', borderRadius: '20px', background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer' }}>
           Manage BCBAs
         </button>
-      </div>
-      <div className="stats-row stats-3" style={{ marginBottom: 22 }}>
-        <ClickableStatCard value={assessData.length} label="Total Clients" color="#6366f1" active={activeFilter?.key === 'all'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('all', 'BCBA Waitlist: All Clients') }} icon={Users} sublabel="All assessment records" />
-        <ClickableStatCard value={unassigned.length} label="Unassigned" color="#ef4444" active={activeFilter?.key === 'unassigned'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('unassigned', 'BCBA Waitlist: Unassigned') }} icon={UserMinus} sublabel="Awaiting BCBA assignment" />
-        <ClickableStatCard value={Object.keys(byBCBA).length} label="Active BCBAs" color="#22c55e" active={activeFilter?.key === 'assigned'} onClick={() => { setSelectedBcbaKey(null); toggleFilter('assigned', 'BCBA Waitlist: Assigned to BCBA') }} icon={BriefcaseMedical} sublabel="Currently assigned clients" />
       </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered BCBA waitlist" />
 
@@ -1166,10 +1139,7 @@ export function AssessmentProgressPage({ assessData, assessLoading, onSelectAsse
 
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /><div style={{ color: 'var(--muted)', marginTop: 12 }}>Loading assessment progress...</div></div>
 
-  const notStarted = assessData.filter(record => getAssessmentWorkflowStatus(record) === 'Not Started')
-  const inProgress = assessData.filter(record => getAssessmentWorkflowStatus(record) === 'In Progress')
-  const completed = assessData.filter(record => getAssessmentWorkflowStatus(record) === 'Completed')
-  const { activeFilter, toggleFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'assessment-progress')
+  const { activeFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'assessment-progress')
   const filteredRows = assessData
     .filter(record => matchesStatFilter(record, activeFilter))
     .filter(record => {
@@ -1187,41 +1157,6 @@ export function AssessmentProgressPage({ assessData, assessLoading, onSelectAsse
 
   return (
     <>
-      <div className="pg-hdr">
-        <div>
-          <div className="pg-hdr-title">Assessment Progress</div>
-          <div className="pg-hdr-sub">Track assessment component completion and notify families when action is needed.</div>
-        </div>
-      </div>
-      <div className="stats-row stats-3" style={{ marginBottom: 22 }}>
-        <ClickableStatCard
-          value={notStarted.length}
-          label="Not Started"
-          color="#ef4444"
-          icon={CircleDashed}
-          sublabel="Assessment work not begun"
-          active={activeFilter?.key === 'not-started'}
-          onClick={() => toggleFilter('not-started', 'Assessment Progress: Not Started')}
-        />
-        <ClickableStatCard
-          value={inProgress.length}
-          label="In Progress"
-          color="#f59e0b"
-          icon={Clock}
-          sublabel="Active assessment progress"
-          active={activeFilter?.key === 'in-progress'}
-          onClick={() => toggleFilter('in-progress', 'Assessment Progress: In Progress')}
-        />
-        <ClickableStatCard
-          value={completed.length}
-          label="Completed"
-          color="#22c55e"
-          icon={CheckCircle}
-          sublabel="Fully completed assessments"
-          active={activeFilter?.key === 'completed'}
-          onClick={() => toggleFilter('completed', 'Assessment Progress: Completed')}
-        />
-      </div>
       <ActiveFilterBanner filter={activeFilter} onClear={onClearStatFilter} defaultText="Showing filtered assessment progress records" />
 
       <div className="filter-row assessment-primary-controls" style={{ marginBottom: 22 }}>
@@ -1435,11 +1370,6 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
 
   return (
     <>
-      <div className="pg-hdr">
-        <div className="pg-hdr-title">Ready for Services</div>
-        <div className="pg-hdr-sub">Clients cleared for service activation and final handoff.</div>
-      </div>
-
       {readyRows.length > 0 && (
         <>
           <div style={{ marginBottom: 8 }}>

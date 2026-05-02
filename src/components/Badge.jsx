@@ -91,12 +91,12 @@ export function PaStatusBadge({ status }) {
   )
 }
 
-export function ProgressRing({ value }) {
+export function ProgressRing({ value, size = 52 }) {
   const radius = 18
   const circ = 2 * Math.PI * radius
   const col = value >= 80 ? '#22c55e' : value >= 50 ? '#f59e0b' : '#ef4444'
   return (
-    <svg width="52" height="52" viewBox="0 0 44 44">
+    <svg width={size} height={size} viewBox="0 0 44 44">
       <circle cx="22" cy="22" r={radius} fill="none" stroke="#1a2840" strokeWidth="4" />
       <circle
         cx="22"
