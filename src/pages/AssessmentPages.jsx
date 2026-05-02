@@ -35,7 +35,6 @@ import {
   getAssessmentWorkflowStatus,
   getAuthorizationStatus,
   isAssessmentActiveClient,
-  isAuthorizationApproved,
   normalizeAssessmentComponentStatus,
   normalizeAuthorizationStatus,
   normalizeParentInterviewStatus,
@@ -946,8 +945,12 @@ export function BCBAAssignmentsPage({
 
   return (
     <>
-      <div className="pg-hdr" style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <button type="button" onClick={() => setManageBcbasOpen(true)} style={{ fontSize: 12, padding: '8px 16px', borderRadius: '20px', background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer' }}>
+      <div className="pg-hdr" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+        <div>
+          <div className="pg-hdr-title">BCBA Waitlist</div>
+          <div className="pg-hdr-sub">Clients currently awaiting BCBA assignment or treatment plan progression</div>
+        </div>
+        <button type="button" onClick={() => setManageBcbasOpen(true)} style={{ fontSize: 12, padding: '8px 16px', borderRadius: '20px', background: 'var(--accent)', border: '1px solid var(--accent)', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
           Manage BCBAs
         </button>
       </div>
@@ -972,7 +975,6 @@ export function BCBAAssignmentsPage({
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 12, marginBottom: 22 }}>
           {bcbaCards.map(([bcbaKey, stats]) => {
             const isSelected = selectedBcbaKey === bcbaKey
-            const completionPercent = stats.total ? Math.round((stats.completed / stats.total) * 100) : 0
             return (
             <div
               key={bcbaKey}
@@ -992,11 +994,11 @@ export function BCBAAssignmentsPage({
                 borderRadius: '20px',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>{stats.name}</div>
+              <div style={{ display: 'grid', justifyItems: 'center', gap: 8, marginBottom: 14, textAlign: 'center' }}>
+                <div style={{ fontWeight: 750, fontSize: 15 }}>{stats.name}</div>
                 <span className="bdg" style={{ background: '#6366f120', color: '#a5b4fc', border: '1px solid #6366f130', fontSize: 11 }}>{stats.total} clients</span>
               </div>
-              <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 22 }}>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: 18, fontWeight: 800, color: '#22c55e' }}>{stats.completed}</div>
                   <div style={{ fontSize: 10, color: 'var(--dim)' }}>Completed</div>
@@ -1010,10 +1012,6 @@ export function BCBAAssignmentsPage({
                   <div style={{ fontSize: 10, color: 'var(--dim)' }}>Not Started</div>
                 </div>
               </div>
-              <div style={{ background: 'var(--surface2)', borderRadius: 4, height: 6, marginBottom: 8 }}>
-                <div style={{ width: `${completionPercent}%`, height: 6, borderRadius: 4, background: '#22c55e', transition: 'width 0.5s' }} />
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--dim)', textAlign: 'center' }}>{completionPercent}% plans complete</div>
             </div>
             )
           })}
@@ -1105,7 +1103,6 @@ export function BCBAAssignmentsPage({
 export function AssessmentProgressPage({ assessData, assessLoading, onSelectAssess, statFilter, onSetStatFilter, onClearStatFilter }) {
   const [notifyRecord, setNotifyRecord] = useState(null)
   const [search, setSearch] = useState('')
-  const [office, setOffice] = useState('ALL')
   const [progressFilter, setProgressFilter] = useState('All')
 
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /><div style={{ color: 'var(--muted)', marginTop: 12 }}>Loading assessment progress...</div></div>
@@ -1118,12 +1115,10 @@ export function AssessmentProgressPage({ assessData, assessLoading, onSelectAsse
       const name = (record.client_name || '').toLowerCase()
       const caregiver = (record.caregiver || '').toLowerCase()
       if (query && !(name.includes(query) || caregiver.includes(query))) return false
-      if (office !== 'ALL' && ((record.clinic || record.office || '').toUpperCase() !== office)) return false
       if (progressFilter !== 'All' && getAssessmentWorkflowStatus(record) !== progressFilter) return false
       return true
     })
 
-  const officeOptions = ['ALL', 'MERIDIAN', 'FOREST', 'FLOWOOD', 'DAY TREATMENT']
   const progressOptions = ['All', 'Not Started', 'In Progress', 'Completed']
 
   return (
@@ -1138,19 +1133,6 @@ export function AssessmentProgressPage({ assessData, assessLoading, onSelectAsse
             value={search}
             onChange={event => setSearch(event.target.value)}
           />
-        </div>
-        <div className="filter-divider"></div>
-        <div className="filter-btns assessment-clinic-filter-group">
-          {officeOptions.map(option => (
-            <button
-              key={option}
-              type="button"
-              className={`filter-btn ${office === option ? 'active' : ''}`}
-              onClick={() => setOffice(option)}
-            >
-              {option}
-            </button>
-          ))}
         </div>
         <div className="filter-divider"></div>
         <div className="assessment-pa-select-group" style={{ minWidth: 180 }}>
@@ -1323,146 +1305,77 @@ export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess, 
 export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess, statFilter, onSetStatFilter, onClearStatFilter }) {
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
-  const referredOut = assessData.filter(record => getAssessmentLifecycleStatus(record) === 'Referred Out')
   const activeClients = assessData.filter(record => isAssessmentActiveClient(record))
   const activeClientSet = new Set(activeClients)
   const ready = assessData.filter(record => record.ready_for_services === true && getAssessmentLifecycleStatus(record) !== 'Referred Out' && !activeClientSet.has(record))
-  const almostAuth = assessData.filter(record =>
-    getAssessmentWorkflowStatus(record) === 'Completed'
-    && !isAuthorizationApproved(record)
-    && !record.ready_for_services
-    && getAssessmentLifecycleStatus(record) !== 'Referred Out'
-    && !activeClientSet.has(record)
-  )
-  const { activeFilter, toggleFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'ready-for-services')
   const readyRows = ready
-  const almostAuthRows = almostAuth
-  const referredOutRows = referredOut
 
   return (
-    <>
-      {readyRows.length > 0 && (
-        <>
-          <div style={{ marginBottom: 8 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#22c55e', marginBottom: 4 }}>Queue</div>
-            <div style={{ fontSize: 13, color: 'var(--muted)' }}>Final review before client handoff into active services.</div>
-          </div>
-          <div className="card" style={{ marginBottom: 20 }}>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Client</th><th>BCBA</th><th>Authorization</th><th>Auth Approved</th><th>Active Date</th><th>Notes</th><th>Open</th></tr></thead>
-                <tbody>
-                  {readyRows.map(record => (
-                    <tr
-                      key={record.assessment_id || record.client_name}
-                      className="row-hover"
-                      onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
-                      style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
-                    >
-                      <td>
-                        <div style={{ fontWeight: 700, color: '#22c55e' }}>{record.client_name}</div>
-                        <div style={{ fontSize: 11, color: 'var(--dim)' }}>{record.clinic || ''}</div>
-                      </td>
-                      <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
-                      <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
-                      <td style={{ fontSize: 11, color: '#a5b4fc' }}>{formatDate(record.authorization_approved_date || record.pa_decision_date) || '—'}</td>
-                      <td>
-                        {record.active_client_date ? (
-                          <span style={{ fontSize: 11, color: '#22c55e' }}>{formatDate(record.active_client_date)}</span>
-                        ) : (
-                          <span className="verification-pill verification-pill-awaiting">Pending</span>
-                        )}
-                      </td>
-                      <td style={{ fontSize: 11, color: 'var(--dim)', maxWidth: 160 }}>{record.notes || '—'}</td>
-                      <td>
-                        <button
-                          className="btn-sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            getAssessmentRecordId(record) && onSelectAssess(record)
-                          }}
-                        >
-                          Open
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
-
-      {almostAuthRows.length > 0 && (
-        <>
-          <div style={{ marginBottom: 14, fontSize: 13, fontWeight: 700, color: '#f59e0b' }}>Awaiting Authorization ({almostAuthRows.length})</div>
-          <div className="card">
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Client</th><th>BCBA</th><th>Assessment Progress</th><th>Treatment Plan</th><th>Authorization</th><th>Submitted</th><th /></tr></thead>
-                <tbody>
-                  {almostAuthRows.map(record => (
-                    <tr
-                      key={record.assessment_id || record.client_name}
-                      className="row-hover"
-                      onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
-                      style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
-                    >
-                      <td>{renderClientCell(record, record.clinic)}</td>
-                      <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
-                      <td>{sBdg(getAssessmentWorkflowStatus(record))}</td>
-                      <td>{sBdg(record.treatment_plan_status || 'Not Started')}</td>
-                      <td><PaStatusBadge status={getAuthorizationStatus(record) || 'Not Submitted'} /></td>
-                      <td style={{ fontSize: 11, color: 'var(--muted)' }}>{formatDisplayDate(record.authorization_submitted_date)}</td>
-                      <td style={{ color: 'var(--accent)' }}>→</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
-
-      {referredOutRows.length > 0 && (
-        <>
-          <div style={{ marginBottom: 14, fontSize: 13, fontWeight: 700, color: '#8b5cf6' }}>Referred Out ({referredOutRows.length})</div>
-          <div className="card" style={{ marginBottom: 20 }}>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Client</th><th>BCBA</th><th>Lifecycle Status</th><th>Authorization</th><th>Notes</th><th /></tr></thead>
-                <tbody>
-                  {referredOutRows.map(record => (
-                    <tr
-                      key={record.assessment_id || record.client_name}
-                      className="row-hover"
-                      onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
-                      style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
-                    >
-                      <td>{renderClientCell(record, record.clinic)}</td>
-                      <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
-                      <td>{lifecycleBadge(getAssessmentLifecycleStatus(record))}</td>
-                      <td><PaStatusBadge status={getAuthorizationStatus(record) || 'Referred Out'} /></td>
-                      <td style={{ fontSize: 11, color: 'var(--dim)', maxWidth: 180 }}>{record.notes || '--'}</td>
-                      <td style={{ color: 'var(--accent)' }}>→</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
-
-      {activeFilter && readyRows.length === 0 && almostAuthRows.length === 0 && notReadyRows.length === 0 && referredOutRows.length === 0 && activeRows.length === 0 && (
-        <div className="card card-pad" style={{ textAlign: 'center', color: 'var(--dim)' }}>
-          No service-readiness records match the current filter.
+    <section className="ready-services-page">
+      <div className="ready-services-header">
+        <div className="ready-services-title-row">
+          <CheckCircle size={22} strokeWidth={2.4} aria-hidden="true" />
+          <div className="pg-hdr-title ready-services-title">Queue</div>
         </div>
-      )}
+        <div className="ready-services-subtitle">
+          Clients in this queue have completed intake and are ready for transition out of intake.
+        </div>
+      </div>
 
-    </>
+      <div className="card ready-services-table-card">
+        <div className="table-wrap">
+          <table className="ready-services-table">
+            <thead><tr><th>Client</th><th>BCBA</th><th>Authorization</th><th>Auth Approved</th><th>Active Date</th><th>Notes</th><th>Open</th></tr></thead>
+            <tbody>
+              {readyRows.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="ready-services-empty">
+                    <div>No clients are ready for services yet.</div>
+                    <span>Completed clients will appear here once intake and authorization requirements are finished.</span>
+                  </td>
+                </tr>
+              ) : readyRows.map(record => (
+                <tr
+                  key={record.assessment_id || record.client_name}
+                  className="row-hover"
+                  onClick={() => getAssessmentRecordId(record) && onSelectAssess(record)}
+                  style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
+                >
+                  <td>
+                    <div className="ready-services-client-name">{record.client_name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--dim)' }}>{record.clinic || ''}</div>
+                  </td>
+                  <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
+                  <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
+                  <td style={{ fontSize: 11, color: '#a5b4fc' }}>{formatDate(record.authorization_approved_date || record.pa_decision_date) || '--'}</td>
+                  <td>
+                    {record.active_client_date ? (
+                      <span style={{ fontSize: 11, color: '#22c55e' }}>{formatDate(record.active_client_date)}</span>
+                    ) : (
+                      <span className="verification-pill verification-pill-awaiting">Pending</span>
+                    )}
+                  </td>
+                  <td style={{ fontSize: 11, color: 'var(--dim)', maxWidth: 160 }}>{record.notes || '--'}</td>
+                  <td>
+                    <button
+                      className="btn-sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        getAssessmentRecordId(record) && onSelectAssess(record)
+                      }}
+                    >
+                      Open
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   )
+
 }
 
 export function ActiveClientsPage({ assessData, assessLoading, onSelectAssess }) {
