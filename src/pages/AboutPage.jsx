@@ -26,6 +26,9 @@ const locations = [
   },
 ]
 
+const activeLocationNames = new Set(['Meridian', 'Forest'])
+const visibleLocations = locations.filter(loc => activeLocationNames.has(loc.name))
+
 export function AboutPortalPage() {
   return (
     <div style={{ width: '100%', maxWidth: 1100, margin: '0 auto' }}>
@@ -75,8 +78,8 @@ export function LocationsPage() {
         <div className="pg-hdr-sub">BSOM Intake Portal — clinic locations and contact information</div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 30, alignItems: 'stretch' }}>
-        {locations.map(loc => (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 30, alignItems: 'stretch', maxWidth: 760, margin: '0 auto' }}>
+        {visibleLocations.map(loc => (
           <div key={loc.name} className="card card-pad" style={{ borderLeft: `3px solid ${loc.color}`, minHeight: 190 }}>
             <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 14, color: loc.color }}>{loc.name}</div>
             <div className="info-row">

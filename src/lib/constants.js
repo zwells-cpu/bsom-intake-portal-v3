@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 
 export const OFFICES = ['MERIDIAN', 'FOREST', 'FLOWOOD', 'DAY TREATMENT']
+export const ACTIVE_REFERRAL_OFFICES = ['MERIDIAN', 'FOREST']
 
 export const INSURANCES = [
   'Medicaid of MS', 'UHC', 'UHC Community', 'Magnolia', 'Molina',

@@ -727,7 +727,27 @@ select option{ background:var(--surface); }
 .office-pill{
   background:var(--surface2); border-radius:6px; padding:3px 9px;
   font-size:11px; font-weight:700; color:var(--muted); display:inline-block;
-  font-family:"DM Sans",system-ui,sans-serif; letter-spacing:0;
+  font-family:"DM Sans",system-ui,sans-serif; letter-spacing:0; text-transform:uppercase;
+}
+.office-pill-meridian{
+  color:#93c5fd;
+  border:1px solid rgba(59,130,246,0.35);
+  background:rgba(59,130,246,0.06);
+}
+.office-pill-forest{
+  color:#6ee7b7;
+  border:1px solid rgba(16,185,129,0.35);
+  background:rgba(16,185,129,0.06);
+}
+[data-theme="light"] .office-pill-meridian{
+  color:#1d4ed8;
+  border-color:rgba(59,130,246,0.35);
+  background:rgba(59,130,246,0.06);
+}
+[data-theme="light"] .office-pill-forest{
+  color:#047857;
+  border-color:rgba(16,185,129,0.35);
+  background:rgba(16,185,129,0.06);
 }
 .btn-primary{
   background:linear-gradient(135deg,var(--accent),var(--accent2));

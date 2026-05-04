@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { OFFICES, INSURANCE_PAYERS, REFERRAL_SOURCES, BOOL, STAT, STAFF, AUTISM_DIAGNOSIS_OPTIONS, REFERRAL_FORM_OPTIONS, IEP_REPORT_OPTIONS, emptyReferral } from '../lib/constants'
+import { ACTIVE_REFERRAL_OFFICES, INSURANCE_PAYERS, REFERRAL_SOURCES, BOOL, STAT, STAFF, AUTISM_DIAGNOSIS_OPTIONS, REFERRAL_FORM_OPTIONS, IEP_REPORT_OPTIONS, emptyReferral } from '../lib/constants'
 import { normalizeOptions, optionValues } from '../lib/lookups'
 import { formatDisplayDate, formatPhoneNumber, normalizeAutismDx } from '../lib/utils'
 
@@ -8,6 +8,16 @@ const ATTEND_SCHOOL_OPTIONS = ['Yes', 'No']
 const INTAKE_PERSONNEL_OPTIONS = [...STAFF.slice(0, -1), 'Nicola', STAFF[STAFF.length - 1]]
 const PHONE_FIELDS = new Set(['caregiver_phone', 'referral_source_phone', 'referral_source_fax'])
 const DRAFT_STORAGE_KEY = 'bsom-new-referral-draft'
+const ACTIVE_REFERRAL_OFFICE_SET = new Set(ACTIVE_REFERRAL_OFFICES.map(office => office.toUpperCase()))
+
+function activeReferralOfficeOptions(options) {
+  return optionValues(options).filter(office => ACTIVE_REFERRAL_OFFICE_SET.has(office.toUpperCase()))
+}
+
+function normalizeActiveReferralOffice(value) {
+  const office = String(value || '').trim()
+  return ACTIVE_REFERRAL_OFFICE_SET.has(office.toUpperCase()) ? office : ''
+}
 
 function getEmptyReferral() {
   return emptyReferral()
@@ -17,11 +27,13 @@ function sanitizeDraftForm(value) {
   const base = getEmptyReferral()
   if (!value || typeof value !== 'object') return base
 
-  return Object.keys(base).reduce((next, key) => {
+  const next = Object.keys(base).reduce((draft, key) => {
     const draftValue = value[key]
-    next[key] = typeof draftValue === 'string' ? draftValue : base[key]
-    return next
+    draft[key] = typeof draftValue === 'string' ? draftValue : base[key]
+    return draft
   }, {})
+
+  return { ...next, office: normalizeActiveReferralOffice(next.office) }
 }
 
 function clampStep(value) {
@@ -132,7 +144,7 @@ export function NewReferralPage({ onSave, saving, officeOptions: liveOfficeOptio
   const draftEnabledRef = useRef(draftEnabled)
   const draftSaveReadyRef = useRef(false)
   const suppressDraftRef = useRef(false)
-  const officeOptions = optionValues(liveOfficeOptions.length ? liveOfficeOptions : normalizeOptions(OFFICES))
+  const officeOptions = activeReferralOfficeOptions(liveOfficeOptions.length ? liveOfficeOptions : normalizeOptions(ACTIVE_REFERRAL_OFFICES))
   const insuranceOptions = optionValues(liveInsuranceOptions.length ? liveInsuranceOptions : normalizeOptions(INSURANCE_PAYERS))
   const referralSourceOptions = optionValues(liveReferralSourceOptions.length ? liveReferralSourceOptions : normalizeOptions(REFERRAL_SOURCES))
 
@@ -222,7 +234,11 @@ export function NewReferralPage({ onSave, saving, officeOptions: liveOfficeOptio
   }
 
   const handleSubmit = async () => {
-    const res = await onSave({ ...form, autism_diagnosis: normalizeAutismDx(form.autism_diagnosis, { emptyAsNotReceived: false }) })
+    const res = await onSave({
+      ...form,
+      office: normalizeActiveReferralOffice(form.office),
+      autism_diagnosis: normalizeAutismDx(form.autism_diagnosis, { emptyAsNotReceived: false }),
+    })
     if (res?.success) {
       suppressDraftRef.current = true
       removeDraft()

@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { Badge, OfficePill, ProgressRing, StagePill } from './Badge'
 import { ConfirmationModal } from './ConfirmationModal'
-import { INSURANCE_PAYERS, REFERRAL_SOURCES, BOOL, STAFF, OFFICES, CHECKLIST_FIELDS } from '../lib/constants'
+import { ACTIVE_REFERRAL_OFFICES, INSURANCE_PAYERS, REFERRAL_SOURCES, BOOL, STAFF, CHECKLIST_FIELDS } from '../lib/constants'
 import { includeCurrentOption, normalizeOptions, optionValues } from '../lib/lookups'
 import { formatDisplayDate, getInsuranceVerificationLabel, getReferralStage, pct, formatInsurance, normalizeAutismDx, normalizeReferralFieldValue } from '../lib/utils'
 import { API_BASE } from '../lib/api'
@@ -22,6 +22,11 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024
 
 const DOCUMENT_TYPE_OPTIONS = ['Referral Form', 'Insurance Card', 'Diagnosis Report', 'Assessment Report', 'IEP/School Records', 'Consent Form', 'Other']
 const INSURANCE_VERIFICATION_STATUS_OPTIONS = ['', 'YES', 'NO', 'AWAITING']
+const ACTIVE_REFERRAL_OFFICE_SET = new Set(ACTIVE_REFERRAL_OFFICES.map(office => office.toUpperCase()))
+
+function activeReferralOfficeOptions(options) {
+  return optionValues(options).filter(office => ACTIVE_REFERRAL_OFFICE_SET.has(office.toUpperCase()))
+}
 
 function formatInsuranceVerificationOption(value) {
   if (value === 'YES') return 'Confirmed'
@@ -124,7 +129,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
   const r = referral
   const e = editMode ? form : referral
   const intakeStage = getReferralStage(e)
-  const officeOptions = includeCurrentOption(optionValues(liveOfficeOptions.length ? liveOfficeOptions : normalizeOptions(OFFICES)), e.office)
+  const officeOptions = includeCurrentOption(activeReferralOfficeOptions(liveOfficeOptions.length ? liveOfficeOptions : normalizeOptions(ACTIVE_REFERRAL_OFFICES)), e.office)
   const insuranceOptions = includeCurrentOption(optionValues(liveInsuranceOptions.length ? liveInsuranceOptions : normalizeOptions(INSURANCE_PAYERS)), e.insurance)
   const secondaryInsuranceOptions = includeCurrentOption(['None', ...insuranceOptions], e.secondary_insurance)
   const referralSourceOptions = includeCurrentOption(optionValues(liveReferralSourceOptions.length ? liveReferralSourceOptions : normalizeOptions(REFERRAL_SOURCES)), e.referral_source)

@@ -17,7 +17,7 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react'
-import { PaStatusBadge } from '../components/Badge'
+import { PaStatusBadge, officePillClassName } from '../components/Badge'
 import { NotifyModal } from '../components/NotifyModal'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
 import { SyncedHorizontalScrollTable } from '../components/SyncedHorizontalScrollTable'
@@ -365,7 +365,7 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, o
                             <div className="work-queue-client-name">{record.client_name || '--'}</div>
                             <div className="work-queue-client-date">{record.caregiver || 'Caregiver not listed'}</div>
                           </td>
-                          <td><span className="office-pill">{record.clinic || '--'}</span></td>
+                          <td><span className={officePillClassName(record.clinic)}>{record.clinic || '--'}</span></td>
                           <td><span className="assessment-bcba-cell">{record.assigned_bcba || 'Unassigned'}</span></td>
                           <td>{sBdg(normalizeParentInterviewStatus(record.parent_interview_status))}</td>
                           <td>{assessVal(record.direct_obs_status || record.direct_obs)}</td>
@@ -510,7 +510,7 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
                           renderClientCell(record, record.caregiver)
                         )}
                       </td>
-                      <td><span className="office-pill">{record.clinic || record.office || '--'}</span></td>
+                      <td><span className={officePillClassName(record.clinic || record.office)}>{record.clinic || record.office || '--'}</span></td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || <span style={{ color: 'var(--dim)', fontStyle: 'italic' }}>Unassigned</span>}</td>
                       <td>{sBdg(normalizeParentInterviewStatus(record.parent_interview_status))}</td>
                       <td style={{ fontSize: 11, color: record.parent_interview_scheduled_date ? '#a5b4fc' : 'var(--dim)' }}>{formatDisplayDate(record.parent_interview_scheduled_date)}</td>
@@ -733,7 +733,7 @@ function ManageBcbasContent({ officeOptions = [], onRefreshLookups }) {
                 <tr key={record.id || record.full_name} style={{ borderBottom: '1px solid var(--border2)' }}>
                   <td style={{ padding: '16px', fontWeight: 600, fontSize: '14px' }}>{cleanLookupValue(record.full_name)}</td>
                   <td style={{ padding: '16px', fontSize: '13px', color: 'var(--muted)' }}>{record.email || '--'}</td>
-                  <td style={{ padding: '16px' }}><span className="office-pill">{record.office || '--'}</span></td>
+                  <td style={{ padding: '16px' }}><span className={officePillClassName(record.office)}>{record.office || '--'}</span></td>
                   <td style={{ padding: '16px' }}>
                     {record.is_active === false ? 
                       <span className="bdg" style={{ background: '#64748b20', color: '#94a3b8', border: '1px solid #64748b35', borderRadius: '16px', padding: '4px 8px', fontSize: '11px', fontWeight: 600 }}>Inactive</span> : 
@@ -992,7 +992,7 @@ export function BCBAAssignmentsPage({
                   style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
                 >
                   <td>{renderClientCell(record, record.caregiver)}</td>
-                  <td><span className="office-pill">{record.clinic || record.office || '--'}</span></td>
+                  <td><span className={officePillClassName(record.clinic || record.office)}>{record.clinic || record.office || '--'}</span></td>
                   <td style={{ fontSize: 12, color: 'var(--muted)' }}>{getBcbaDisplayName(record.assigned_bcba) || <span style={{ color: 'var(--dim)', fontStyle: 'italic' }}>Unassigned</span>}</td>
                   <td>{sBdg(normalizeTreatmentPlanStatus(record.treatment_plan_status))}</td>
                   <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
@@ -1368,7 +1368,7 @@ export function ActiveClientsPage({ assessData, assessLoading, onSelectAssess })
                     style={{ cursor: getAssessmentRecordId(record) ? 'pointer' : 'default' }}
                   >
                     <td>{renderClientCell(record, record.caregiver)}</td>
-                    <td><span className="office-pill">{record.clinic || record.office || '--'}</span></td>
+                    <td><span className={officePillClassName(record.clinic || record.office)}>{record.clinic || record.office || '--'}</span></td>
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.insurance || '--'}</td>
                     <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>

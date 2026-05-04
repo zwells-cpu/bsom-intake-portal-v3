@@ -35,7 +35,7 @@ export function OfficePill({ office, previousOffice }) {
 
   return (
     <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', minHeight: 28 }}>
-      <span className="office-pill">{norm || ''}</span>
+      <span className={officePillClassName(norm)}>{norm || ''}</span>
       <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: 600, visibility: showPreviousOffice ? 'visible' : 'hidden' }}>
         Prev. {showPreviousOffice ? previousOffice : ' '}
       </span>
@@ -43,11 +43,20 @@ export function OfficePill({ office, previousOffice }) {
   )
 }
 
+export function officePillClassName(office) {
+  const norm = normalizeOfficeFn(office)
+  const officeKey = String(norm || '').trim().toUpperCase()
+  if (officeKey === 'MERIDIAN') return 'office-pill office-pill-meridian'
+  if (officeKey === 'FOREST') return 'office-pill office-pill-forest'
+  return 'office-pill'
+}
+
 function normalizeOfficeFn(o) {
-  if (o === 'JACKSON') return 'FLOWOOD'
-  if (o === 'SCHOOL') return 'DAY TREATMENT'
-  if (o === 'NEWTON') return 'FOREST'
-  return o
+  const office = String(o || '').trim().toUpperCase()
+  if (office === 'JACKSON') return 'FLOWOOD'
+  if (office === 'SCHOOL') return 'DAY TREATMENT'
+  if (office === 'NEWTON') return 'FOREST'
+  return office
 }
 
 export function StagePill({ stage }) {
