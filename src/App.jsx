@@ -7,7 +7,7 @@ import { useIdleTimeout } from './hooks/useIdleTimeout'
 import { useReferrals } from './hooks/useReferrals'
 import { useAssessments } from './hooks/useAssessments'
 import { useLookups } from './hooks/useLookups'
-import { MODULES, MODULE_NAV } from './lib/constants'
+import { ACTIVE_OPERATIONAL_OFFICES, ACTIVE_REFERRAL_OFFICES, MODULES, MODULE_NAV } from './lib/constants'
 
 import { HomePage } from './components/HomePage'
 import { Sidebar } from './components/Sidebar'
@@ -18,7 +18,7 @@ import { NewAssessmentModal } from './components/NewAssessmentModal'
 
 import { NewReferralPage } from './pages/NewReferralPage'
 import { createActivityLog } from './lib/activityLogs'
-import { getAssessmentRecordId, isActiveReferralWork, isAssessmentActiveClient, isReferralTransitioned, needsInsuranceVerification } from './lib/utils'
+import { getAssessmentRecordId, isActiveReferralWork, isAssessmentActiveClient, isReferralTransitioned, needsInsuranceVerification, normalizeOffice } from './lib/utils'
 import { API_BASE, parseApiError } from './lib/api'
 import { formatProfileAccessLabel, formatRoleLabel, isAdmin, normalizeProfile, canAccessOperations } from './lib/profileUtils'
 
@@ -50,6 +50,10 @@ const ASSESSMENT_MODAL_STATE_KEY = 'bsom-portal-open-assessment-modal'
 const REFERRAL_DOCUMENT_FIELDS = new Set(['referral_form', 'permission_assessment', 'vineland', 'srs2', 'autism_diagnosis', 'intake_paperwork', 'iep_report', 'attends_school'])
 const REFERRAL_CONTACT_FIELDS  = new Set(['caregiver', 'caregiver_phone', 'caregiver_email', 'referral_source', 'referral_source_phone', 'referral_source_fax', 'provider_npi', 'point_of_contact'])
 const REFERRAL_INSURANCE_FIELDS = new Set(['insurance', 'secondary_insurance'])
+const ACTIVE_REFERRAL_OFFICE_SET = new Set(ACTIVE_REFERRAL_OFFICES)
+const ACTIVE_OPERATIONAL_OFFICE_SET = new Set(ACTIVE_OPERATIONAL_OFFICES)
+const isActiveReferralOffice = (office) => ACTIVE_REFERRAL_OFFICE_SET.has(normalizeOffice(office) || office)
+const isActiveOperationalOffice = (office) => ACTIVE_OPERATIONAL_OFFICE_SET.has(normalizeOffice(office) || office)
 
 function PageLoader({ label = 'Loading page...' }) {
   return (
@@ -358,14 +362,14 @@ export default function App() {
     setRouteFilter(null)
   }
 
-  const active = useMemo(() => refs.filter(r => isActiveReferralWork(r, assessData)), [refs, assessData])
-  const nr = useMemo(() => refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out'), [refs])
+  const active = useMemo(() => refs.filter(r => isActiveReferralOffice(r.office) && isActiveReferralWork(r, assessData)), [refs, assessData])
+  const nr = useMemo(() => refs.filter(r => isActiveReferralOffice(r.office) && (r.status === 'non-responsive' || r.status === 'referred-out')), [refs])
   const pending = useMemo(() => active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase())), [active])
-  const readyForInterview = useMemo(() => refs.filter(r => isReferralTransitioned(r, assessData)), [refs, assessData])
+  const readyForInterview = useMemo(() => refs.filter(r => isActiveReferralOffice(r.office) && isReferralTransitioned(r, assessData)), [refs, assessData])
   const noIns = useMemo(() => active.filter(r => needsInsuranceVerification(r.insurance_verified)).length, [active])
   const operationsRefs = useMemo(() => refs, [refs])
   const operationsAssessData = useMemo(() => assessData, [assessData])
-  const activeAssessmentQueueData = useMemo(() => assessData.filter(record => !isAssessmentActiveClient(record)), [assessData])
+  const activeAssessmentQueueData = useMemo(() => assessData.filter(record => isActiveOperationalOffice(record.clinic || record.office) && !isAssessmentActiveClient(record)), [assessData])
 
   const selectedRef = selId ? refs.find(r => r.id === selId) : null
   const selectedAssess = selAssessId

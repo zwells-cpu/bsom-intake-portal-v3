@@ -138,6 +138,11 @@ export function getOffices() {
   return fetchLookup('/offices', 'name')
 }
 
+export function filterActiveOffices(options = [], activeOffices = []) {
+  const activeSet = new Set(activeOffices.map(office => String(office).trim().toUpperCase()))
+  return options.filter(option => activeSet.has(String(option).trim().toUpperCase()))
+}
+
 export function getInsurancePayers() {
   return fetchLookup('/insurance-payers', 'name')
 }

@@ -1,6 +1,7 @@
 import { Activity, BarChart3, Clock, FileText, PieChart, UserCheck, Users, UserX } from 'lucide-react'
 import { StagePill } from '../components/Badge'
 import { ClickableStatCard } from '../components/StatFilterControls'
+import { ACTIVE_OPERATIONAL_OFFICES } from '../lib/constants'
 import { displayStaffName, getAuthorizationStatus, getReferralStage, isActiveReferralWork, isAssessmentActiveClient, isInsuranceVerified, needsInsuranceVerification, normalizeAutismDx, normalizeOffice, normalizeParentInterviewStatus, normalizeStaffName, normalizeTreatmentPlanStatus } from '../lib/utils'
 
 // ── Shared helpers ──
@@ -63,7 +64,7 @@ function SectionHeader({ icon: Icon, children }) {
 // REFERRAL AGING
 // ══════════════════════════════════════
 export function ReferralAgingPage({ refs, assessData = [], onSelectRef }) {
-  const active = refs.filter(r => isActiveReferralWork(r, assessData))
+  const active = refs.filter(r => isActiveOperationalOffice(r.office) && isActiveReferralWork(r, assessData))
   const WARN = 14, DANGER = 30
 
   const aged = active.map(r => {
@@ -140,13 +141,15 @@ export function ReferralAgingPage({ refs, assessData = [], onSelectRef }) {
 // ══════════════════════════════════════
 // CLINIC VOLUME
 // ══════════════════════════════════════
-const OFFICE_COLORS = { 'MERIDIAN': '#6366f1', 'FOREST': '#22c55e', 'FLOWOOD': '#f59e0b', 'DAY TREATMENT': '#fb923c' }
+const OFFICE_COLORS = { 'MERIDIAN': '#6366f1', 'FOREST': '#22c55e', 'DAY TREATMENT': '#fb923c' }
+const ACTIVE_OPERATIONAL_OFFICE_SET = new Set(ACTIVE_OPERATIONAL_OFFICES)
+const isActiveOperationalOffice = (office) => ACTIVE_OPERATIONAL_OFFICE_SET.has(normalizeOffice(office) || office)
 
 export function ClinicVolumePage({ refs, assessData = [] }) {
-  const active  = refs.filter(r => isActiveReferralWork(r, assessData))
-  const nr      = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
+  const active  = refs.filter(r => isActiveOperationalOffice(r.office) && isActiveReferralWork(r, assessData))
+  const nr      = refs.filter(r => isActiveOperationalOffice(r.office) && (r.status === 'non-responsive' || r.status === 'referred-out'))
   const all     = [...active, ...nr]
-  const offices = ['MERIDIAN','FOREST','FLOWOOD','DAY TREATMENT']
+  const offices = ACTIVE_OPERATIONAL_OFFICES
 
   const stats = offices.map(o => ({
     office: o, color: OFFICE_COLORS[o] || '#64748b',
@@ -280,11 +283,11 @@ export function ClinicVolumePage({ refs, assessData = [] }) {
 // CONVERSION RATE
 // ══════════════════════════════════════
 export function ConversionRatePage({ refs, assessData = [] }) {
-  const active = refs.filter(r => isActiveReferralWork(r, assessData))
-  const nr     = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
+  const active = refs.filter(r => isActiveOperationalOffice(r.office) && isActiveReferralWork(r, assessData))
+  const nr     = refs.filter(r => isActiveOperationalOffice(r.office) && (r.status === 'non-responsive' || r.status === 'referred-out'))
   const all    = [...active, ...nr]
   const total  = all.length
-  const activeClientCount = assessData.filter(record => isAssessmentActiveClient(record)).length
+  const activeClientCount = assessData.filter(record => isActiveOperationalOffice(record.clinic || record.office) && isAssessmentActiveClient(record)).length
 
   const FUNNEL = [
     { label: 'Referral Received',         count: total,                                                                                                      color: '#6366f1' },
@@ -391,7 +394,7 @@ export function ConversionRatePage({ refs, assessData = [] }) {
 // INTAKE PERFORMANCE
 // ══════════════════════════════════════
 export function IntakePerformancePage({ refs, assessData = [] }) {
-  const active     = refs.filter(r => isActiveReferralWork(r, assessData))
+  const active     = refs.filter(r => isActiveOperationalOffice(r.office) && isActiveReferralWork(r, assessData))
   const STAFF_LIST = [...new Set(active.map(r => normalizeStaffName(r.intake_personnel)).filter(Boolean))].sort()
 
   const perf = STAFF_LIST.map(staff => {

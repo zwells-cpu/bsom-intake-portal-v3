@@ -1,8 +1,12 @@
 import { Badge, OfficePill, ProgressRing } from '../components/Badge'
 import { ActivityLogList, RecentActivityCard } from '../components/dashboard/RecentActivityCard'
 import { useActivityLogs } from '../hooks/useActivityLogs'
-import { formatDisplayDate, isActiveReferralWork, needsInsuranceVerification, pct } from '../lib/utils'
+import { ACTIVE_REFERRAL_OFFICES } from '../lib/constants'
+import { formatDisplayDate, isActiveReferralWork, needsInsuranceVerification, normalizeOffice, pct } from '../lib/utils'
 import { ChevronRight, ClipboardList, Clock, ShieldCheck, UserRoundX } from 'lucide-react'
+
+const ACTIVE_REFERRAL_OFFICE_SET = new Set(ACTIVE_REFERRAL_OFFICES)
+const isActiveReferralOffice = (office) => ACTIVE_REFERRAL_OFFICE_SET.has(normalizeOffice(office) || office)
 
 export function DashboardPage({ refs, assessData = [], setSelectedId, openModulePage, activityRefreshKey = 0, profileRole = '', canAccessOperations = false }) {
   const { logs, loading: activityLoading } = useActivityLogs(20, activityRefreshKey)
@@ -11,8 +15,8 @@ export function DashboardPage({ refs, assessData = [], setSelectedId, openModule
   const role = String(profileRole || '').toLowerCase()
   const isIntakeView = role === 'intake'
   const canShowOversight = role === 'admin'
-  const active = refs.filter((r) => isActiveReferralWork(r, assessData))
-  const nr = refs.filter((r) => r.status === 'non-responsive' || r.status === 'referred-out')
+  const active = refs.filter((r) => isActiveReferralOffice(r.office) && isActiveReferralWork(r, assessData))
+  const nr = refs.filter((r) => isActiveReferralOffice(r.office) && (r.status === 'non-responsive' || r.status === 'referred-out'))
   const pending = active.filter((r) => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
   const noIns = active.filter((r) => needsInsuranceVerification(r.insurance_verified))
   const aging14 = active.filter((r) => {

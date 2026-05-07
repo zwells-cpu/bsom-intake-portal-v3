@@ -20,6 +20,8 @@ import {
 } from 'lucide-react'
 
 export const OFFICES = ['MERIDIAN', 'FOREST', 'FLOWOOD', 'DAY TREATMENT']
+export const INACTIVE_OFFICES = ['FLOWOOD']
+export const ACTIVE_OPERATIONAL_OFFICES = OFFICES.filter(office => !INACTIVE_OFFICES.includes(office))
 export const ACTIVE_REFERRAL_OFFICES = ['MERIDIAN', 'FOREST']
 
 export const INSURANCES = [

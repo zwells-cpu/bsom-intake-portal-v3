@@ -21,8 +21,8 @@ import { PaStatusBadge, officePillClassName } from '../components/Badge'
 import { NotifyModal } from '../components/NotifyModal'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
 import { SyncedHorizontalScrollTable } from '../components/SyncedHorizontalScrollTable'
-import { LIFECYCLE_BADGE_STYLES } from '../lib/constants'
-import { cleanLookupValue, createBcbaStaff, deactivateBcbaStaff, getBcbaStaffRecords, normalizeLookupValue, optionValues, updateBcbaStaff } from '../lib/lookups'
+import { ACTIVE_OPERATIONAL_OFFICES, LIFECYCLE_BADGE_STYLES } from '../lib/constants'
+import { cleanLookupValue, createBcbaStaff, deactivateBcbaStaff, filterActiveOffices, getBcbaStaffRecords, normalizeLookupValue, optionValues, updateBcbaStaff } from '../lib/lookups'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
 import {
   AUTHORIZATION_STATUSES,
@@ -41,6 +41,10 @@ import {
   normalizeTreatmentPlanStatus,
   statusColor,
 } from '../lib/utils'
+
+const OFFICE_FILTER_OPTIONS = ['ALL', ...ACTIVE_OPERATIONAL_OFFICES]
+const ACTIVE_OPERATIONAL_OFFICE_SET = new Set(ACTIVE_OPERATIONAL_OFFICES)
+const isActiveOperationalOffice = (office) => ACTIVE_OPERATIONAL_OFFICE_SET.has(String(office || '').trim().toUpperCase())
 
 function assessVal(value) {
   const normalized = normalizeAssessmentComponentStatus(value)
@@ -232,7 +236,7 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, o
     clinic: record.clinic || record.office || '',
     assessment_id: getAssessmentRecordId(record),
     authorization_status: getAuthorizationStatus(record),
-  }))
+  })).filter(record => isActiveOperationalOffice(record.clinic))
 
   const { activeFilter, toggleFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'assessment-tracker')
 
@@ -319,7 +323,7 @@ export function AssessmentTracker({ assessData, assessLoading, onSelectAssess, o
         </div>
         <div className="filter-divider"></div>
         <div className="filter-btns assessment-clinic-filter-group">
-          {['ALL', 'MERIDIAN', 'FOREST', 'FLOWOOD', 'DAY TREATMENT'].map(option => (
+          {OFFICE_FILTER_OPTIONS.map(option => (
             <button key={option} className={`filter-btn ${office === option ? 'active' : ''}`} onClick={() => setOffice(option)}>{option}</button>
           ))}
         </div>
@@ -416,7 +420,7 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
   const { activeFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'parent-interviews')
-  let filteredRows = assessData.filter(record => matchesStatFilter(record, activeFilter))
+  let filteredRows = assessData.filter(record => isActiveOperationalOffice(record.clinic || record.office) && matchesStatFilter(record, activeFilter))
 
   // Apply additional filters
   if (search) {
@@ -448,7 +452,7 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
         </div>
         <div className="filter-divider"></div>
         <div className="filter-btns assessment-clinic-filter-group">
-          {['ALL', 'MERIDIAN', 'FOREST', 'FLOWOOD', 'DAY TREATMENT'].map(option => (
+          {OFFICE_FILTER_OPTIONS.map(option => (
             <button key={option} className={`filter-btn ${office === option ? 'active' : ''}`} onClick={() => setOffice(option)}>{option}</button>
           ))}
         </div>
@@ -569,7 +573,7 @@ function ManageBcbasContent({ officeOptions = [], onRefreshLookups }) {
   const [busyId, setBusyId] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState({ full_name: '', email: '', office: '' })
-  const officeValues = optionValues(officeOptions)
+  const officeValues = filterActiveOffices(optionValues(officeOptions), ACTIVE_OPERATIONAL_OFFICES)
 
   const resetForm = () => {
     setEditingId(null)
@@ -818,8 +822,9 @@ export function BCBAAssignmentsPage({
 
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
-  const unassigned = assessData.filter(record => getBcbaAssignmentKey(record.assigned_bcba) === UNASSIGNED_BCBA_KEY)
-  const assigned = assessData.filter(record => getBcbaAssignmentKey(record.assigned_bcba) !== UNASSIGNED_BCBA_KEY)
+  const activeOfficeAssessData = assessData.filter(record => isActiveOperationalOffice(record.clinic || record.office))
+  const unassigned = activeOfficeAssessData.filter(record => getBcbaAssignmentKey(record.assigned_bcba) === UNASSIGNED_BCBA_KEY)
+  const assigned = activeOfficeAssessData.filter(record => getBcbaAssignmentKey(record.assigned_bcba) !== UNASSIGNED_BCBA_KEY)
   const byBCBA = {}
   const staffNamesByKey = {}
   bcbaOptions.forEach(option => {
@@ -827,12 +832,12 @@ export function BCBAAssignmentsPage({
     const key = normalizeLookupValue(name)
     if (key) staffNamesByKey[key] = cleanLookupValue(name)
   })
-  const duplicateGroups = getDuplicateBcbaGroups(assessData)
+  const duplicateGroups = getDuplicateBcbaGroups(activeOfficeAssessData)
   const bcbaFilter = isStatFilterTarget(statFilter, 'bcba-assignments')
   const treatmentPlanFilter = isStatFilterTarget(statFilter, 'treatment-plans')
   const activeFilter = bcbaFilter || treatmentPlanFilter
   const toggleFilter = (key, label) => onSetStatFilter(toggleStatFilter(bcbaFilter, { target: 'bcba-assignments', key, label }))
-  const filteredRows = assessData.filter(record => matchesStatFilter(record, activeFilter))
+  const filteredRows = activeOfficeAssessData.filter(record => matchesStatFilter(record, activeFilter))
 
   assigned.forEach(record => {
     const workflowStatus = normalizeTreatmentPlanStatus(record.treatment_plan_status)
@@ -1053,6 +1058,7 @@ export function AssessmentProgressPage({ assessData, assessLoading, onSelectAsse
 
   const { activeFilter } = getAssessmentPageFilter(statFilter, onSetStatFilter, 'assessment-progress')
   const filteredRows = assessData
+    .filter(record => isActiveOperationalOffice(record.clinic || record.office))
     .filter(record => matchesStatFilter(record, activeFilter))
     .filter(record => {
       const query = (search || '').toLowerCase()
@@ -1179,7 +1185,7 @@ export function AssessmentProgressPage({ assessData, assessLoading, onSelectAsse
 export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess, statFilter, onSetStatFilter, onClearStatFilter }) {
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
-  const normalizedRecords = assessData.map(record => ({
+  const normalizedRecords = assessData.filter(record => isActiveOperationalOffice(record.clinic || record.office)).map(record => ({
     ...record,
     treatment_plan_status: normalizeTreatmentPlanStatus(record.treatment_plan_status),
   }))
@@ -1249,9 +1255,10 @@ export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess, 
 export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess, statFilter, onSetStatFilter, onClearStatFilter }) {
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
-  const activeClients = assessData.filter(record => isAssessmentActiveClient(record))
+  const activeOfficeAssessData = assessData.filter(record => isActiveOperationalOffice(record.clinic || record.office))
+  const activeClients = activeOfficeAssessData.filter(record => isAssessmentActiveClient(record))
   const activeClientSet = new Set(activeClients)
-  const ready = assessData.filter(record => record.ready_for_services === true && getAssessmentLifecycleStatus(record) !== 'Referred Out' && !activeClientSet.has(record))
+  const ready = activeOfficeAssessData.filter(record => record.ready_for_services === true && getAssessmentLifecycleStatus(record) !== 'Referred Out' && !activeClientSet.has(record))
   const readyRows = ready
 
   return (
@@ -1327,7 +1334,7 @@ export function ActiveClientsPage({ assessData, assessLoading, onSelectAssess })
 
   if (assessLoading) return <div className="loader-wrap"><div className="spinner" /></div>
 
-  const activeClients = assessData.filter(record => isAssessmentActiveClient(record))
+  const activeClients = assessData.filter(record => isActiveOperationalOffice(record.clinic || record.office) && isAssessmentActiveClient(record))
   const query = search.trim().toLowerCase()
   const filtered = activeClients.filter(record => {
     if (!query) return true

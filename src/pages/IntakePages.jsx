@@ -2,8 +2,12 @@ import { useState } from 'react'
 import { Badge, OfficePill } from '../components/Badge'
 import { ActiveFilterBanner, ClickableStatCard } from '../components/StatFilterControls'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
-import { getInsuranceVerificationLabel, getInsuranceVerificationStatus, getReferralStage, isActiveReferralWork, isReferralTransitioned, displayStaffName, formatDisplayDate, formatInsurance, normalizeAutismDx, normalizeStaffName } from '../lib/utils'
+import { ACTIVE_REFERRAL_OFFICES } from '../lib/constants'
+import { getInsuranceVerificationLabel, getInsuranceVerificationStatus, getReferralStage, isActiveReferralWork, isReferralTransitioned, displayStaffName, formatDisplayDate, formatInsurance, normalizeAutismDx, normalizeOffice, normalizeStaffName } from '../lib/utils'
 import { ArrowRight, CheckCircle, ChevronRight, FileText, FileWarning, ShieldCheck, UserRoundX, Users } from 'lucide-react'
+
+const ACTIVE_REFERRAL_OFFICE_SET = new Set(ACTIVE_REFERRAL_OFFICES)
+const isActiveReferralOffice = (office) => ACTIVE_REFERRAL_OFFICE_SET.has(normalizeOffice(office) || office)
 
 // ══════════════════════════════════════
 // INTAKE DASHBOARD
@@ -14,9 +18,9 @@ export function IntakeDashboard({ refs, assessData = [], onSelectRef, openModule
 
 function RedesignedIntakeDashboard({ refs, assessData = [], onSelectRef, openModulePage }) {
   const [queueFilter, setQueueFilter] = useState('all')
-  const active = refs.filter(r => isActiveReferralWork(r, assessData))
-  const transitioned = refs.filter(r => r.status === 'active' && isReferralTransitioned(r, assessData))
-  const nr = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
+  const active = refs.filter(r => isActiveReferralOffice(r.office) && isActiveReferralWork(r, assessData))
+  const transitioned = refs.filter(r => isActiveReferralOffice(r.office) && r.status === 'active' && isReferralTransitioned(r, assessData))
+  const nr = refs.filter(r => isActiveReferralOffice(r.office) && (r.status === 'non-responsive' || r.status === 'referred-out'))
   const pending = active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
   const signed = active.filter(r => (r.intake_paperwork || '').toLowerCase().includes('signed'))
   const noIns = active.filter(r => getInsuranceVerificationStatus(r) !== 'YES')
@@ -71,7 +75,7 @@ function RedesignedIntakeDashboard({ refs, assessData = [], onSelectRef, openMod
     .sort((a, b) => a.meta.priority - b.meta.priority || (b.days || 0) - (a.days || 0))
     .slice(0, 10)
 
-  const recentRows = [...refs]
+  const recentRows = refs.filter(r => isActiveReferralOffice(r.office))
     .sort((a, b) => new Date(b.date_received || b.referral_received_date || 0).getTime() - new Date(a.date_received || a.referral_received_date || 0).getTime())
     .slice(0, 8)
 
@@ -176,7 +180,7 @@ function IntakeActionItem({ icon: Icon, tone, title, helper, action, onClick }) 
 
 // ══════════════════════════════════════
 export function PendingDocsPage({ refs, assessData = [], onSelectRef, statFilter, onClearStatFilter }) {
-  const active  = refs.filter(r => isActiveReferralWork(r, assessData))
+  const active  = refs.filter(r => isActiveReferralOffice(r.office) && isActiveReferralWork(r, assessData))
   const pending = active.filter(r => !['signed', 'completed'].includes((r.intake_paperwork || '').toLowerCase()))
   const activeFilter = isStatFilterTarget(statFilter, 'pending-docs')
   const filteredRows = (activeFilter ? active : pending)
@@ -226,7 +230,7 @@ export function PendingDocsPage({ refs, assessData = [], onSelectRef, statFilter
 // ══════════════════════════════════════
 export function InsuranceVerifPage({ refs, assessData = [], onSelectRef, statFilter, onClearStatFilter }) {
   const [providerFilter, setProviderFilter] = useState('')
-  const active     = refs.filter(r => isActiveReferralWork(r, assessData))
+  const active     = refs.filter(r => isActiveReferralOffice(r.office) && isActiveReferralWork(r, assessData))
   const confirmed  = active.filter(r => getInsuranceVerificationStatus(r) === 'YES')
   const needsWork  = active.filter(r => getInsuranceVerificationStatus(r) !== 'YES')
   const byProvider = {}
@@ -335,7 +339,7 @@ function InsuranceStatusPill({ record }) {
 }
 
 export function NonResponsivePage({ refs, onRestore, statFilter, onClearStatFilter }) {
-  const nr = refs.filter(r => r.status === 'non-responsive' || r.status === 'referred-out')
+  const nr = refs.filter(r => isActiveReferralOffice(r.office) && (r.status === 'non-responsive' || r.status === 'referred-out'))
   const activeFilter = isStatFilterTarget(statFilter, 'non-responsive')
   const filteredRows = nr.filter(r => matchesStatFilter(r, activeFilter))
   return (

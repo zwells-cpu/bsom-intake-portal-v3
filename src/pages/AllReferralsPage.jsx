@@ -3,7 +3,7 @@ import { Bell, ChevronDown, ListFilter } from 'lucide-react'
 import { Badge, OfficePill, StagePill, ProgressRing } from '../components/Badge'
 import { ActiveFilterBanner } from '../components/StatFilterControls'
 import { NotifyModal } from '../components/NotifyModal'
-import { OFFICES } from '../lib/constants'
+import { ACTIVE_REFERRAL_OFFICES } from '../lib/constants'
 import { isStatFilterTarget, matchesStatFilter, toggleStatFilter } from '../lib/statFilters'
 import {
   sortList, normalizeOffice, normalizeAutismDx, formatInsurance, exportCSV,
@@ -18,6 +18,8 @@ const OFFICE_LABELS = {
   FLOWOOD: 'Flowood',
   'DAY TREATMENT': 'Day Treatment',
 }
+const ACTIVE_REFERRAL_OFFICE_SET = new Set(ACTIVE_REFERRAL_OFFICES)
+const isActiveReferralOffice = (office) => ACTIVE_REFERRAL_OFFICE_SET.has(normalizeOffice(office) || office)
 
 function getNextBlocker(r, assessData) {
   const paperwork = (r.intake_paperwork || '').toUpperCase()
@@ -39,8 +41,9 @@ function getNextBlocker(r, assessData) {
 
 export function AllReferralsPage({ refs, assessData = [], onSelectRef, statFilter, onSetStatFilter, onClearStatFilter }) {
   const active = refs.filter(r => r.status === 'active')
-  const activeWork = active.filter(r => isActiveReferralWork(r, assessData))
-  const transitioned = active.filter(r => isReferralTransitioned(r, assessData))
+  const activeOfficeRefs = active.filter(r => isActiveReferralOffice(r.office))
+  const activeWork = activeOfficeRefs.filter(r => isActiveReferralWork(r, assessData))
+  const transitioned = activeOfficeRefs.filter(r => isReferralTransitioned(r, assessData))
 
   const [search, setSearch] = useState('')
   const [office, setOffice] = useState('ALL')
@@ -54,9 +57,9 @@ export function AllReferralsPage({ refs, assessData = [], onSelectRef, statFilte
   const searchActive = search.trim().length > 0
 
   const baseRows = showingTransitioned
-    ? transitioned
+      ? transitioned
     : searchActive
-      ? active
+      ? activeOfficeRefs
       : activeWork
 
   const visibleBeforeStageFilter = baseRows.map(r => ({
@@ -95,7 +98,7 @@ export function AllReferralsPage({ refs, assessData = [], onSelectRef, statFilte
     }))
   }
 
-  const officeCounts = ['ALL', ...OFFICES].reduce((acc, officeKey) => {
+  const officeCounts = ['ALL', ...ACTIVE_REFERRAL_OFFICES].reduce((acc, officeKey) => {
     acc[officeKey] = officeKey === 'ALL'
       ? stageFiltered.length
       : stageFiltered.filter(r => normalizeOffice(r.office) === officeKey || r.office === officeKey).length
@@ -194,7 +197,7 @@ export function AllReferralsPage({ refs, assessData = [], onSelectRef, statFilte
             <ChevronDown className="referral-stage-filter-chevron" size={15} strokeWidth={2.2} />
           </summary>
           <div className="referral-stage-filter-menu">
-            {['ALL', ...OFFICES].map(o => (
+            {['ALL', ...ACTIVE_REFERRAL_OFFICES].map(o => (
               <button
                 key={o}
                 type="button"

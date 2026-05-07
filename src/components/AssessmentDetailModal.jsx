@@ -10,8 +10,8 @@ import {
   X,
 } from 'lucide-react'
 import { ConfirmationModal } from './ConfirmationModal'
-import { OFFICES } from '../lib/constants'
-import { cleanLookupValue, includeCurrentOption, normalizeOptions, optionValues } from '../lib/lookups'
+import { ACTIVE_OPERATIONAL_OFFICES } from '../lib/constants'
+import { cleanLookupValue, filterActiveOffices, includeCurrentOption, normalizeOptions, optionValues } from '../lib/lookups'
 import {
   ASSESSMENT_COMPONENT_STATUSES,
   AUTHORIZATION_STATUSES,
@@ -175,7 +175,11 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, o
   const clinic = form?.clinic || form?.office || ''
   const lifecycleStatus = getAssessmentLifecycleStatus(form)
   const isActiveClient = isAssessmentActiveClient(form)
-  const officeOptions = includeCurrentOption(optionValues(liveOfficeOptions.length ? liveOfficeOptions : normalizeOptions(OFFICES)), clinic)
+  const activeOfficeOptions = filterActiveOffices(
+    optionValues(liveOfficeOptions.length ? liveOfficeOptions : normalizeOptions(ACTIVE_OPERATIONAL_OFFICES)),
+    ACTIVE_OPERATIONAL_OFFICES
+  )
+  const officeOptions = includeCurrentOption(activeOfficeOptions, clinic)
   const currentBcba = cleanLookupValue(form?.assigned_bcba)
   const bcbaValues = useMemo(() => getBcbaValues(bcbaOptions), [bcbaOptions])
   const matchingBcbaOption = bcbaValues.find(option => option.toLowerCase() === currentBcba.toLowerCase())

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { OFFICES, INSURANCES } from '../lib/constants'
-import { cleanLookupValue, includeCurrentOption, normalizeOptions, optionValues } from '../lib/lookups'
+import { ACTIVE_OPERATIONAL_OFFICES, INSURANCES } from '../lib/constants'
+import { cleanLookupValue, filterActiveOffices, includeCurrentOption, normalizeOptions, optionValues } from '../lib/lookups'
 import {
   ASSESSMENT_COMPONENT_STATUSES,
   AUTHORIZATION_STATUSES,
@@ -59,7 +59,13 @@ export function NewAssessmentModal({ onClose, onSave, bcbaOptions = [], officeOp
   const [error, setError] = useState(null)
 
   const officeValues = useMemo(
-    () => includeCurrentOption(optionValues(liveOfficeOptions.length ? liveOfficeOptions : normalizeOptions(OFFICES)), form.clinic),
+    () => includeCurrentOption(
+      filterActiveOffices(
+        optionValues(liveOfficeOptions.length ? liveOfficeOptions : normalizeOptions(ACTIVE_OPERATIONAL_OFFICES)),
+        ACTIVE_OPERATIONAL_OFFICES
+      ),
+      form.clinic
+    ),
     [form.clinic, liveOfficeOptions],
   )
   const insuranceValues = useMemo(
