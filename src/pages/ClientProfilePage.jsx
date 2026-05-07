@@ -88,7 +88,7 @@ export function ClientProfilePage({ referralId, onBack, canShowTechnicalDetails 
             {referral.first_name} {referral.last_name}
           </div>
           <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-            DOB: {formatDisplayDate(referral.dob)} | Received: {formatDisplayDate(referral.date_received)} | Office: {referral.office || '--'}
+            DOB: <span className={referral.dob ? 'date-value' : 'date-empty'}>{formatDisplayDate(referral.dob)}</span> | Received: <span className={referral.date_received ? 'date-value' : 'date-empty'}>{formatDisplayDate(referral.date_received)}</span> | Office: {referral.office || '--'}
           </div>
         </div>
       </div>
@@ -135,8 +135,8 @@ export function ClientProfilePage({ referralId, onBack, canShowTechnicalDetails 
               <tbody>
                 {assessments.map(a => (
                   <tr key={a.assessment_id || a.id}>
-                    <td style={{ fontSize: 12 }}>{formatDisplayDate(a.assessment_started_date)}</td>
-                    <td style={{ fontSize: 12 }}>{formatDisplayDate(a.assessment_completed_date)}</td>
+                    <td className={a.assessment_started_date ? 'date-value' : 'date-empty'} style={{ fontSize: 12 }}>{formatDisplayDate(a.assessment_started_date)}</td>
+                    <td className={a.assessment_completed_date ? 'date-value' : 'date-empty'} style={{ fontSize: 12 }}>{formatDisplayDate(a.assessment_completed_date)}</td>
                     <td style={{ color: stageColor(normalizeParentInterviewStatus(a.parent_interview_status)), fontSize: 12, fontWeight: 700 }}>{normalizeParentInterviewStatus(a.parent_interview_status)}</td>
                     <td style={{ color: stageColor(normalizeTreatmentPlanStatus(a.treatment_plan_status)), fontSize: 12, fontWeight: 700 }}>{normalizeTreatmentPlanStatus(a.treatment_plan_status)}</td>
                     <td style={{ color: stageColor(normalizeAuthorizationStatus(a.authorization_status)), fontSize: 12, fontWeight: 700 }}>{normalizeAuthorizationStatus(a.authorization_status) || '--'}</td>

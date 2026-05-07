@@ -513,10 +513,10 @@ export function ParentInterviewsPage({ assessData, assessLoading, onSelectAssess
                       <td><span className={officePillClassName(record.clinic || record.office)}>{record.clinic || record.office || '--'}</span></td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || <span style={{ color: 'var(--dim)', fontStyle: 'italic' }}>Unassigned</span>}</td>
                       <td>{sBdg(normalizeParentInterviewStatus(record.parent_interview_status))}</td>
-                      <td style={{ fontSize: 11, color: record.parent_interview_scheduled_date ? '#a5b4fc' : 'var(--dim)' }}>{formatDisplayDate(record.parent_interview_scheduled_date)}</td>
-                      <td style={{ fontSize: 11, color: record.parent_interview_completed_date ? '#22c55e' : 'var(--dim)' }}>{formatDisplayDate(record.parent_interview_completed_date)}</td>
+                      <td className={record.parent_interview_scheduled_date ? 'date-value' : 'date-empty'} style={{ fontSize: 11 }}>{formatDisplayDate(record.parent_interview_scheduled_date)}</td>
+                      <td className={record.parent_interview_completed_date ? 'date-value' : 'date-empty'} style={{ fontSize: 11 }}>{formatDisplayDate(record.parent_interview_completed_date)}</td>
                       <td>{assessVal(directObsStatus)}</td>
-                      <td style={{ fontSize: 11, color: record.direct_obs_completed_date ? '#22c55e' : record.direct_obs_scheduled_date ? '#a5b4fc' : 'var(--dim)' }}>{formatDisplayDate(directObsDate)}</td>
+                      <td className={directObsDate ? 'date-value' : 'date-empty'} style={{ fontSize: 11 }}>{formatDisplayDate(directObsDate)}</td>
                       <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.insurance || '--'}</td>
                     </tr>
                   )
@@ -996,8 +996,8 @@ export function BCBAAssignmentsPage({
                   <td style={{ fontSize: 12, color: 'var(--muted)' }}>{getBcbaDisplayName(record.assigned_bcba) || <span style={{ color: 'var(--dim)', fontStyle: 'italic' }}>Unassigned</span>}</td>
                   <td>{sBdg(normalizeTreatmentPlanStatus(record.treatment_plan_status))}</td>
                   <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
-                  <td style={{ fontSize: 11, color: record.treatment_plan_started_date ? 'var(--muted)' : 'var(--dim)' }}>{formatDisplayDate(record.treatment_plan_started_date)}</td>
-                  <td style={{ fontSize: 11, color: record.treatment_plan_completed_date ? '#22c55e' : 'var(--dim)' }}>{formatDisplayDate(record.treatment_plan_completed_date)}</td>
+                  <td className={record.treatment_plan_started_date ? 'date-value' : 'date-empty'} style={{ fontSize: 11 }}>{formatDisplayDate(record.treatment_plan_started_date)}</td>
+                  <td className={record.treatment_plan_completed_date ? 'date-value' : 'date-empty'} style={{ fontSize: 11 }}>{formatDisplayDate(record.treatment_plan_completed_date)}</td>
                   <td>
                     <button
                       type="button"
@@ -1233,8 +1233,8 @@ export function TreatmentPlansPage({ assessData, assessLoading, onSelectAssess, 
                   <td>{sBdg(getAssessmentWorkflowStatus(record))}</td>
                   <td>{sBdg(record.treatment_plan_status || 'Not Started')}</td>
                   <td><PaStatusBadge status={getAuthorizationStatus(record) || 'Not Submitted'} /></td>
-                  <td style={{ fontSize: 11, color: 'var(--muted)' }}>{formatDisplayDate(record.treatment_plan_started_date)}</td>
-                  <td style={{ fontSize: 11, color: record.treatment_plan_completed_date ? '#22c55e' : 'var(--dim)' }}>{formatDisplayDate(record.treatment_plan_completed_date)}</td>
+                  <td className={record.treatment_plan_started_date ? 'date-value' : 'date-empty'} style={{ fontSize: 11 }}>{formatDisplayDate(record.treatment_plan_started_date)}</td>
+                  <td className={record.treatment_plan_completed_date ? 'date-value' : 'date-empty'} style={{ fontSize: 11 }}>{formatDisplayDate(record.treatment_plan_completed_date)}</td>
                   <td style={{ color: 'var(--accent)' }}>→</td>
                 </tr>
               ))}
@@ -1291,10 +1291,10 @@ export function ReadyForServicesPage({ assessData, assessLoading, onSelectAssess
                   </td>
                   <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
                   <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
-                  <td style={{ fontSize: 11, color: '#a5b4fc' }}>{formatDate(record.authorization_approved_date || record.pa_decision_date) || '--'}</td>
+                  <td className={(record.authorization_approved_date || record.pa_decision_date) ? 'date-value' : 'date-empty'} style={{ fontSize: 11 }}>{formatDate(record.authorization_approved_date || record.pa_decision_date) || '--'}</td>
                   <td>
                     {record.active_client_date ? (
-                      <span style={{ fontSize: 11, color: '#22c55e' }}>{formatDate(record.active_client_date)}</span>
+                      <span className="date-value" style={{ fontSize: 11 }}>{formatDate(record.active_client_date)}</span>
                     ) : (
                       <span className="verification-pill verification-pill-awaiting">Pending</span>
                     )}
@@ -1372,7 +1372,7 @@ export function ActiveClientsPage({ assessData, assessLoading, onSelectAssess })
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.assigned_bcba || '--'}</td>
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{record.insurance || '--'}</td>
                     <td><PaStatusBadge status={getAuthorizationStatus(record)} /></td>
-                    <td style={{ fontSize: 11, color: '#22c55e' }}>{formatDate(record.active_client_date)}</td>
+                    <td className={record.active_client_date ? 'date-value' : 'date-empty'} style={{ fontSize: 11 }}>{formatDate(record.active_client_date)}</td>
                     <td>{lifecycleBadge(getAssessmentLifecycleStatus(record))}</td>
                     <td style={{ fontSize: 11, color: record.notes ? 'var(--muted)' : 'var(--dim)', maxWidth: 220 }}>{record.notes || '--'}</td>
                   </tr>

@@ -114,8 +114,9 @@ export function ActivityLogItem({ log, index, canShowTechnicalDetails = false, c
           )}
         </div>
         <span
+          className="date-value"
           title={formatFullTimestamp(log.created_at)}
-          style={{ fontSize: 11, color: 'var(--dim)', flexShrink: 0, cursor: 'default' }}
+          style={{ fontSize: 11, flexShrink: 0, cursor: 'default' }}
         >
           {formatRelativeTime(log.created_at)}
         </span>

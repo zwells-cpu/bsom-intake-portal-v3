@@ -62,19 +62,21 @@ function SectionCard({ icon: Icon, title, children, className = '' }) {
 }
 
 function DetailField({ label, value, children, className = '' }) {
+  const dateLike = /date|dob/i.test(label)
   return (
     <div className={`client-record-field ${className}`}>
       <div className="label">{label}</div>
-      {children || <div className="client-record-value">{value || '--'}</div>}
+      {children || <div className={`client-record-value ${dateLike ? (value ? 'date-value' : 'date-empty') : ''}`}>{value || '--'}</div>}
     </div>
   )
 }
 
 function MetadataChip({ label, children }) {
+  const dateLike = /date|dob/i.test(label)
   return (
     <span className="client-record-chip">
       <span>{label}</span>
-      <strong>{children || '--'}</strong>
+      <strong className={dateLike ? 'date-value' : ''}>{children || '--'}</strong>
     </span>
   )
 }
@@ -462,7 +464,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
               <DetailField label="Date Received">
                 {editMode
                   ? <input className="edit-input" type="date" value={e.date_received || ''} onChange={ev => field('date_received')(ev.target.value)} />
-                  : <div className="client-record-value">{formatDisplayDate(r.date_received)}</div>}
+                  : <div className="client-record-value date-value">{formatDisplayDate(r.date_received)}</div>}
               </DetailField>
               <DetailField label="Office">
                 {editMode

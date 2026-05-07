@@ -121,7 +121,7 @@ export function ReferralAgingPage({ refs, assessData = [], onSelectRef }) {
                     <td><div style={{ fontWeight: 700 }}>{r.first_name} {r.last_name}</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>{r.office || ''}</div></td>
                     <td><StagePill stage={getReferralStage(r)} /></td>
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.intake_personnel || '--'}</td>
-                    <td style={{ fontSize: 11, color: 'var(--dim)' }}>{r.received || '--'}</td>
+                    <td className={r.received ? 'date-value' : 'date-empty'} style={{ fontSize: 11 }}>{r.received || '--'}</td>
                     <td><AgeBadge days={r.daysTotal} warn={WARN} danger={DANGER} /></td>
                     <td>{r.daysAwaitPW !== null ? <AgeBadge days={r.daysAwaitPW} warn={WARN} danger={DANGER} /> : <span style={{ color: '#22c55e', fontSize: 12 }}>Done</span>}</td>
                     <td>{r.daysAwaitIns !== null ? <AgeBadge days={r.daysAwaitIns} warn={WARN} danger={DANGER} /> : <span style={{ color: '#22c55e', fontSize: 12 }}>Done</span>}</td>
