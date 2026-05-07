@@ -39,6 +39,9 @@ const ReferralAgingPage = lazy(() => import('./pages/OperationsPages').then(modu
 const ClinicVolumePage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.ClinicVolumePage })))
 const ConversionRatePage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.ConversionRatePage })))
 const IntakePerformancePage = lazy(() => import('./pages/OperationsPages').then(module => ({ default: module.IntakePerformancePage })))
+const SecurityPage = lazy(() => import('./pages/SecurityPage').then(module => ({ default: module.SecurityPage })))
+const PrivacyDataHandlingPage = lazy(() => import('./pages/PolicyPages').then(module => ({ default: module.PrivacyDataHandlingPage })))
+const TermsOfUsePage = lazy(() => import('./pages/PolicyPages').then(module => ({ default: module.TermsOfUsePage })))
 
 const NAV_STATE_KEY = 'bsom-portal-nav'
 const REFERRAL_MODAL_STATE_KEY = 'bsom-portal-open-referral-modal'
@@ -430,9 +433,6 @@ export default function App() {
     user_email: session?.user?.email || null,
     user_role: profile?.role || null,
     user_name: displayName,
-  }
-  const supportUserContext = {
-    ...activityActorContext,
   }
   const formatReferralName = (record) => {
     if (!record) return 'Referral'
@@ -1288,7 +1288,6 @@ export default function App() {
           readyForInterviewCount={readyForInterview.length}
           assessmentsCount={activeAssessmentQueueData.length}
           statsLoading={loading}
-          supportUserContext={supportUserContext}
           profile={profile}
           topRightContent={(
             <div className="home-account-card">
@@ -1351,6 +1350,9 @@ export default function App() {
 
     if (module === 'about') {
       if (subpage === 'portal') return <AboutPortalPage />
+      if (subpage === 'security') return <SecurityPage />
+      if (subpage === 'privacy') return <PrivacyDataHandlingPage />
+      if (subpage === 'terms') return <TermsOfUsePage />
       if (subpage === 'locations') return <LocationsPage />
     }
 
@@ -1410,7 +1412,6 @@ export default function App() {
           goHome={goHome}
           pendingCount={pending.length}
           unverifiedCount={noIns}
-          supportUserContext={supportUserContext}
           canViewActivityLog={canViewActivityLog}
           canAccessOperations={canAccessOperationsModule}
         />

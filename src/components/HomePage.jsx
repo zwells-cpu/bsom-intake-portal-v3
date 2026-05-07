@@ -1,5 +1,4 @@
 import { MODULES } from '../lib/constants'
-import { LaunchWeekSupportCard } from './LaunchWeekSupportCard'
 import { ThemeToggle } from './ThemeToggle'
 import { canAccessOperations, isAdmin } from '../lib/profileUtils'
 import {
@@ -11,7 +10,6 @@ import {
   Home,
   Info,
   LayoutDashboard,
-  Lock,
   MessagesSquare,
   TrendingUp,
   Zap,
@@ -60,7 +58,6 @@ export function HomePage({
   topRightContent = null,
   displayName = '',
   onEnterSubpage,
-  supportUserContext,
   profile,
 }) {
   const handleSidebarNav = (item) => {
@@ -108,13 +105,6 @@ export function HomePage({
             )
           })}
         </nav>
-
-        <LaunchWeekSupportCard className="hp-sidebar-support" userContext={supportUserContext} />
-
-        <div className="hp-sidebar-notice">
-          <Lock size={11} />
-          <span>Internal staff portal · Authorized access only</span>
-        </div>
 
       </aside>
 

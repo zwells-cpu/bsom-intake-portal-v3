@@ -1,7 +1,6 @@
 import { MODULES, MODULE_NAV } from '../lib/constants'
-import { LaunchWeekSupportCard } from './LaunchWeekSupportCard'
 
-export function Sidebar({ module, subpage, setSubpage, goHome, pendingCount, unverifiedCount, supportUserContext, canViewActivityLog = false, canAccessOperations = false }) {
+export function Sidebar({ module, subpage, setSubpage, goHome, pendingCount, unverifiedCount, canViewActivityLog = false, canAccessOperations = false }) {
   const m = MODULES.find(x => x.id === module)
   const navItems = (MODULE_NAV[module] || []).filter(n => !(n.id === 'activity' && !canViewActivityLog))
 
@@ -54,8 +53,6 @@ export function Sidebar({ module, subpage, setSubpage, goHome, pendingCount, unv
           </div>
         ))}
       </nav>
-
-      <LaunchWeekSupportCard className="sidebar-support" userContext={supportUserContext} />
 
       <div className="sidebar-footer">
         <div className="back-btn" onClick={goHome}>{'\u2190'} Back to Portal Home</div>

@@ -3,8 +3,10 @@ import {
   BadgeCheck,
   BarChart3,
   ClipboardList,
+  ClipboardCheck,
   ClipboardPenLine,
   Clock,
+  FileText,
   FileClock,
   FilePlus2,
   Info,
@@ -76,6 +78,9 @@ export const MODULE_NAV = {
   about: [
     { id: 'locations', icon: MapPin, label: 'Office Locations' },
     { id: 'portal', icon: Info, label: 'About the Portal' },
+    { id: 'security', icon: ShieldCheck, label: 'Security' },
+    { id: 'privacy', icon: FileText, label: 'Privacy & Data Handling' },
+    { id: 'terms', icon: ClipboardCheck, label: 'Terms of Use' },
   ],
 }
 

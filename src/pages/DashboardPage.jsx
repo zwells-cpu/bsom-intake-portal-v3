@@ -82,7 +82,7 @@ export function DashboardPage({ refs, assessData = [], setSelectedId, openModule
               <article key={item.label} className={`priority-card priority-card-${item.tone}`}>
                 <div className="priority-card-head">
                   <div className="priority-card-icon" aria-hidden="true">
-                    <Icon size={28} strokeWidth={1.9} />
+                    <Icon size={22} strokeWidth={2} />
                   </div>
                   <div className="priority-card-count">
                     <span>{item.value}</span>
