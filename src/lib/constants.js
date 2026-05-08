@@ -33,6 +33,8 @@ export const INSURANCE_PAYERS = INSURANCES
 
 export const REFERRAL_SOURCES = ['Provider Referral', 'Parent/Caregiver', 'School', 'Physician', 'Other']
 
+export const GENDER_OPTIONS = ['Male', 'Female']
+
 export const BOOL = ['YES', 'NO', 'AWAITING']
 
 export const STAT = ['Completed', 'Emailed', 'Awaiting', 'Please Send', 'N/A']
@@ -197,6 +199,7 @@ export function emptyReferral() {
     first_name: '',
     last_name: '',
     dob: '',
+    gender: '',
     caregiver: '',
     caregiver_phone: '',
     caregiver_email: '',

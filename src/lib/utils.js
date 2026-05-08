@@ -433,7 +433,7 @@ export function sortList(list, sortCol, sortDir) {
 // ── Export CSV ──
 export function exportCSV(refs) {
   const active = refs.filter(r => r.status === 'active')
-  const cols = ['first_name','last_name','dob','caregiver','caregiver_phone','caregiver_email','office','insurance','insurance_verified','autism_diagnosis','intake_paperwork','intake_personnel','referral_form','permission_assessment','vineland','srs2','attends_school','iep_report','contact1','contact2','contact3','date_received','notes','status']
+  const cols = ['first_name','last_name','dob','gender','caregiver','caregiver_phone','caregiver_email','office','insurance','insurance_verified','autism_diagnosis','intake_paperwork','intake_personnel','referral_form','permission_assessment','vineland','srs2','attends_school','iep_report','contact1','contact2','contact3','date_received','notes','status']
   const csv = [
     cols.join(','),
     ...active.map(r => cols.map(c => '"' + (r[c] || '').replace(/"/g, '""') + '"').join(',')),

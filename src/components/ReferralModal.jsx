@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { Badge, OfficePill, ProgressRing, StagePill } from './Badge'
 import { ConfirmationModal } from './ConfirmationModal'
-import { ACTIVE_REFERRAL_OFFICES, INSURANCE_PAYERS, REFERRAL_SOURCES, BOOL, STAFF, CHECKLIST_FIELDS } from '../lib/constants'
+import { ACTIVE_REFERRAL_OFFICES, INSURANCE_PAYERS, REFERRAL_SOURCES, GENDER_OPTIONS, BOOL, STAFF, CHECKLIST_FIELDS } from '../lib/constants'
 import { includeCurrentOption, normalizeOptions, optionValues } from '../lib/lookups'
 import { formatDisplayDate, getInsuranceVerificationLabel, getReferralStage, pct, formatInsurance, normalizeAutismDx, normalizeReferralFieldValue } from '../lib/utils'
 import { API_BASE } from '../lib/api'
@@ -323,6 +323,7 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
             <div className="modal-title client-record-title">{r.first_name} {r.last_name}</div>
             <div className="client-record-meta">
               <MetadataChip label="DOB">{formatDisplayDate(r.dob)}</MetadataChip>
+              {r.gender ? <MetadataChip label="Gender">{r.gender}</MetadataChip> : null}
               <MetadataChip label="Date Received">{formatDisplayDate(r.date_received)}</MetadataChip>
               <MetadataChip label="Office"><OfficePill office={r.office} /></MetadataChip>
               <MetadataChip label="Stage"><StagePill stage={intakeStage} /></MetadataChip>
@@ -351,6 +352,35 @@ export function ReferralModal({ referral, onClose, onSave, onDelete, onSetStatus
         </div>
 
         <div className="modal-body client-record-body">
+          <SectionCard icon={UserRound} title="Client Details">
+            {editMode ? (
+              <div className="client-record-form-grid">
+                <DetailField label="First Name">
+                  <input className="edit-input" value={e.first_name || ''} onChange={ev => field('first_name')(ev.target.value)} />
+                </DetailField>
+                <DetailField label="Last Name">
+                  <input className="edit-input" value={e.last_name || ''} onChange={ev => field('last_name')(ev.target.value)} />
+                </DetailField>
+                <DetailField label="Date of Birth">
+                  <input className="edit-input" type="date" value={e.dob || ''} onChange={ev => field('dob')(ev.target.value)} />
+                </DetailField>
+                <DetailField label="Gender">
+                  <select className="edit-select" value={e.gender || ''} onChange={ev => field('gender')(ev.target.value)}>
+                    <option value="">-- Select --</option>
+                    {GENDER_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </DetailField>
+              </div>
+            ) : (
+              <div className="client-record-form-grid">
+                <DetailField label="First Name" value={r.first_name} />
+                <DetailField label="Last Name" value={r.last_name} />
+                {r.dob ? <DetailField label="Date of Birth" value={formatDisplayDate(r.dob)} /> : null}
+                {r.gender ? <DetailField label="Gender" value={r.gender} /> : null}
+              </div>
+            )}
+          </SectionCard>
+
           <SectionCard icon={UserRound} title="Caregiver Information">
             {editMode ? (
               <div className="client-record-form-grid">

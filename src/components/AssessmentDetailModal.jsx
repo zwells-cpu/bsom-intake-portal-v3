@@ -10,7 +10,7 @@ import {
   X,
 } from 'lucide-react'
 import { ConfirmationModal } from './ConfirmationModal'
-import { ACTIVE_OPERATIONAL_OFFICES } from '../lib/constants'
+import { ACTIVE_OPERATIONAL_OFFICES, GENDER_OPTIONS } from '../lib/constants'
 import { cleanLookupValue, filterActiveOffices, includeCurrentOption, normalizeOptions, optionValues } from '../lib/lookups'
 import {
   ASSESSMENT_COMPONENT_STATUSES,
@@ -23,6 +23,7 @@ import {
   normalizeAssessmentComponentStatus,
   normalizeParentInterviewStatus,
   normalizeTreatmentPlanStatus,
+  formatDisplayDate,
 } from '../lib/utils'
 
 function asBoolString(value) {
@@ -98,10 +99,11 @@ function DateField({ label, value, onChange }) {
 }
 
 function MetadataChip({ label, children }) {
+  const dateLike = /date|dob/i.test(label)
   return (
     <span className="client-record-chip">
       <span>{label}</span>
-      <strong>{children || '--'}</strong>
+      <strong className={dateLike ? 'date-value' : ''}>{children || '--'}</strong>
     </span>
   )
 }
@@ -132,6 +134,8 @@ function getSelectedBcbaValue(record, bcbaOptions) {
 function getEditableAssessmentPatch(record = {}, assignedBcba = '') {
   return {
     client_name: record.client_name || '',
+    dob: record.dob || null,
+    gender: record.gender || '',
     clinic: record.clinic || record.office || '',
     assigned_bcba: assignedBcba,
     caregiver: record.caregiver || '',
@@ -261,6 +265,8 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, o
             <div className="client-record-kicker">Initial Assessment Record</div>
             <div className="modal-title client-record-title">{displayValue(form?.client_name)}</div>
             <div className="client-record-meta">
+              {form?.dob ? <MetadataChip label="DOB">{formatDisplayDate(form.dob)}</MetadataChip> : null}
+              {form?.gender ? <MetadataChip label="Gender">{form.gender}</MetadataChip> : null}
               <MetadataChip label="Clinic / Office">{displayValue(clinic)}</MetadataChip>
               <MetadataChip label="Assigned BCBA">{displayValue(selectedBcbaValue)}</MetadataChip>
               <MetadataChip label="Lifecycle Status"><StatusPill value={lifecycleStatus} /></MetadataChip>
@@ -282,6 +288,8 @@ export function AssessmentDetailModal({ assessment, onClose, onSave, onDelete, o
           <AssessmentSection icon={UserRound} title="Client Details">
             <div className="client-record-form-grid assessment-record-grid">
               <TextField label="Client Name" value={form?.client_name} onChange={setField('client_name')} />
+              <DateField label="Date of Birth" value={form?.dob} onChange={setField('dob')} />
+              <SelectField label="Gender" value={form?.gender} onChange={setField('gender')} options={GENDER_OPTIONS} />
               <SelectField label="Clinic" value={form?.clinic || form?.office || ''} onChange={setField('clinic')} options={officeOptions} />
               <SelectField label="Assigned BCBA" value={selectedBcbaValue} onChange={setField('assigned_bcba')} options={assignedBcbaOptions} placeholder="Select BCBA" />
               <AssessmentField label="Lifecycle Status">

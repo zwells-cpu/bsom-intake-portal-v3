@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ACTIVE_OPERATIONAL_OFFICES, INSURANCES } from '../lib/constants'
+import { ACTIVE_OPERATIONAL_OFFICES, GENDER_OPTIONS, INSURANCES } from '../lib/constants'
 import { cleanLookupValue, filterActiveOffices, includeCurrentOption, normalizeOptions, optionValues } from '../lib/lookups'
 import {
   ASSESSMENT_COMPONENT_STATUSES,
@@ -14,6 +14,8 @@ import {
 
 const DEFAULT_FORM = {
   client_name: '',
+  dob: '',
+  gender: '',
   clinic: '',
   assigned_bcba: '',
   insurance: '',
@@ -37,6 +39,15 @@ function TextField({ label, value, onChange, required = false, placeholder = '' 
     <div>
       <div className="label">{label}{required ? ' *' : ''}</div>
       <input className="edit-input" value={value || ''} placeholder={placeholder} onChange={event => onChange(event.target.value)} />
+    </div>
+  )
+}
+
+function DateField({ label, value, onChange }) {
+  return (
+    <div>
+      <div className="label">{label}</div>
+      <input className="edit-input" type="date" value={value || ''} onChange={event => onChange(event.target.value)} />
     </div>
   )
 }
@@ -96,6 +107,8 @@ export function NewAssessmentModal({ onClose, onSave, bcbaOptions = [], officeOp
     const res = await onSave({
       referral_id: null,
       client_name: clientName,
+      dob: form.dob || null,
+      gender: cleanLookupValue(form.gender),
       clinic,
       assigned_bcba: assignedBcba,
       insurance: cleanLookupValue(form.insurance),
@@ -139,6 +152,8 @@ export function NewAssessmentModal({ onClose, onSave, bcbaOptions = [], officeOp
           <div className="section-hdr">Client Details</div>
           <div className="responsive-review-grid" style={{ gap: 12 }}>
             <TextField label="Client Name" value={form.client_name} onChange={setField('client_name')} required />
+            <DateField label="Date of Birth" value={form.dob} onChange={setField('dob')} />
+            <SelectField label="Gender" value={form.gender} onChange={setField('gender')} options={GENDER_OPTIONS} />
             <SelectField label="Clinic" value={form.clinic} onChange={setField('clinic')} options={officeValues} required />
             <SelectField label="Assigned BCBA" value={form.assigned_bcba} onChange={setField('assigned_bcba')} options={assignedBcbaOptions} placeholder={assignedBcbaOptions.length ? 'Unassigned' : 'No active BCBAs available'} />
             <SelectField label="Insurance" value={form.insurance} onChange={setField('insurance')} options={insuranceValues} placeholder="Optional" />

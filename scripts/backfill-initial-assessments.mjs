@@ -52,6 +52,8 @@ function buildAssessmentFromReferral(referral = {}) {
   return {
     referral_id: getReferralId(referral),
     client_name: getClientName(referral),
+    dob: referral.dob || null,
+    gender: referral.gender || '',
     clinic: referral.office || referral.clinic || '',
     caregiver: referral.caregiver || '',
     caregiver_phone: referral.caregiver_phone || '',

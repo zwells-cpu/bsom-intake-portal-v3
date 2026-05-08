@@ -39,6 +39,8 @@ export function filterActivityLogsForLaunch(logs = []) {
 
 export const ACTIVITY_FIELD_LABELS = {
   client_name: 'Client name',
+  dob: 'Date of birth',
+  gender: 'Gender',
   clinic: 'Clinic',
   office: 'Clinic',
   assigned_bcba: 'Assigned BCBA',

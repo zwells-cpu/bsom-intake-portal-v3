@@ -45,6 +45,8 @@ function getClientName(referral = {}) {
 function buildMappedFields(referral = {}) {
   return {
     client_name: getClientName(referral),
+    dob: referral.dob || '',
+    gender: referral.gender || '',
     clinic: referral.office || referral.clinic || '',
     caregiver: referral.caregiver || '',
     caregiver_phone: referral.caregiver_phone || '',
@@ -106,15 +108,14 @@ async function main() {
       .map(referral => [String(getReferralId(referral)), referral]),
   )
 
-  const linkedBlankAssessments = (Array.isArray(assessments) ? assessments : [])
+  const linkedAssessments = (Array.isArray(assessments) ? assessments : [])
     .filter(assessment => !isBlank(assessment.referral_id))
-    .filter(assessment => isBlank(assessment.client_name))
 
   const repairable = []
   let skippedNoReferral = 0
   let skippedNoPatch = 0
 
-  linkedBlankAssessments.forEach((assessment) => {
+  linkedAssessments.forEach((assessment) => {
     const referral = referralById.get(String(assessment.referral_id))
     if (!referral) {
       skippedNoReferral += 1
@@ -132,7 +133,7 @@ async function main() {
 
   console.log(`Mode: ${commit ? 'COMMIT' : 'DRY RUN'}`)
   console.log(`Assessments checked: ${Array.isArray(assessments) ? assessments.length : 0}`)
-  console.log(`Linked blank promoted rows found: ${linkedBlankAssessments.length}`)
+  console.log(`Linked promoted rows checked: ${linkedAssessments.length}`)
   console.log(`Skipped missing linked referral: ${skippedNoReferral}`)
   console.log(`Skipped no missing mapped fields to repair: ${skippedNoPatch}`)
   console.log(`Rows repairable: ${repairable.length}`)

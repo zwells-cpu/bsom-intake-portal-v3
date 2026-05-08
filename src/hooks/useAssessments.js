@@ -7,6 +7,8 @@ const API_URL = import.meta.env.VITE_API_URL
 const ASSESSMENT_DB_FIELDS = [
   'referral_id',
   'client_name',
+  'dob',
+  'gender',
   'clinic',
   'assigned_bcba',
   'caregiver',
@@ -96,6 +98,8 @@ function buildAssessmentFromReferral(referral = {}) {
   return {
     referral_id: referral.id || referral.referral_id || null,
     client_name: clientName || referral.client_name || '',
+    dob: referral.dob || null,
+    gender: referral.gender || '',
     clinic: referral.office || referral.clinic || '',
     caregiver: referral.caregiver || '',
     caregiver_phone: referral.caregiver_phone || '',
@@ -131,6 +135,8 @@ function hasReferralMappingFields(referral = {}) {
     referral.first_name
     || referral.last_name
     || referral.client_name
+    || referral.dob
+    || referral.gender
     || referral.office
     || referral.clinic
     || referral.insurance
@@ -169,7 +175,7 @@ function sanitizeAssessmentPatch(patch = {}) {
       cleaned[field] = normalizeAuthorizationStatus(value)
       return
     }
-    if (field.endsWith('_date')) {
+    if (field === 'dob' || field.endsWith('_date')) {
       cleaned[field] = value || null
       return
     }

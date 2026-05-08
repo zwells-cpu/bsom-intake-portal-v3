@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ACTIVE_REFERRAL_OFFICES, INSURANCE_PAYERS, REFERRAL_SOURCES, BOOL, STAT, STAFF, AUTISM_DIAGNOSIS_OPTIONS, REFERRAL_FORM_OPTIONS, IEP_REPORT_OPTIONS, emptyReferral } from '../lib/constants'
+import { ACTIVE_REFERRAL_OFFICES, INSURANCE_PAYERS, REFERRAL_SOURCES, GENDER_OPTIONS, BOOL, STAT, STAFF, AUTISM_DIAGNOSIS_OPTIONS, REFERRAL_FORM_OPTIONS, IEP_REPORT_OPTIONS, emptyReferral } from '../lib/constants'
 import { normalizeOptions, optionValues } from '../lib/lookups'
 import { formatDisplayDate, formatPhoneNumber, normalizeAutismDx } from '../lib/utils'
 
@@ -284,6 +284,7 @@ export function NewReferralPage({ onSave, saving, officeOptions: liveOfficeOptio
         <Field label="First Name" value={form.first_name} onChange={f('first_name')} />
         <Field label="Last Name" value={form.last_name} onChange={f('last_name')} />
         <Field label="Date of Birth" type="date" value={form.dob} onChange={f('dob')} />
+        <Field label="Gender" options={GENDER_OPTIONS} value={form.gender} onChange={f('gender')} />
         <Field label="Date Received" type="date" value={form.date_received} onChange={f('date_received')} />
         <Field label="Office" options={officeOptions} value={form.office} onChange={f('office')} />
         <Field label="Reason for Referral" value={form.reason_for_referral} onChange={f('reason_for_referral')} />
@@ -333,7 +334,7 @@ export function NewReferralPage({ onSave, saving, officeOptions: liveOfficeOptio
       <div className="card card-pad" style={{ marginBottom: 16 }}>
         <div className="section-hdr">Client</div>
         <div className="responsive-review-grid">
-          {[['Name', `${form.first_name} ${form.last_name}`], ['DOB', formatDisplayDate(form.dob)], ['Office', form.office], ['Date Received', formatDisplayDate(form.date_received)]].map(([label, value]) => (
+          {[['Name', `${form.first_name} ${form.last_name}`], ['DOB', formatDisplayDate(form.dob)], ['Gender', form.gender], ['Office', form.office], ['Date Received', formatDisplayDate(form.date_received)]].map(([label, value]) => (
             <div key={label}><div className="label">{label}</div><div style={{ color: 'var(--text)' }}>{value || '--'}</div></div>
           ))}
         </div>
